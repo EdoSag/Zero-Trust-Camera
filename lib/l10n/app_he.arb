@@ -1,0 +1,18 @@
+{
+  "@@locale": "he",
+  "homeTitle": "ZT Camera",
+  "homeTagline": "תמונות וסרטונים נשמרים בלי מיקום, תאריך או פרטי הטלפון.",
+  "backToCamera": "חזרה למצלמה",
+  "accountSignIn": "כניסה או יצירת חשבון",
+  "accountOptional": "לא חובה: המצלמה עובדת גם בלי חשבון. חשבון יידרש לכספת הפרטית ולגיבוי המוצפן, שיגיעו בגרסה מאוחרת יותר.",
+  "accountManage": "סיסמה, אבטחה ויציאה מהחשבון",
+  "privacySection": "מה נשמר בתמונות",
+  "privacyLocation": "מיקום",
+  "privacyLocationNever": "לא נשמר אף פעם. לאפליקציה אין הרשאת מיקום.",
+  "privacyDateTime": "תאריך ושעה",
+  "privacyModel": "היצרן והדגם של הטלפון",
+  "privacyOffByDefault": "לא נשמר, אלא אם מפעילים זאת בהגדרות המצלמה",
+  "privacyOtherApps": "תמונות שמצולמות עבור אפליקציות אחרות",
+  "privacyOtherAppsNever": "תמיד נשמרות בלי שום פרט נוסף",
+  "cameraScreensLicence": "מסכי המצלמה התחילו מ-GrapheneOS Camera (רישיון MIT). ZT Camera לא נוצרה על ידי GrapheneOS ואינה מאושרת על ידה."
+}
