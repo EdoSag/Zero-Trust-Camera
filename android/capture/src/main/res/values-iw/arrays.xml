@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <array name="time_options">
+        <item>כבוי</item>
+        <item>3 שנ׳</item>
+        <item>5 שנ׳</item>
+        <item>8 שנ׳</item>
+        <item>10 שנ׳</item>
+    </array>
+
+</resources>

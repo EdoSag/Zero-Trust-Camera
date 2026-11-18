@@ -1,0 +1,18 @@
+{
+  "@@locale": "en",
+  "homeTitle": "ZT Camera",
+  "homeTagline": "Photos and videos are saved without location, date or phone details.",
+  "backToCamera": "Back to camera",
+  "accountSignIn": "Sign in or create an account",
+  "accountOptional": "Optional: the camera works without one. An account will be needed for the private vault and encrypted backup, which come in a later version.",
+  "accountManage": "Password, security and sign out",
+  "privacySection": "What your photos keep",
+  "privacyLocation": "Location",
+  "privacyLocationNever": "Never saved. The app has no location permission.",
+  "privacyDateTime": "Date and time",
+  "privacyModel": "Phone make and model",
+  "privacyOffByDefault": "Not saved, unless you turn it on in the camera's settings",
+  "privacyOtherApps": "Photos taken for other apps",
+  "privacyOtherAppsNever": "Always saved with nothing extra",
+  "cameraScreensLicence": "The camera screens started from GrapheneOS Camera (MIT licence). ZT Camera is not made or endorsed by GrapheneOS."
+}

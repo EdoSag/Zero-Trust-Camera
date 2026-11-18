@@ -1,0 +1,377 @@
+package dev.sagron.zerotrustcamera.capture.capturer
+
+import android.annotation.SuppressLint
+import android.content.ContentValues
+import android.content.Context
+import android.graphics.ImageDecoder
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.net.Uri
+import android.provider.DocumentsContract
+import android.provider.MediaStore
+import android.system.Os
+import android.util.Log
+import android.webkit.MimeTypeMap
+import androidx.annotation.Px
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.internal.compat.workaround.ExifRotationAvailability
+import androidx.camera.core.internal.utils.ImageUtil
+import androidxc.camera.core.impl.utils.Exif
+import dev.sagron.zerotrustcamera.capture.CamConfig
+import dev.sagron.zerotrustcamera.capture.CapturedItem
+import dev.sagron.zerotrustcamera.capture.IMAGE_NAME_PREFIX
+import dev.sagron.zerotrustcamera.capture.ITEM_TYPE_IMAGE
+import dev.sagron.zerotrustcamera.capture.capturer.ImageSaverException.Place
+import dev.sagron.zerotrustcamera.capture.MetadataPolicy
+import dev.sagron.zerotrustcamera.capture.applyMetadataPolicy
+import dev.sagron.zerotrustcamera.capture.util.ImageResizer
+import dev.sagron.zerotrustcamera.capture.util.executeIfAlive
+import dev.sagron.zerotrustcamera.capture.util.getTreeDocumentUri
+import dev.sagron.zerotrustcamera.capture.util.removePendingFlagFromUri
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.IOException
+import java.nio.ByteBuffer
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicBoolean
+
+// see com.android.externalstorage.ExternalStorageProvider and
+// com.android.internal.content.FileSystemProvider
+const val SAF_URI_HOST_EXTERNAL_STORAGE = "com.android.externalstorage.documents"
+
+const val DEFAULT_MEDIA_STORE_CAPTURE_PATH = "DCIM/Camera"
+
+/*
+Based on androidx.camera.core.ImageSaver
+
+Main differences:
+- image saving stages are pipelined: extractJpegBytes(), saveImage() and generateThumbnail() can
+execute concurrently, each processing a different image
+- image is written to storage only once, after all the processing is completed. androidx ImageSaver
+writes and reads it back from storage multiple times
+- generateThumbnail() stage which removes the need to do an expensive ContentResolver call to
+open a Uri during the thumbnail generation
+- ImageProxy isn't held open for the whole duration of storage IO, it's closed as soon as possible
+ */
+class ImageSaver(
+    val imageCapturer: ImageCapturer,
+    val appContext: Context,
+    val jpegQuality: Int,
+    val storageLocation: String,
+    val imageFileFormat: String,
+    val imageCaptureMetadata: ImageCapture.Metadata,
+    val metadataPolicy: MetadataPolicy,
+    @Px val targetThumbnailWidth: Int,
+    @Px val targetThumbnailHeight: Int,
+) : ImageCapture.OnImageCapturedCallback()
+{
+    val captureTime = Date()
+    val contentResolver = appContext.contentResolver
+    val mainThreadExecutor = appContext.mainExecutor
+
+    private var isCancelled = false
+
+    fun cancelCaptureRequest() {
+        isCancelled = true
+    }
+
+    override fun onCaptureSuccess(image: ImageProxy) {
+        mainThreadExecutor.execute(imageCapturer::onCaptureSuccess)
+
+        try {
+            extractJpegBytes(image)
+        } catch (e: Exception) {
+            handleError(ImageSaverException(Place.IMAGE_EXTRACTION, e))
+            return
+        }
+
+        imageWriterExecutor.execute(this::saveImage)
+    }
+
+    // based on androidx.camera.core.ImageSaver#imageToJpegByteArray(),
+    // optimized to avoid extracting uncropped image twice and to close ImageProxy sooner
+    @SuppressLint("RestrictedApi")
+    @Throws(ImageUtil.CodecFailedException::class)
+    private fun extractJpegBytes(image: ImageProxy) {
+        try {
+            cropRect = if (ImageUtil.shouldCropImage(image)) image.cropRect else null
+            val imageFormat = image.format
+
+            origJpegBytes = if (imageFormat == ImageFormat.JPEG) {
+                withoutTrailingPadding(ImageUtil.jpegImageToJpegByteArray(image))
+            } else if (imageFormat == ImageFormat.YUV_420_888) {
+                ImageUtil.yuvImageToJpegByteArray(image, cropRect, jpegQuality, 0)
+            } else {
+                throw IllegalStateException("unknown imageFormat $imageFormat")
+            }
+
+            shouldUseExifOrientation = ExifRotationAvailability().shouldUseExifOrientation(image)
+            orientation = image.imageInfo.rotationDegrees
+        } finally {
+            /*
+             from javadoc of the Image class:
+             Since Images are often directly produced or consumed by hardware components, they are
+             a limited resource shared across the system, and should be closed as soon as
+             they are no longer needed.
+             */
+            image.close()
+        }
+    }
+
+    private fun withoutTrailingPadding(jpeg: ByteArray): ByteArray {
+        val length = jpeg.indexOfLast { it != 0.toByte() } + 1
+        if (length == jpeg.size) {
+            return jpeg
+        }
+
+        // Only zeros straight after the EOI marker are padding. Without the marker right before
+        // them they may be image data, e.g. of a JPEG that ends early
+        if (!endsWithEoiMarker(jpeg, length)) {
+            return jpeg
+        }
+
+        return jpeg.copyOf(length)
+    }
+
+    private fun endsWithEoiMarker(jpeg: ByteArray, length: Int): Boolean {
+        return length >= 2 && jpeg[length - 2] == 0xff.toByte() && jpeg[length - 1] == 0xd9.toByte()
+    }
+
+    private fun saveImage() {
+        val item = try {
+            saveImageInner()
+        } catch (e: ImageSaverException) {
+            handleError(e)
+            return
+        }
+
+        imageCapturer.mActivity.thumbnailLoaderExecutor.executeIfAlive { generateThumbnail(item) }
+    }
+
+    private var cropRect: Rect? = null
+    private var origJpegBytes: ByteArray? = null
+    private lateinit var processedJpegBytes: ByteArray
+    private var shouldUseExifOrientation = false
+    private var orientation = 0
+
+    @Throws(ImageSaverException::class)
+    private fun saveImageInner(): CapturedItem {
+        val uncroppedJpegBytes = origJpegBytes!!
+        if (cropRect != null) {
+            try {
+                // cropJpegByteArray call is slow, overhead from reflection doesn't matter in this case
+                // copying out cropJpegByteArray method isn't worth the maintenance burden
+                val cropJpegByteArray = ImageUtil::class.java.getDeclaredMethod(
+                    "cropJpegByteArray",
+                    ByteArray::class.java, Rect::class.java, Int::class.javaPrimitiveType)
+                cropJpegByteArray.isAccessible = true
+                origJpegBytes = cropJpegByteArray.invoke(null, uncroppedJpegBytes, cropRect, jpegQuality) as ByteArray
+            } catch (e: Exception) {
+                throw ImageSaverException(Place.IMAGE_CROPPING, e)
+            }
+        }
+
+        processedJpegBytes = processExif(uncroppedJpegBytes)
+
+        val startOfWriting = timestamp()
+
+        val uri = try {
+            obtainOutputUri()!!
+        } catch (e: Exception) {
+            throw ImageSaverException(Place.FILE_CREATION, e)
+        }
+
+        val shouldFsync = when (uri.host) {
+            MediaStore.AUTHORITY,
+            SAF_URI_HOST_EXTERNAL_STORAGE ->
+                true
+            else ->
+                false
+        }
+
+        try {
+            contentResolver.openAssetFileDescriptor(uri, "w")!!.use {
+                val fd = it.fileDescriptor
+                val bytes = processedJpegBytes
+                var off = 0
+                val len = bytes.size
+                do {
+                    // "-1" is never returned to indicate an error, ErrnoException is thrown instead
+                    off += Os.write(fd, bytes, off, len - off)
+                } while (off != len)
+
+                if (shouldFsync) {
+                    Os.fsync(fd)
+                }
+            }
+        } catch (e: Exception) {
+            deleteIncompleteImage(uri)
+            throw ImageSaverException(Place.FILE_WRITE, e)
+        }
+
+        if (saveToMediaStore()) {
+            try {
+                removePendingFlagFromUri(contentResolver, uri)
+            } catch (e: Exception) {
+                // don't delete the image in this case, since it's already fully written out
+                throw ImageSaverException(Place.FILE_WRITE_COMPLETION, e)
+            }
+        }
+        logDuration(startOfWriting) {"image writing (saveToMediaStore: ${saveToMediaStore()})"}
+
+        val capturedItem = CapturedItem(ITEM_TYPE_IMAGE, dateString(), uri)
+        mainThreadExecutor.execute { imageCapturer.onImageSaverSuccess(capturedItem) }
+        return capturedItem
+    }
+
+    // based on EXIF update sequence in androidx.camera.core.ImageSaver#saveImageToTempFile(),
+    // optimized to skip writing of the unfinished image to storage
+    @Throws(ImageSaverException::class)
+    private fun processExif(uncroppedJpegBytes: ByteArray): ByteArray {
+        val startOfExifProcessing = timestamp()
+
+        val exif: Exif
+        try {
+            exif = Exif.createFromInputStream(ByteArrayInputStream(origJpegBytes))
+            if (cropRect != null) {
+                val orig = Exif.createFromInputStream(ByteArrayInputStream(uncroppedJpegBytes))
+                orig.copyToCroppedImage(exif)
+            }
+        } catch (e: Exception) {
+            throw ImageSaverException(Place.EXIF_PARSING, e)
+        }
+
+        // Overwrite the original orientation if the quirk exists.
+        if (!shouldUseExifOrientation) {
+            exif.rotate(orientation)
+        }
+        val metadata = imageCaptureMetadata
+        if (metadata.isReversedHorizontal) {
+            exif.flipHorizontally()
+        }
+        if (metadata.isReversedVertical) {
+            exif.flipVertically()
+        }
+
+        val exifInterface = exif.exifInterface
+
+        // ZT Camera: everything is removed, then only what the person chose to keep is put back.
+        // A location is never written.
+        exifInterface.applyMetadataPolicy(metadataPolicy, captureTime)
+
+        val baos = ByteArrayOutputStream(origJpegBytes!!.size +
+                // make sure buffer doesn't need to be resized due to additional EXIF attributes
+                (100 * 1024))
+
+        try {
+            exifInterface.saveAttributes(ByteArrayInputStream(origJpegBytes), baos)
+        } catch (e: Exception) {
+            throw ImageSaverException(Place.EXIF_PARSING, e)
+        }
+
+        // let GC collect this large buffer
+        origJpegBytes = null
+
+        val res = baos.toByteArray()
+
+        logDuration(startOfExifProcessing) {"exif processing"}
+
+        return res
+    }
+
+    private fun generateThumbnail(item: CapturedItem) {
+        val source = ImageDecoder.createSource(ByteBuffer.wrap(processedJpegBytes))
+        val bitmap = try {
+            ImageDecoder.decodeBitmap(source, ImageResizer(targetThumbnailWidth, targetThumbnailHeight))
+        } catch (e: IOException) {
+            // Some HALs produce JPEGs that end early. The image is already saved by now, so it is
+            // kept and goes without a thumbnail, like any other item that can't be decoded
+            Log.w(TAG, "unable to generate a thumbnail", e)
+            null
+        }
+        mainThreadExecutor.execute { imageCapturer.onThumbnailGenerated(item, bitmap) }
+    }
+
+    fun saveToMediaStore() = storageLocation == CamConfig.SettingValues.Default.STORAGE_LOCATION
+
+    private fun dateString() =
+        // it's important to include milliseconds (SSS), otherwise new image may overwrite the previous one
+        SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.US).format(captureTime)
+
+    private fun fileName(): String {
+        return IMAGE_NAME_PREFIX + dateString() + imageFileFormat
+    }
+
+    private fun mimeType() = MimeTypeMap.getSingleton().getMimeTypeFromExtension(imageFileFormat) ?: "image/*"
+
+    @Throws(Exception::class)
+    fun obtainOutputUri(): Uri? {
+        if (saveToMediaStore()) {
+            val cv = ContentValues().apply {
+                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName())
+                put(MediaStore.MediaColumns.MIME_TYPE, mimeType())
+                put(MediaStore.MediaColumns.RELATIVE_PATH, DEFAULT_MEDIA_STORE_CAPTURE_PATH)
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+
+            return contentResolver.insert(CamConfig.imageCollectionUri, cv)
+        } else {
+            try {
+                val treeUri = Uri.parse(storageLocation)
+                val treeDocumentUri = getTreeDocumentUri(treeUri)
+                return DocumentsContract.createDocument(contentResolver, treeDocumentUri, mimeType(), fileName())!!
+            } catch (e: Exception) {
+                appContext.mainExecutor.execute(imageCapturer::onStorageLocationNotFound)
+                skipErrorDialog = true
+                throw e
+            }
+        }
+    }
+
+    private fun deleteIncompleteImage(uri: Uri) {
+        try {
+            val num = contentResolver.delete(uri, null, null)
+            check(num == 1) { "unexpected number of deleted rows: $num" }
+        } catch (deleteException: Exception) {
+            Log.w(TAG, "unable to delete an incomplete image $uri", deleteException)
+        }
+    }
+
+    // implementation of ImageCapture.OnImageCapturedCallback.onError
+    override fun onError(exception: ImageCaptureException) {
+        mainThreadExecutor.execute {
+            if (isCancelled) return@execute
+            imageCapturer.onCaptureError(exception)
+        }
+    }
+
+    private var skipErrorDialog = false
+
+    private fun handleError(e: ImageSaverException) {
+        mainThreadExecutor.execute { imageCapturer.onImageSaverError(e, skipErrorDialog) }
+    }
+
+    companion object {
+        val imageCaptureCallbackExecutor = Executors.newSingleThreadExecutor()
+        private val imageWriterExecutor = Executors.newSingleThreadExecutor()
+
+        private const val TAG = "ImageSaver"
+        private const val LOG_DURATION = false
+    }
+
+    private fun timestamp() = if (LOG_DURATION) System.nanoTime() else 0
+
+    private fun logDuration(start: Long, lazyMessage: () -> String) {
+        if (LOG_DURATION) {
+            val now = timestamp()
+            val us = (now - start) / 1000
+            val durationStr = if (us < 10_000) "$us us" else "${us / 1000} ms"
+            Log.d(TAG, "${lazyMessage()}: $durationStr")
+        }
+    }
+}
