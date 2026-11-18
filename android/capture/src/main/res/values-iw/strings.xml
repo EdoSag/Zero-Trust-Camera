@@ -154,6 +154,7 @@
     <string name="show_details">הצגת פרטים</string>
     <string name="recording_too_short_to_be_saved">ההקלטה קצרה מדי לשמירה</string>
     <string name="unable_to_save_video">שמירת הסרטון נכשלה</string>
+    <string name="video_time_not_cleared">הסרטון נשמר, אך לא ניתן היה להסיר ממנו את זמן הצילום</string>
     <string name="unable_to_save_video_verbose">שמירת הסרטון נכשלה, קוד שגיאה: %d</string>
     <string name="unable_to_play_video">לא ניתן להפעיל את הסרטון</string>
     <string name="recording_stopped_storage_almost_full">ההקלטה נעצרה כי האחסון כמעט מלא</string>

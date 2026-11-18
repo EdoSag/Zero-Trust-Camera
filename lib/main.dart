@@ -8,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 
+import 'app/account_gate.dart';
+import 'app/auth_providers.dart';
 import 'app/camera_bridge.dart';
 import 'app/camera_config.dart';
 import 'app/email_links.dart';
@@ -53,6 +55,8 @@ class ZeroTrustCameraApp extends ConsumerStatefulWidget {
 }
 
 class _ZeroTrustCameraAppState extends ConsumerState<ZeroTrustCameraApp> {
+  final _navigator = GlobalKey<NavigatorState>();
+
   @override
   void initState() {
     super.initState();
@@ -68,10 +72,21 @@ class _ZeroTrustCameraAppState extends ConsumerState<ZeroTrustCameraApp> {
     ref.listen<Locale?>(ztLanguageProvider, (_, Locale? next) {
       ref.read(cameraBridgeProvider).setLanguage(next?.languageCode);
     });
+    // A reset-password email link opens this app on its first page, not on
+    // the account page. Listening from the start (not only once the account
+    // page is open) is what catches the link, and the account page is then
+    // opened to show "choose a new password".
+    ref.listen<bool>(passwordRecoveryProvider, (_, bool recovering) {
+      if (!recovering) return;
+      _navigator.currentState
+        ?..popUntil((Route<dynamic> r) => r.isFirst)
+        ..push(MaterialPageRoute<void>(builder: (_) => const AccountGate()));
+    });
     return ZtThemeBuilder(
       builder: (context, theme, darkTheme, mode) => MaterialApp(
         // On-device task switcher label; the store name is Zero-Trust Camera.
         title: 'ZT Camera',
+        navigatorKey: _navigator,
         theme: theme,
         darkTheme: darkTheme,
         themeMode: mode,

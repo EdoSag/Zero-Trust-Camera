@@ -400,8 +400,19 @@ class VideoCapturer(private val mActivity: MainActivity) {
             // ZT Camera: an MP4 always carries when it was recorded. Cleared here, while the file
             // is still hidden from other apps, unless the person chose to keep the date and time.
             // A video recorded for another app never keeps it.
-            if (mActivity is VideoCaptureActivity || !camConfig.keepDateTime) {
-                clearRecordingDate(recordingCtx.uri)
+            val forOtherApp = mActivity is VideoCaptureActivity
+            val timeCleared =
+                !(forOtherApp || !camConfig.keepDateTime) || clearRecordingDate(recordingCtx.uri)
+
+            if (!timeCleared && forOtherApp) {
+                // The other app was promised a file with no recording time, and its file can't
+                // be read back to clear it (it gave write access only). Nothing is handed over
+                // rather than a file that tells when it was made.
+                emptyOutput(recordingCtx.uri)
+                handler.post {
+                    mActivity.showMessage(R.string.unable_to_save_video)
+                }
+                return@execute
             }
 
             val saved = !recordingCtx.isPendingMediaStoreUri || try {
@@ -420,23 +431,35 @@ class VideoCapturer(private val mActivity: MainActivity) {
                 failedWithError?.let {
                     mActivity.showMessage(mActivity.getString(R.string.error_during_recording, it))
                 }
+                if (!timeCleared) {
+                    // The person's own video is kept, and they are told what it still carries.
+                    mActivity.showMessage(R.string.video_time_not_cleared)
+                }
                 onOutputSaved(recordingCtx, dateString)
             }
         }
     }
 
-    // Runs on outputExecutor. The video is fine without this, so a failure only gets logged.
-    private fun clearRecordingDate(uri: Uri) {
+    // Runs on outputExecutor. True when the file no longer says when it was recorded.
+    private fun clearRecordingDate(uri: Uri): Boolean = try {
+        contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
+            // The streams must not be closed on their own: that would close the descriptor
+            // under the other one. Closing the descriptor (use) ends both.
+            val input = FileInputStream(pfd.fileDescriptor)
+            val output = FileOutputStream(pfd.fileDescriptor)
+            Mp4TimeScrubber.scrub(input.channel, output.channel) > 0
+        } ?: false
+    } catch (e: Exception) {
+        Log.w("VideoCapturer", "could not clear the recording date", e)
+        false
+    }
+
+    // Runs on outputExecutor. Leaves another app's output file with nothing in it.
+    private fun emptyOutput(uri: Uri) {
         try {
-            contentResolver.openFileDescriptor(uri, "rw")?.use { pfd ->
-                // The streams must not be closed on their own: that would close the descriptor
-                // under the other one. Closing the descriptor (use) ends both.
-                val input = FileInputStream(pfd.fileDescriptor)
-                val output = FileOutputStream(pfd.fileDescriptor)
-                Mp4TimeScrubber.scrub(input.channel, output.channel)
-            }
+            contentResolver.openFileDescriptor(uri, "wt")?.close()
         } catch (e: Exception) {
-            Log.w("VideoCapturer", "could not clear the recording date", e)
+            Log.w("VideoCapturer", "could not empty the output file", e)
         }
     }
 

@@ -196,6 +196,7 @@
     <string name="show_details">Show details</string>
     <string name="recording_too_short_to_be_saved">Recording too short to be saved</string>
     <string name="unable_to_save_video">Unable to save this video</string>
+    <string name="video_time_not_cleared">Saved, but the recording time could not be removed from this video</string>
     <string name="unable_to_save_video_verbose">Unable to save this video, error code: %d</string>
     <string name="unable_to_play_video">Unable to play this video</string>
     <string name="recording_stopped_storage_almost_full">Recording stopped because the storage is almost full</string>
