@@ -96,6 +96,16 @@ class VaultChannel(
             }
             "thumb" -> unlocked(result) { priv -> VaultStore.thumb(ctx, call.argument<String>("id")!!, priv) }
             "photo" -> unlocked(result) { priv -> VaultStore.media(ctx, call.argument<String>("id")!!, priv) }
+            "scans" -> unlocked(result) { priv -> VaultStore.listScans(ctx, priv) }
+            "deleteScans" -> background(result) {
+                call.argument<List<String>>("ids")!!.forEach { VaultStore.deleteScan(ctx, it) }
+                null
+            }
+            "scanHistory" -> result.success(CamConfig.isScanHistoryOn(ctx))
+            "setScanHistory" -> {
+                CamConfig.setScanHistoryOn(ctx, call.argument<Boolean>("on") == true)
+                result.success(null)
+            }
             "readState" -> unlocked(result) { priv -> VaultStore.readState(ctx, priv) }
             "writeState" -> background(result) {
                 VaultStore.writeState(ctx, VaultKeys.publicKey(ctx)!!, call.argument<String>("json")!!)

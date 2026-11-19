@@ -5,12 +5,20 @@ videos are saved without location, time or device details unless you choose
 to keep them. Same account, settings and look as the other Zero-Trust apps,
 built on [Zero-Trust-Core](https://github.com/EdoSag/Zero-Trust-Core).
 
-## What it does (0.3)
+## What it does (0.4)
 
 - **Photo and video**, with the phone's own camera extensions where it has
   them (Night, HDR, Portrait, Face retouch, Auto), zoom, tap to focus,
   exposure, flash, timer, grid and aspect ratio.
-- **QR and barcode scanner**, on the phone only.
+- **QR and barcode scanner**, on the phone only (new in 0.4: it reads what
+  a code holds). Nothing opens by itself. A link shows the site it really
+  goes to and warns about plain http, lookalike names (paypal-login...),
+  letters from other alphabets, short links, bare IP addresses and "@"
+  tricks. Wi-Fi codes join through Android's own sheet; contacts, events,
+  calls, texts and emails go to the ZT app when it is installed; Zero Trust
+  invites open the right ZT app; two-factor secrets are never shown. "Scan
+  code" in the share sheet reads a code from a screenshot. Scan history is
+  off by default and, when on, kept in the Private vault.
 - **Clean files by default.** A saved photo keeps only its orientation. A
   saved video has its recording time cleared. Two switches under More
   settings keep the date and time, or the camera model, for people who want
@@ -43,7 +51,7 @@ built on [Zero-Trust-Core](https://github.com/EdoSag/Zero-Trust-Core).
   comes next.
 - **English and Hebrew**, with right-to-left layout.
 
-Not in 0.3 yet: encrypted backup of the vault, the document scanner and ZT app actions for scanned codes. The plan is in the project's
+Not in 0.4 yet: encrypted backup of the vault, the document scanner and ZT app actions for scanned codes. The plan is in the project's
 `zt-camera-plan.md`.
 
 ## How it is built

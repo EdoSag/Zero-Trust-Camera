@@ -238,6 +238,34 @@ object VaultStore {
         for (kind in listOf("media", "thumb", "meta")) file(ctx, id, kind).delete()
     }
 
+    // ---- scan history ----------------------------------------------------------------------------
+
+    /** Keeps one scanned code, sealed like everything else (works while locked). */
+    fun saveScan(ctx: Context, pub: ByteArray, text: String, at: Long) {
+        val json = JSONObject().put("v", 1).put("text", text).put("at", at)
+        writeSealed(file(ctx, newId(), "scan"), pub, ByteArrayInputStream(json.toString().toByteArray()))
+    }
+
+    /** Every kept scan, newest first. */
+    fun listScans(ctx: Context, priv: ByteArray): List<Map<String, Any>> {
+        val out = ArrayList<Map<String, Any>>()
+        dir(ctx).listFiles { f -> f.name.endsWith(".scan") }?.forEach { f ->
+            try {
+                val json = JSONObject(String(MediaVault.openBytes(f.readBytes(), priv)))
+                out.add(mapOf("id" to f.name.removeSuffix(".scan"), "text" to json.getString("text"),
+                    "at" to json.optLong("at")))
+            } catch (e: Exception) {
+                Log.w(TAG, "scan ${f.name}", e)
+            }
+        }
+        out.sortByDescending { it["at"] as Long }
+        return out
+    }
+
+    fun deleteScan(ctx: Context, id: String) {
+        file(ctx, id, "scan").delete()
+    }
+
     // ---- albums, favourites and trash ----------------------------------------------------------
 
     private fun stateFile(ctx: Context) = File(dir(ctx), "state")

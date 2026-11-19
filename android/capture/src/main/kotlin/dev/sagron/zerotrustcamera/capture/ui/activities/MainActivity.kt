@@ -3,8 +3,6 @@ package dev.sagron.zerotrustcamera.capture.ui.activities
 import android.Manifest
 import android.animation.Animator
 import android.annotation.SuppressLint
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
@@ -24,7 +22,6 @@ import android.os.SystemClock
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
-import android.text.util.Linkify
 import android.util.Log
 import android.view.GestureDetector
 import android.view.KeyEvent
@@ -54,6 +51,8 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestMultiple
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
+import dev.sagron.zerotrustcamera.capture.zt.ScanHistory
+import dev.sagron.zerotrustcamera.capture.zt.ScanSheet
 import dev.sagron.zerotrustcamera.capture.zt.PrivateVaultSetup
 import dev.sagron.zerotrustcamera.capture.zt.ZtApp
 import dev.sagron.zerotrustcamera.capture.zt.ZtBaseActivity
@@ -84,7 +83,6 @@ import dev.sagron.zerotrustcamera.capture.capturer.VideoCapturer
 import dev.sagron.zerotrustcamera.capture.capturer.getVideoThumbnail
 import dev.sagron.zerotrustcamera.capture.shareCapturedItem
 import dev.sagron.zerotrustcamera.capture.databinding.ActivityMainBinding
-import dev.sagron.zerotrustcamera.capture.databinding.ScanResultDialogBinding
 import dev.sagron.zerotrustcamera.capture.ktx.SystemSettingsObserver
 import dev.sagron.zerotrustcamera.capture.ktx.applyPreviewRatio
 import dev.sagron.zerotrustcamera.capture.notifier.SensorOrientationChangeNotifier
@@ -109,7 +107,6 @@ import com.google.android.material.snackbar.Snackbar
 import com.google.android.material.tabs.TabLayout
 import com.google.zxing.BarcodeFormat
 import java.io.File
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
@@ -117,7 +114,6 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.roundToInt
 import androidx.core.graphics.scale
-import androidx.core.net.toUri
 import androidx.core.view.isVisible
 import androidx.core.graphics.createBitmap
 
@@ -1323,94 +1319,18 @@ open class MainActivity : ZtBaseActivity(),
 
         isQRDialogShowing = true
 
-        val hString = bytesToHex(
-            rawText.toByteArray(StandardCharsets.UTF_8)
-        )
+        // ZT Camera: the result sheet reads what the code holds and offers the matching action
+        // (zt/ScanSheet.kt); nothing opens by itself. Kept in the vault's scan history when that
+        // is turned on.
+        ScanHistory.save(applicationContext, rawText)
 
         runOnUiThread {
-            val builder = MaterialAlertDialogBuilder(this)
-            val dialogBinding = ScanResultDialogBinding.inflate(layoutInflater)
-            builder.setView(dialogBinding.root)
+            camConfig.cameraProvider?.unbindAll()
 
-            val tabLayout: TabLayout = dialogBinding.encodingTabs
-            val textView = dialogBinding.scanResultText
-
-            val intentView = Intent(Intent.ACTION_VIEW, rawText.toUri())
-
-            if (packageManager.resolveActivity(intentView, 0L) != null) {
-                dialogBinding.openWith.setOnClickListener {
-                    val chooser = Intent.createChooser(intentView, getString(R.string.open_with))
-                    startActivity(chooser)
-                }
-            } else {
-                dialogBinding.openWith.visibility = View.GONE
-            }
-
-            tabLayout.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
-
-                override fun onTabSelected(tab: TabLayout.Tab?) {
-                    when (tab?.text.toString()) {
-                        "Binary" -> {
-                            textView.autoLinkMask = 0
-                            textView.text = hString
-                        }
-
-                        "UTF-8" -> {
-                            textView.autoLinkMask =
-                                Linkify.WEB_URLS or Linkify.PHONE_NUMBERS or Linkify.EMAIL_ADDRESSES
-                            textView.text = rawText
-                        }
-                    }
-                }
-
-                override fun onTabReselected(tab: TabLayout.Tab?) {}
-
-                override fun onTabUnselected(tab: TabLayout.Tab?) {}
-            })
-
-            tabLayout.addTab(tabLayout.newTab().apply {
-                text = "UTF-8"
-            })
-
-            tabLayout.addTab(tabLayout.newTab().apply {
-                text = "Binary"
-            })
-
-            val ctc: ImageButton = dialogBinding.copyQrText
-            ctc.setOnClickListener {
-                val clipboardManager = getSystemService(
-                    Context.CLIPBOARD_SERVICE
-                ) as ClipboardManager
-                val clipData = ClipData.newPlainText(
-                    "text",
-                    textView.text
-                )
-                clipboardManager.setPrimaryClip(clipData)
-
-                showMessage(getString(R.string.copied_text_to_clipboard))
-            }
-
-            val sButton: ImageButton = dialogBinding.shareQrText
-            sButton.setOnClickListener {
-                val sIntent = Intent(Intent.ACTION_SEND)
-                sIntent.type = "text/plain"
-                sIntent.putExtra(Intent.EXTRA_TEXT, textView.text.toString())
-                startActivity(
-                    Intent.createChooser(
-                        sIntent,
-                        getString(R.string.share_text_via)
-                    )
-                )
-            }
-
-            builder.setOnDismissListener {
+            ScanSheet.show(this, rawText) {
                 isQRDialogShowing = false
                 camConfig.startCamera(true)
             }
-
-            camConfig.cameraProvider?.unbindAll()
-
-            builder.showIgnoringShortEdgeMode()
         }
     }
 

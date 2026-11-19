@@ -221,4 +221,40 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get vaultPlay => 'Play';
+
+  @override
+  String get scanHistoryTitle => 'Scan history';
+
+  @override
+  String get scanHistoryKeep => 'Keep scan history';
+
+  @override
+  String get scanHistoryKeepHint =>
+      'Codes you scan are kept here, in the Private vault, where only you can open them.';
+
+  @override
+  String get scanHistoryEmpty => 'No scans kept yet.';
+
+  @override
+  String get scanHistoryDelete => 'Delete';
+
+  @override
+  String get scanHistoryClear => 'Clear all';
+
+  @override
+  String get scanHistoryClearTitle => 'Clear scan history?';
+
+  @override
+  String scanHistoryClearMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count scans will be deleted.',
+      one: '1 scan will be deleted.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scanHistoryCopied => 'Copied';
 }

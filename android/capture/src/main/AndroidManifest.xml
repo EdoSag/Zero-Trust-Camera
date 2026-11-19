@@ -27,6 +27,31 @@
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="*" />
         </intent>
+        <!-- ZT Camera: scanned codes are handed to the ZT apps when they are installed -->
+        <package android:name="dev.sagron.zerotrustbrowser" />
+        <package android:name="dev.sagron.zerotrustcontacts" />
+        <package android:name="dev.sagron.zerotrustcalendar" />
+        <package android:name="dev.sagron.zerotrustphone" />
+        <package android:name="dev.sagron.zerotrusttasks" />
+        <package android:name="dev.sagron.zerotrustnotes" />
+        <package android:name="dev.sagron.zerotrustmeds" />
+        <package android:name="dev.sagron.zerotrustfitness" />
+        <package android:name="dev.sagron.zerotrustfamily" />
+        <package android:name="dev.sagron.zerotrusthome" />
+        <package android:name="dev.sagron.zerotrustclock" />
+        <package android:name="dev.sagron.zerotrusttime" />
+        <package android:name="dev.sagron.zerotrustquests" />
+        <intent>
+            <action android:name="android.intent.action.INSERT" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="*" />
+        </intent>
     </queries>
 
     <application>
@@ -192,6 +217,21 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="image/*" />
                 <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- ZT Camera: "Scan code" in the share sheet for pictures (screenshots of QR codes) -->
+        <activity
+            android:name=".zt.ScanImageActivity"
+            android:label="@string/scan_image_label"
+            android:theme="@style/Theme.CleanShare"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
 

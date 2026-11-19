@@ -137,6 +137,9 @@ class CamConfig(private val mActivity: MainActivity) {
             const val ULTRA_HDR = "zt_ultra_hdr"
             const val VIDEO_60_FPS = "zt_video_60_fps"
 
+            // ZT Camera: scanned codes kept in the Private vault (off by default)
+            const val SCAN_HISTORY = "zt_scan_history"
+
             const val GYROSCOPE_SUGGESTIONS = "gyroscope_suggestions"
 
             const val CAMERA_SOUNDS = "camera_sounds"
@@ -234,6 +237,15 @@ class CamConfig(private val mActivity: MainActivity) {
             ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
                 .edit().putBoolean(SettingValues.Key.PRIVATE_VAULT, on)
                 .putBoolean(SettingValues.Key.SAVE_PLACE_CHOSEN, true).apply()
+        }
+
+        fun isScanHistoryOn(ctx: Context): Boolean =
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(SettingValues.Key.SCAN_HISTORY, false)
+
+        fun setScanHistoryOn(ctx: Context, on: Boolean) {
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putBoolean(SettingValues.Key.SCAN_HISTORY, on).apply()
         }
 
         val FRONT_CAMERA_SELECTOR = CameraSelector.Builder()

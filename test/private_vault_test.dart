@@ -120,6 +120,25 @@ class FakeVault implements VaultBackend {
 
   @override
   Future<void> playVideo(String id) async {}
+
+  bool scanHistoryOn = false;
+  List<ScanRecord> scanRecords = [];
+
+  @override
+  Future<bool> scanHistory() async => scanHistoryOn;
+
+  @override
+  Future<void> setScanHistory(bool on) async => scanHistoryOn = on;
+
+  @override
+  Future<List<ScanRecord>> scans() async {
+    _check();
+    return scanRecords;
+  }
+
+  @override
+  Future<void> deleteScans(List<String> ids) async =>
+      scanRecords.removeWhere((s) => ids.contains(s.id));
 }
 
 VaultItem _item(String id, DateTime at, {bool video = false}) =>
@@ -401,6 +420,44 @@ void main() {
         tester.getTopLeft(find.text('הכול')).dx,
         greaterThan(tester.getTopLeft(find.text('אשפה')).dx),
       );
+    });
+
+    testWidgets('scan history: switch on top, codes below, delete one', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)])
+        ..scanRecords = [
+          ScanRecord(id: 's1', text: 'https://example.com', at: now),
+          ScanRecord(id: 's2', text: 'WIFI:S:Home;;', at: now),
+        ];
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Scan history'));
+      await tester.pumpAndSettle();
+      final toggle = find.byKey(const Key('scan-history-switch'));
+      expect(toggle, findsOneWidget);
+      expect(
+        tester.getTopLeft(toggle).dy,
+        lessThan(tester.getTopLeft(find.text('https://example.com')).dy),
+      );
+      await tester.tap(toggle);
+      await tester.pumpAndSettle();
+      expect(vault.scanHistoryOn, isTrue);
+      await tester.tap(
+        find.descendant(
+          of: find.byKey(const ValueKey('scan-s1')),
+          matching: find.byTooltip('Delete'),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('https://example.com'), findsNothing);
+      expect(find.text('WIFI:S:Home;;'), findsOneWidget);
     });
   });
 }
