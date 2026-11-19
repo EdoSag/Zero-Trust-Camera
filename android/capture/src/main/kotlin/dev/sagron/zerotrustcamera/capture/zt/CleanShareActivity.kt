@@ -28,7 +28,13 @@ class CleanShareActivity : ZtBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        if (savedInstanceState != null) return // the dialog is not brought back after a rotation
+        // Rotation doesn't recreate this screen (see the manifest). If Android recreates it anyway
+        // (it was killed in the background), the shared items are gone: close rather than sit
+        // there empty.
+        if (savedInstanceState != null) {
+            finish()
+            return
+        }
         val uris = incoming()
         if (uris.isEmpty()) {
             finish()
