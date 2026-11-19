@@ -7,8 +7,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/camera_bridge.dart';
 import '../l10n/l10n.dart';
+import 'backup_page.dart';
 import 'scan_history_page.dart';
 import 'vault_backend.dart';
+import 'vault_backup.dart';
 import 'vault_library.dart';
 import 'vault_viewer.dart';
 
@@ -132,9 +134,49 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
         _items = shown;
         _library = library;
       });
+      unawaited(_autoBackup());
     } on VaultLockedException {
       await _refresh();
     }
+  }
+
+  bool _backingUp = false;
+
+  /// With backup on and the account ready, new items go up quietly each time
+  /// the vault opens (and copies of items deleted for good are deleted).
+  Future<void> _autoBackup() async {
+    if (_backingUp || !_library.backup.on || !ref.read(backupReadyProvider)) {
+      return;
+    }
+    _backingUp = true;
+    final library = _library;
+    try {
+      final engine = VaultBackup(
+        vault: _vault,
+        store: ref.read(backupStoreProvider),
+      );
+      final r = await engine.backUp(library, _items);
+      // Saved even with nothing new: copies deleted from the account leave
+      // the queue.
+      if (identical(library, _library)) {
+        await _vault.writeState(library.toJson());
+      }
+      if (r.full) _say((l) => l.backupFull);
+    } on Object {
+      // Offline or locked: the next opening tries again.
+    } finally {
+      _backingUp = false;
+    }
+  }
+
+  Future<void> _openBackup() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            VaultBackupPage(library: _library, items: _items, save: _save),
+      ),
+    );
+    if (mounted) setState(() {});
   }
 
   Future<void> _save() async {
@@ -288,6 +330,8 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       _selected.clear();
     });
     await _save();
+    // Their backed-up copies go too (queued by forget).
+    unawaited(_autoBackup());
   }
 
   Future<void> _saveToGallery(List<String> ids) async {
@@ -512,6 +556,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                     builder: (_) => const ScanHistoryPage(),
                   ),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.cloud_outlined),
+                tooltip: l.vaultBackup,
+                onPressed: _openBackup,
               ),
               IconButton(
                 icon: const Icon(Icons.lock_outline),

@@ -122,6 +122,24 @@ abstract class VaultBackend {
 
   /// Opens the photo editor; the edited copy is saved into the vault as a new photo.
   Future<void> editPhoto(String id);
+
+  /// The item's file exactly as sealed, for the encrypted backup.
+  Future<VaultOriginal> original(String id);
+
+  /// Seals a file brought back from the backup; returns its new id.
+  Future<String> restore(
+    Uint8List bytes, {
+    required String mime,
+    required bool isVideo,
+    required DateTime takenAt,
+  });
+}
+
+class VaultOriginal {
+  const VaultOriginal(this.bytes, this.mime);
+
+  final Uint8List bytes;
+  final String mime;
 }
 
 class ChannelVaultBackend implements VaultBackend {
@@ -250,6 +268,25 @@ class ChannelVaultBackend implements VaultBackend {
 
   @override
   Future<void> editPhoto(String id) => _call<void>('editPhoto', {'id': id});
+
+  @override
+  Future<VaultOriginal> original(String id) async {
+    final m = (await _call<Map<Object?, Object?>>('original', {'id': id}))!;
+    return VaultOriginal(m['bytes']! as Uint8List, m['mime']! as String);
+  }
+
+  @override
+  Future<String> restore(
+    Uint8List bytes, {
+    required String mime,
+    required bool isVideo,
+    required DateTime takenAt,
+  }) async => (await _call<String>('restore', {
+    'bytes': bytes,
+    'mime': mime,
+    'video': isVideo,
+    'takenAt': takenAt.millisecondsSinceEpoch,
+  }))!;
 }
 
 final vaultBackendProvider = Provider<VaultBackend>(

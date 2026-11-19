@@ -564,6 +564,120 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Copy'**
   String get vaultCopy;
+
+  /// No description provided for @vaultBackup.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted backup'**
+  String get vaultBackup;
+
+  /// No description provided for @backupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted backup'**
+  String get backupTitle;
+
+  /// No description provided for @backupIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Each photo is encrypted on this phone with its own key before it goes to your Zero Trust account. The server can\'t see it. Restore it on a new phone with your account.'**
+  String get backupIntro;
+
+  /// No description provided for @backupSignIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to your Zero Trust account on the home screen to back up the vault.'**
+  String get backupSignIn;
+
+  /// No description provided for @backupOn.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up the vault'**
+  String get backupOn;
+
+  /// No description provided for @backupCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total} backed up'**
+  String backupCount(int done, int total);
+
+  /// No description provided for @backupEverything.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in the vault'**
+  String get backupEverything;
+
+  /// No description provided for @backupAlbums.
+  ///
+  /// In en, this message translates to:
+  /// **'Only these albums'**
+  String get backupAlbums;
+
+  /// No description provided for @backupVideos.
+  ///
+  /// In en, this message translates to:
+  /// **'Videos too'**
+  String get backupVideos;
+
+  /// No description provided for @backupVideosSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Each up to 20 MB. Longer videos stay on this phone only.'**
+  String get backupVideosSubtitle;
+
+  /// No description provided for @backupNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Back up now'**
+  String get backupNow;
+
+  /// No description provided for @backupRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore to this phone'**
+  String get backupRestore;
+
+  /// No description provided for @backupRestoreSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Brings back photos from your account that aren\'t on this phone'**
+  String get backupRestoreSubtitle;
+
+  /// No description provided for @backupDone.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} backed up'**
+  String backupDone(int count);
+
+  /// No description provided for @backupRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} restored'**
+  String backupRestored(int count);
+
+  /// No description provided for @backupTooLarge.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} too large, kept on this phone only'**
+  String backupTooLarge(int count);
+
+  /// No description provided for @backupFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} didn\'t go through. They\'ll be tried again next time.'**
+  String backupFailed(int count);
+
+  /// No description provided for @backupFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Your account\'s storage is full. The rest will wait.'**
+  String get backupFull;
+
+  /// No description provided for @backupProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'{done} of {total}'**
+  String backupProgress(int done, int total);
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

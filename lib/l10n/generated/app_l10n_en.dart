@@ -286,4 +286,78 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get vaultCopy => 'Copy';
+
+  @override
+  String get vaultBackup => 'Encrypted backup';
+
+  @override
+  String get backupTitle => 'Encrypted backup';
+
+  @override
+  String get backupIntro =>
+      'Each photo is encrypted on this phone with its own key before it goes to your Zero Trust account. The server can\'t see it. Restore it on a new phone with your account.';
+
+  @override
+  String get backupSignIn =>
+      'Sign in to your Zero Trust account on the home screen to back up the vault.';
+
+  @override
+  String get backupOn => 'Back up the vault';
+
+  @override
+  String backupCount(int done, int total) {
+    return '$done of $total backed up';
+  }
+
+  @override
+  String get backupEverything => 'Everything in the vault';
+
+  @override
+  String get backupAlbums => 'Only these albums';
+
+  @override
+  String get backupVideos => 'Videos too';
+
+  @override
+  String get backupVideosSubtitle =>
+      'Each up to 20 MB. Longer videos stay on this phone only.';
+
+  @override
+  String get backupNow => 'Back up now';
+
+  @override
+  String get backupRestore => 'Restore to this phone';
+
+  @override
+  String get backupRestoreSubtitle =>
+      'Brings back photos from your account that aren\'t on this phone';
+
+  @override
+  String backupDone(int count) {
+    return '$count backed up';
+  }
+
+  @override
+  String backupRestored(int count) {
+    return '$count restored';
+  }
+
+  @override
+  String backupTooLarge(int count) {
+    return '$count too large, kept on this phone only';
+  }
+
+  @override
+  String backupFailed(int count) {
+    return '$count didn\'t go through. They\'ll be tried again next time.';
+  }
+
+  @override
+  String get backupFull =>
+      'Your account\'s storage is full. The rest will wait.';
+
+  @override
+  String backupProgress(int done, int total) {
+    return '$done of $total';
+  }
 }

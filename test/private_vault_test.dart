@@ -159,6 +159,32 @@ class FakeVault implements VaultBackend {
 
   final edited = <String>[];
 
+  /// Files as sealed, for the backup tests.
+  final originals = <String, VaultOriginal>{};
+  final restored = <(Uint8List, String, bool, DateTime)>[];
+
+  @override
+  Future<VaultOriginal> original(String id) async {
+    _check();
+    return originals[id] ??
+        VaultOriginal(Uint8List.fromList([1, 2, 3]), 'image/jpeg');
+  }
+
+  @override
+  Future<String> restore(
+    Uint8List bytes, {
+    required String mime,
+    required bool isVideo,
+    required DateTime takenAt,
+  }) async {
+    restored.add((bytes, mime, isVideo, takenAt));
+    final id = 'restored${restored.length}';
+    items.add(
+      VaultItem(id: id, isVideo: isVideo, takenAt: takenAt, size: bytes.length),
+    );
+    return id;
+  }
+
   @override
   Future<void> editPhoto(String id) async {
     _check();
@@ -465,6 +491,26 @@ void main() {
       await tester.tap(find.byTooltip('Copy text'));
       await tester.pumpAndSettle();
       expect(find.text('Invoice 1234'), findsNothing);
+    });
+
+    testWidgets('backup asks for the account first and is off until on', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Encrypted backup'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('encrypted on this phone'), findsOneWidget);
+      expect(find.textContaining('Sign in to your Zero Trust'), findsOneWidget);
+      expect(find.text('Back up now'), findsNothing);
+      expect(vault.originals, isEmpty);
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {
