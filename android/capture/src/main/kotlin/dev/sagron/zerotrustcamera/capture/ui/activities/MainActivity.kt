@@ -739,7 +739,7 @@ open class MainActivity : ZtBaseActivity(),
         // ZT Camera: asked once, gallery or Private vault. Not over the lock screen, not for a
         // photo or video another app asked for, and not on top of the camera permission prompt.
         if (this !is SecureActivity && this !is VideoCaptureActivity && !camConfig.isInCaptureMode
-            && !camConfig.savePlaceChosen && !savePlaceAsked && hasCameraPermission()) {
+            && !camConfig.privateShot && !camConfig.savePlaceChosen && !savePlaceAsked && hasCameraPermission()) {
             savePlaceAsked = true
             PrivateVaultSetup.askWhereToSave(this, camConfig)
         }
