@@ -456,6 +456,60 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Play'**
   String get vaultPlay;
+
+  /// No description provided for @scanHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan history'**
+  String get scanHistoryTitle;
+
+  /// No description provided for @scanHistoryKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep scan history'**
+  String get scanHistoryKeep;
+
+  /// No description provided for @scanHistoryKeepHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Codes you scan are kept here, in the Private vault, where only you can open them.'**
+  String get scanHistoryKeepHint;
+
+  /// No description provided for @scanHistoryEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No scans kept yet.'**
+  String get scanHistoryEmpty;
+
+  /// No description provided for @scanHistoryDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get scanHistoryDelete;
+
+  /// No description provided for @scanHistoryClear.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get scanHistoryClear;
+
+  /// No description provided for @scanHistoryClearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear scan history?'**
+  String get scanHistoryClearTitle;
+
+  /// No description provided for @scanHistoryClearMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 scan will be deleted.} other{{count} scans will be deleted.}}'**
+  String scanHistoryClearMessage(int count);
+
+  /// No description provided for @scanHistoryCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'Copied'**
+  String get scanHistoryCopied;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

@@ -62,6 +62,21 @@ class VaultStatus {
 enum VaultAuth { ok, cancelled, noScreenLock, keyLost, failed }
 
 /// Thrown when the vault locked itself (the app was left) during a call.
+/// One scanned code kept in the vault (scan history).
+class ScanRecord {
+  const ScanRecord({required this.id, required this.text, required this.at});
+
+  final String id;
+  final String text;
+  final DateTime at;
+
+  factory ScanRecord.fromMap(Map<Object?, Object?> m) => ScanRecord(
+    id: m['id']! as String,
+    text: m['text']! as String,
+    at: DateTime.fromMillisecondsSinceEpoch((m['at'] as num?)?.toInt() ?? 0),
+  );
+}
+
 class VaultLockedException implements Exception {
   const VaultLockedException();
 }
@@ -95,6 +110,12 @@ abstract class VaultBackend {
   /// Opens the photo picker and seals what was picked. Returns how many.
   Future<int> importMedia();
   Future<void> playVideo(String id);
+
+  /// Scan history: whether scanned codes are kept, and the kept ones.
+  Future<bool> scanHistory();
+  Future<void> setScanHistory(bool on);
+  Future<List<ScanRecord>> scans();
+  Future<void> deleteScans(List<String> ids);
 }
 
 class ChannelVaultBackend implements VaultBackend {
@@ -198,6 +219,25 @@ class ChannelVaultBackend implements VaultBackend {
 
   @override
   Future<void> playVideo(String id) => _call<void>('playVideo', {'id': id});
+
+  @override
+  Future<bool> scanHistory() async => await _call<bool>('scanHistory') ?? false;
+
+  @override
+  Future<void> setScanHistory(bool on) =>
+      _call<void>('setScanHistory', {'on': on});
+
+  @override
+  Future<List<ScanRecord>> scans() async {
+    final raw = await _call<List<Object?>>('scans') ?? const [];
+    return [
+      for (final m in raw.cast<Map<Object?, Object?>>()) ScanRecord.fromMap(m),
+    ];
+  }
+
+  @override
+  Future<void> deleteScans(List<String> ids) =>
+      _call<void>('deleteScans', {'ids': ids});
 }
 
 final vaultBackendProvider = Provider<VaultBackend>(

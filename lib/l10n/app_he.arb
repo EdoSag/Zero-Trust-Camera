@@ -94,5 +94,21 @@
     }
   },
   "vaultNoAlbums": "עדיין אין אלבומים",
-  "vaultPlay": "הפעלה"
+  "vaultPlay": "הפעלה",
+  "scanHistoryTitle": "היסטוריית סריקות",
+  "scanHistoryKeep": "שמירת היסטוריית סריקות",
+  "scanHistoryKeepHint": "קודים שסורקים נשמרים כאן, בכספת הפרטית, שרק לך יש גישה אליה.",
+  "scanHistoryEmpty": "עדיין אין סריקות שמורות.",
+  "scanHistoryDelete": "מחיקה",
+  "scanHistoryClear": "מחיקת הכול",
+  "scanHistoryClearTitle": "למחוק את היסטוריית הסריקות?",
+  "scanHistoryClearMessage": "{count, plural, =1{סריקה אחת תימחק.} other{{count} סריקות יימחקו.}}",
+  "scanHistoryCopied": "הועתק",
+  "@scanHistoryClearMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

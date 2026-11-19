@@ -53,6 +53,12 @@ Licences.
   `GroupableFeature.FPS_60` as a preferred feature next to stabilization, so
   an unsupported combination falls back instead of failing.
 
+- **Scanned codes** (`zt/ScanContent.java`, `zt/ScanSheet.kt`,
+  `zt/ScanImageActivity.kt`, `zt/ScanHistory.kt`): upstream's result dialog
+  (raw text, hex view, "open with") is replaced by a sheet that parses the
+  code and offers one action per type, with link safety checks. Scan history
+  is sealed into the vault as `<id>.scan` files.
+
 Everything added for Zero-Trust lives under `zt/`, to keep upstream files as
 close to the original as possible.
 
@@ -72,5 +78,5 @@ close to the original as possible.
 `./gradlew :capture:testDebugUnitTest` from `android/` runs the JVM tests,
 including `MediaVaultTest` (sealing round trips at every chunk boundary, any
 changed byte, cut, dropped or swapped chunks, ranged reads, the RFC 7748
-X25519 vector and a fixed vector for the file format), `JpegMetadataStripperTest`,
+X25519 vector and a fixed vector for the file format), `JpegMetadataStripperTest`, `ScanContentTest`,
 `Mp4MetadataStripperTest` and `Mp4TimeScrubberTest`.

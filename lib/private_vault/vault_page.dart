@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/camera_bridge.dart';
 import '../l10n/l10n.dart';
+import 'scan_history_page.dart';
 import 'vault_backend.dart';
 import 'vault_library.dart';
 import 'vault_viewer.dart';
@@ -440,6 +441,15 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                 icon: const Icon(Icons.add_photo_alternate_outlined),
                 tooltip: l.vaultImport,
                 onPressed: _busy ? null : _import,
+              ),
+              IconButton(
+                icon: const Icon(Icons.qr_code_2),
+                tooltip: l.scanHistoryTitle,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ScanHistoryPage(),
+                  ),
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.lock_outline),

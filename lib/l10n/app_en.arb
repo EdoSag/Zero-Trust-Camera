@@ -94,5 +94,21 @@
     }
   },
   "vaultNoAlbums": "No albums yet",
-  "vaultPlay": "Play"
+  "vaultPlay": "Play",
+  "scanHistoryTitle": "Scan history",
+  "scanHistoryKeep": "Keep scan history",
+  "scanHistoryKeepHint": "Codes you scan are kept here, in the Private vault, where only you can open them.",
+  "scanHistoryEmpty": "No scans kept yet.",
+  "scanHistoryDelete": "Delete",
+  "scanHistoryClear": "Clear all",
+  "scanHistoryClearTitle": "Clear scan history?",
+  "scanHistoryClearMessage": "{count, plural, =1{1 scan will be deleted.} other{{count} scans will be deleted.}}",
+  "scanHistoryCopied": "Copied",
+  "@scanHistoryClearMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  }
 }

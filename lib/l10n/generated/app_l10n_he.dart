@@ -219,4 +219,40 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get vaultPlay => 'הפעלה';
+
+  @override
+  String get scanHistoryTitle => 'היסטוריית סריקות';
+
+  @override
+  String get scanHistoryKeep => 'שמירת היסטוריית סריקות';
+
+  @override
+  String get scanHistoryKeepHint =>
+      'קודים שסורקים נשמרים כאן, בכספת הפרטית, שרק לך יש גישה אליה.';
+
+  @override
+  String get scanHistoryEmpty => 'עדיין אין סריקות שמורות.';
+
+  @override
+  String get scanHistoryDelete => 'מחיקה';
+
+  @override
+  String get scanHistoryClear => 'מחיקת הכול';
+
+  @override
+  String get scanHistoryClearTitle => 'למחוק את היסטוריית הסריקות?';
+
+  @override
+  String scanHistoryClearMessage(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count סריקות יימחקו.',
+      one: 'סריקה אחת תימחק.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get scanHistoryCopied => 'הועתק';
 }
