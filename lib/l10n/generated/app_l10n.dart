@@ -622,7 +622,7 @@ abstract class AppL10n {
   /// No description provided for @backupVideosSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Each up to 20 MB. Longer videos stay on this phone only.'**
+  /// **'Videos take a lot of storage. Each up to 2 GB; longer ones stay on this phone only.'**
   String get backupVideosSubtitle;
 
   /// No description provided for @backupNow.

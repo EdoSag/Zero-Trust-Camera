@@ -126,6 +126,21 @@ abstract class VaultBackend {
   /// The item's file exactly as sealed, for the encrypted backup.
   Future<VaultOriginal> original(String id);
 
+  /// [length] bytes of a video's file from [offset], for backing up a video
+  /// too large to hold in memory or send as one file.
+  Future<Uint8List> originalPart(String id, int offset, int length);
+
+  /// Adds the next part of a large video being brought back from the
+  /// backup. [token] names the video until [restoreFinish].
+  Future<void> restorePart(String token, Uint8List bytes);
+
+  /// Seals the video whose parts were given to [restorePart]; returns its
+  /// new id.
+  Future<String> restoreFinish(String token, DateTime takenAt);
+
+  /// Wipes the parts of a restore that didn't finish.
+  Future<void> restoreCancel(String token);
+
   /// Seals a file brought back from the backup; returns its new id.
   Future<String> restore(
     Uint8List bytes, {
@@ -274,6 +289,29 @@ class ChannelVaultBackend implements VaultBackend {
     final m = (await _call<Map<Object?, Object?>>('original', {'id': id}))!;
     return VaultOriginal(m['bytes']! as Uint8List, m['mime']! as String);
   }
+
+  @override
+  Future<Uint8List> originalPart(String id, int offset, int length) async =>
+      (await _call<Uint8List>('originalPart', {
+        'id': id,
+        'offset': offset,
+        'length': length,
+      }))!;
+
+  @override
+  Future<void> restorePart(String token, Uint8List bytes) =>
+      _call<void>('restorePart', {'token': token, 'bytes': bytes});
+
+  @override
+  Future<String> restoreFinish(String token, DateTime takenAt) async =>
+      (await _call<String>('restoreFinish', {
+        'token': token,
+        'takenAt': takenAt.millisecondsSinceEpoch,
+      }))!;
+
+  @override
+  Future<void> restoreCancel(String token) =>
+      _call<void>('restoreCancel', {'token': token});
 
   @override
   Future<String> restore(

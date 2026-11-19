@@ -171,6 +171,20 @@ class FakeVault implements VaultBackend {
   }
 
   @override
+  Future<Uint8List> originalPart(String id, int offset, int length) async =>
+      Uint8List(length);
+
+  @override
+  Future<void> restorePart(String token, Uint8List bytes) async {}
+
+  @override
+  Future<String> restoreFinish(String token, DateTime takenAt) async =>
+      'restored';
+
+  @override
+  Future<void> restoreCancel(String token) async {}
+
+  @override
   Future<String> restore(
     Uint8List bytes, {
     required String mime,

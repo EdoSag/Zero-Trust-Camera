@@ -246,6 +246,33 @@ object VaultStore {
             out.toByteArray()
         }
 
+    /**
+     * [length] bytes of an item from [offset], opened one chunk at a time: for backing up a
+     * video too large to hold in memory. Shorter only at the end of the file.
+     */
+    fun mediaPart(ctx: Context, id: String, priv: ByteArray, offset: Long, length: Int): ByteArray {
+        require(offset >= 0 && length >= 0) { "bad range" }
+        FileInputStream(file(ctx, id, "media")).use { input ->
+            MediaVault.Reader(input.channel, priv).use { reader ->
+                val want = minOf(length.toLong(), maxOf(0L, reader.size() - offset)).toInt()
+                val out = ByteArray(want)
+                var done = 0
+                while (done < want) {
+                    val n = reader.read(offset + done, out, done, want - done)
+                    if (n <= 0) break
+                    done += n
+                }
+                return if (done == want) out else out.copyOf(done)
+            }
+        }
+    }
+
+    /** Where the parts of a large video coming back from the backup are put together. */
+    fun restoreFile(ctx: Context, token: String): File {
+        require(token.matches(Regex("[0-9a-f]{32}"))) { "bad token" }
+        return File(tempDir(ctx), "$token.restore.mp4")
+    }
+
     /** Opens an item into a plain file (for saving or sharing). */
     fun openTo(ctx: Context, id: String, priv: ByteArray, target: File) {
         FileInputStream(file(ctx, id, "media")).use { input ->

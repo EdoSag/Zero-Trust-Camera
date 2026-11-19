@@ -130,7 +130,7 @@
   "backupEverything": "Everything in the vault",
   "backupAlbums": "Only these albums",
   "backupVideos": "Videos too",
-  "backupVideosSubtitle": "Each up to 20 MB. Longer videos stay on this phone only.",
+  "backupVideosSubtitle": "Videos take a lot of storage. Each up to 2 GB; longer ones stay on this phone only.",
   "backupNow": "Back up now",
   "backupRestore": "Restore to this phone",
   "backupRestoreSubtitle": "Brings back photos from your account that aren't on this phone",

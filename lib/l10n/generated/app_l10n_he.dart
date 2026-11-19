@@ -318,7 +318,7 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get backupVideosSubtitle =>
-      'עד 20MB לכל סרטון. סרטונים ארוכים יותר נשארים רק בטלפון הזה.';
+      'סרטונים תופסים הרבה מקום. עד 2GB לכל סרטון; ארוכים יותר נשארים רק בטלפון הזה.';
 
   @override
   String get backupNow => 'גיבוי עכשיו';
