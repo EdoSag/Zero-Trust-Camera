@@ -103,7 +103,13 @@ void main() {
     final scan = tester.getTopLeft(find.text('Scan a document')).dy;
     final pro = tester.getTopLeft(find.text('Pro camera')).dy;
     expect(pro, greaterThan(scan));
-    expect(tester.getTopLeft(find.text('Location')).dy, greaterThan(pro));
+    final pano = tester.getTopLeft(find.text('Panorama (beta)')).dy;
+    expect(pano, greaterThan(pro));
+    expect(tester.getTopLeft(find.text('Location')).dy, greaterThan(pano));
+
+    await tester.tap(find.text('Panorama (beta)'));
+    await tester.pumpAndSettle();
+    expect(bridge.panorama, 1);
 
     await tester.tap(find.text('Pro camera'));
     await tester.pumpAndSettle();

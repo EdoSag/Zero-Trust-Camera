@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import dev.sagron.zerotrustcamera.capture.zt.DocScanActivity
+import dev.sagron.zerotrustcamera.capture.zt.PanoramaActivity
 import dev.sagron.zerotrustcamera.capture.zt.ProCameraActivity
 import dev.sagron.zerotrustcamera.capture.zt.VaultSession
 import dev.sagron.zerotrustcamera.capture.zt.ZtApp
@@ -69,6 +70,10 @@ class ZtAppActivity : FlutterFragmentActivity() {
                     }
                     "openProCamera" -> {
                         ProCameraActivity.open(this)
+                        result.success(null)
+                    }
+                    "openPanorama" -> {
+                        PanoramaActivity.open(this)
                         result.success(null)
                     }
                     "takeScreen" -> {

@@ -266,6 +266,13 @@ class AppL10nEn extends AppL10n {
       'Straight, clean pages as a PDF, with the text read on your phone';
 
   @override
+  String get homePanorama => 'Panorama (beta)';
+
+  @override
+  String get homePanoramaSubtitle =>
+      'Turn slowly and the phone joins the view into one wide photo';
+
+  @override
   String get homeProCamera => 'Pro camera';
 
   @override

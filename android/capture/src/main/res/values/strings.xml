@@ -424,4 +424,13 @@
     <!-- ZT Camera: Private shot (home screen widget) -->
     <string name="private_shot_on">Photos go to the Private vault</string>
     <string name="private_shot_failed">The Private vault couldn\'t be set up, so the camera didn\'t open.</string>
+    <!-- ZT Camera: panorama -->
+    <string name="pano_shortcut">Panorama</string>
+    <string name="pano_hint_start">Hold the phone upright and press Start</string>
+    <string name="pano_hint_sweep">Turn slowly to one side. Keep the phone level.</string>
+    <string name="pano_start">Start</string>
+    <string name="pano_done">Done</string>
+    <string name="pano_failed">The panorama couldn\'t be made</string>
+    <string name="pano_too_short">Turn a little further to make a panorama</string>
+    <string name="pano_no_sensor">This phone has no motion sensor, so it can\'t make panoramas</string>
 </resources>
