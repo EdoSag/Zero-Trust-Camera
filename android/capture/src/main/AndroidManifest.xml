@@ -253,6 +253,18 @@
             </intent-filter>
         </activity>
 
+        <!-- ZT Camera: the camera saving to the Private vault ("Private shot" on the widget) -->
+        <activity
+            android:name=".zt.PrivateShotActivity"
+            android:taskAffinity=".zt.PrivateShotActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:screenOrientation="nosensor"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@style/Theme.Camera"
+            tools:ignore="DiscouragedApi" />
+
         <activity
             android:name=".zt.ProCameraActivity"
             android:theme="@style/Theme.App"

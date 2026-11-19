@@ -421,4 +421,7 @@
     <string name="pro_saved">Saved to your gallery</string>
     <string name="pro_saved_vault">Saved to the Private vault</string>
     <string name="pro_failed">Couldn\'t take the photo</string>
+    <!-- ZT Camera: Private shot (home screen widget) -->
+    <string name="private_shot_on">Photos go to the Private vault</string>
+    <string name="private_shot_failed">The Private vault couldn\'t be set up, so the camera didn\'t open.</string>
 </resources>

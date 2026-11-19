@@ -733,9 +733,13 @@ class CamConfig(private val mActivity: MainActivity) {
         false
     }
 
+    // ZT Camera: this camera screen saves to the Private vault whatever the setting says
+    // (the "Private shot" widget button). Never stored.
+    var privateShot = false
+
     /** The key a new capture is sealed to, or null when it goes to the gallery. */
     fun vaultKeyForCapture(): ByteArray? =
-        if (privateVault && !isInCaptureMode && mActivity !is VideoCaptureActivity)
+        if ((privateVault || privateShot) && !isInCaptureMode && mActivity !is VideoCaptureActivity)
             VaultKeys.publicKey(mActivity)
         else null
 

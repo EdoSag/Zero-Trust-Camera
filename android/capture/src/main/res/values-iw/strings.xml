@@ -373,4 +373,7 @@
     <string name="pro_saved">נשמר בגלריה</string>
     <string name="pro_saved_vault">נשמר בכספת הפרטית</string>
     <string name="pro_failed">לא ניתן לצלם</string>
+    <!-- ZT Camera: Private shot (home screen widget) -->
+    <string name="private_shot_on">התמונות נשמרות בכספת הפרטית</string>
+    <string name="private_shot_failed">לא ניתן היה להגדיר את הכספת הפרטית, ולכן המצלמה לא נפתחה.</string>
 </resources>
