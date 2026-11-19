@@ -140,32 +140,33 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     }
   }
 
-  bool _backingUp = false;
-
   /// With backup on and the account ready, new items go up quietly each time
   /// the vault opens (and copies of items deleted for good are deleted).
   Future<void> _autoBackup() async {
-    if (_backingUp || !_library.backup.on || !ref.read(backupReadyProvider)) {
-      return;
-    }
-    _backingUp = true;
+    // Only for the account backup was turned on for: after a switch of
+    // accounts nothing goes up until it is turned on again.
+    final account = ref.read(backupAccountProvider);
+    if (account == null || !_library.backupFor(account)) return;
     final library = _library;
+    final items = _items;
     try {
       final engine = VaultBackup(
         vault: _vault,
         store: ref.read(backupStoreProvider),
+        account: account,
       );
-      final r = await engine.backUp(library, _items);
-      // Saved even with nothing new: copies deleted from the account leave
-      // the queue.
-      if (identical(library, _library)) {
-        await _vault.writeState(library.toJson());
-      }
-      if (r.full) _say((l) => l.backupFull);
+      final r = await VaultBackup.exclusive(() async {
+        final r = await engine.backUp(library, items);
+        // Saved even with nothing new: copies deleted from the account
+        // leave the queue.
+        if (identical(library, _library)) {
+          await _vault.writeState(library.toJson());
+        }
+        return r;
+      });
+      if (r != null && r.full) _say((l) => l.backupFull);
     } on Object {
       // Offline or locked: the next opening tries again.
-    } finally {
-      _backingUp = false;
     }
   }
 
@@ -176,7 +177,8 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
             VaultBackupPage(library: _library, items: _items, save: _save),
       ),
     );
-    if (mounted) setState(() {});
+    // A restore adds items the list here doesn't have yet.
+    if (mounted) await _refresh();
   }
 
   Future<void> _save() async {

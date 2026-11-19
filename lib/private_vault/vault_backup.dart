@@ -1,6 +1,6 @@
 import 'dart:math';
-import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 
@@ -192,12 +192,31 @@ class VaultBackup {
   VaultBackup({
     required this.vault,
     required this.store,
+    required this.account,
     this.maxBytes = ZtAttachments.defaultMaxBytes,
   });
 
   final VaultBackend vault;
   final BackupStore store;
+
+  /// The signed-in user's id: where [store] reads and writes.
+  final String account;
   final int maxBytes;
+
+  /// True while a backup or restore runs, anywhere in the app.
+  static final running = ValueNotifier<bool>(false);
+
+  /// Runs [job] unless a backup or restore is already running (then null):
+  /// two at once would upload the same item twice.
+  static Future<T?> exclusive<T>(Future<T> Function() job) async {
+    if (running.value) return null;
+    running.value = true;
+    try {
+      return await job();
+    } finally {
+      running.value = false;
+    }
+  }
 
   /// The items [library]'s settings say to back up.
   List<VaultItem> eligible(VaultLibrary library, List<VaultItem> items) {
@@ -219,7 +238,7 @@ class VaultBackup {
     List<VaultItem> items, {
     void Function(int done, int total)? progress,
   }) async {
-    if (!library.backup.on) return const BackupResult();
+    if (!library.backupFor(account)) return const BackupResult();
     await deletePending(library);
     final todo = eligible(library, items);
     final remote = {for (final m in await store.media()) m.id: m};
@@ -295,6 +314,7 @@ class VaultBackup {
     VaultLibrary library, {
     void Function(int done, int total)? progress,
   }) async {
+    library.useBackupAccount(account);
     final here = {...library.backedUp.values, ...library.backupDeletes};
     final missing = [
       for (final m in await store.media())
@@ -363,10 +383,15 @@ class VaultBackup {
   ).join();
 }
 
-/// Whether the account is ready for backup: signed in, and its own vault
-/// (the account key) unlocked.
+/// The id of the account backup can use right now, or null: signed in, and
+/// its own vault (the account key) unlocked.
+final backupAccountProvider = Provider<String?>(
+  (ref) => ref.watch(vaultControllerProvider) is VaultUnlocked
+      ? ref.watch(currentUserProvider)?.id
+      : null,
+);
+
+/// Whether the account is ready for backup.
 final backupReadyProvider = Provider<bool>(
-  (ref) =>
-      ref.watch(currentUserProvider) != null &&
-      ref.watch(vaultControllerProvider) is VaultUnlocked,
+  (ref) => ref.watch(backupAccountProvider) != null,
 );

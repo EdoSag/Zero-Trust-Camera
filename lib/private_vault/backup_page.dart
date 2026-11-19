@@ -28,7 +28,6 @@ class VaultBackupPage extends ConsumerStatefulWidget {
 }
 
 class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
-  bool _running = false;
   (int, int)? _progress;
   String? _result;
 
@@ -38,7 +37,24 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
   VaultBackup get _engine => VaultBackup(
     vault: ref.read(vaultBackendProvider),
     store: ref.read(backupStoreProvider),
+    account: ref.read(backupAccountProvider) ?? '',
   );
+
+  @override
+  void initState() {
+    super.initState();
+    VaultBackup.running.addListener(_onRunning);
+  }
+
+  @override
+  void dispose() {
+    VaultBackup.running.removeListener(_onRunning);
+    super.dispose();
+  }
+
+  void _onRunning() {
+    if (mounted) setState(() {});
+  }
 
   Future<void> _change(void Function() edit) async {
     setState(edit);
@@ -50,26 +66,28 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
     String Function(AppL10n l, BackupResult r) say,
   ) async {
     setState(() {
-      _running = true;
       _result = null;
       _progress = null;
     });
     final l = context.l10n;
-    String text;
+    String? text;
     try {
-      final r = await job((done, total) {
-        if (mounted) setState(() => _progress = (done, total));
+      // One at a time, the quiet backup on opening the vault included.
+      text = await VaultBackup.exclusive(() async {
+        try {
+          final r = await job((done, total) {
+            if (mounted) setState(() => _progress = (done, total));
+          });
+          return say(l, r);
+        } finally {
+          await widget.save();
+        }
       });
-      await widget.save();
-      text = say(l, r);
     } on Object {
       text = l.vaultFailed;
     }
     if (!mounted) return;
-    setState(() {
-      _running = false;
-      _result = text;
-    });
+    setState(() => _result = text);
   }
 
   String _summary(AppL10n l, BackupResult r) => [
@@ -82,7 +100,10 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
   @override
   Widget build(BuildContext context) {
     final l = context.l10n;
-    final ready = ref.watch(backupReadyProvider);
+    final account = ref.watch(backupAccountProvider);
+    final ready = account != null;
+    final on = _lib.backupFor(account);
+    final running = VaultBackup.running.value;
     final eligible = _engine.eligible(_lib, widget.items);
     final backedUp = eligible
         .where((i) => _lib.backedUp.containsKey(i.id))
@@ -104,13 +125,19 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
             SwitchListTile(
               secondary: const Icon(Icons.cloud_upload_outlined),
               title: Text(l.backupOn),
-              subtitle: _s.on
+              subtitle: on
                   ? Text(l.backupCount(backedUp, eligible.length))
                   : null,
-              value: _s.on,
-              onChanged: _running ? null : (v) => _change(() => _s.on = v),
+              value: on,
+              onChanged: running
+                  ? null
+                  : (v) => _change(() {
+                      // Turning it on is for this account, and only this one.
+                      if (v) _lib.useBackupAccount(account);
+                      _s.on = v;
+                    }),
             ),
-            if (_s.on) ...[
+            if (on) ...[
               RadioGroup<bool>(
                 groupValue: _s.everything,
                 onChanged: (v) => _change(() => _s.everything = v ?? true),
@@ -152,7 +179,7 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
               ListTile(
                 leading: const Icon(Icons.backup_outlined),
                 title: Text(l.backupNow),
-                enabled: !_running,
+                enabled: !running,
                 onTap: () => _run(
                   (p) => _engine.backUp(_lib, widget.items, progress: p),
                   _summary,
@@ -163,7 +190,7 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
               leading: const Icon(Icons.restore),
               title: Text(l.backupRestore),
               subtitle: Text(l.backupRestoreSubtitle),
-              enabled: !_running,
+              enabled: !running,
               onTap: () => _run(
                 (p) => _engine.restore(_lib, progress: p),
                 (l, r) => [
@@ -172,7 +199,7 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
                 ].join('\n'),
               ),
             ),
-            if (_running)
+            if (running)
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Column(
