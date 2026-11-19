@@ -132,6 +132,11 @@ class CamConfig(private val mActivity: MainActivity) {
             const val PRIVATE_VAULT = "zt_private_vault"
             const val SAVE_PLACE_CHOSEN = "zt_save_place_chosen"
 
+            // ZT Camera: photos with a gain map (Ultra HDR) and videos at 60 frames a second,
+            // where the camera can
+            const val ULTRA_HDR = "zt_ultra_hdr"
+            const val VIDEO_60_FPS = "zt_video_60_fps"
+
             const val GYROSCOPE_SUGGESTIONS = "gyroscope_suggestions"
 
             const val CAMERA_SOUNDS = "camera_sounds"
@@ -274,6 +279,7 @@ class CamConfig(private val mActivity: MainActivity) {
         val usesFeatureGroup: Boolean,
         val captureMode: Int,
         val selectHighestResolution: Boolean,
+        val wants60fps: Boolean,
     )
 
     var camera: Camera? = null
@@ -685,6 +691,35 @@ class CamConfig(private val mActivity: MainActivity) {
 
     val savePlaceChosen: Boolean
         get() = commonPref.getBoolean(SettingValues.Key.SAVE_PLACE_CHOSEN, false)
+
+    var ultraHdr: Boolean
+        get() = commonPref.getBoolean(SettingValues.Key.ULTRA_HDR, false)
+        set(value) {
+            commonPref.edit().putBoolean(SettingValues.Key.ULTRA_HDR, value).apply()
+        }
+
+    var video60fps: Boolean
+        get() = commonPref.getBoolean(SettingValues.Key.VIDEO_60_FPS, false)
+        set(value) {
+            commonPref.edit().putBoolean(SettingValues.Key.VIDEO_60_FPS, value).apply()
+        }
+
+    // Ultra HDR is offered for the plain camera only: vendor extensions (Night, HDR, Portrait...)
+    // make their own JPEGs.
+    fun supportsUltraHdr(): Boolean = try {
+        Build.VERSION.SDK_INT >= 34 &&
+            ImageCapture.getImageCaptureCapabilities(getCurrentCameraInfo()).supportedOutputFormats
+                .contains(ImageCapture.OUTPUT_FORMAT_JPEG_ULTRA_HDR)
+    } catch (e: Exception) {
+        false
+    }
+
+    fun supports60fps(): Boolean = try {
+        canVerifyFeatureCombinations() &&
+            getCurrentCameraInfo().supportedFrameRateRanges.any { it.upper >= 60 }
+    } catch (e: Exception) {
+        false
+    }
 
     /** The key a new capture is sealed to, or null when it goes to the gallery. */
     fun vaultKeyForCapture(): ByteArray? =
@@ -1479,9 +1514,12 @@ class CamConfig(private val mActivity: MainActivity) {
         // lead's no-EIS-messaging wish, a "stabilization unsupported" message would misattribute
         // the loss, because stabilization can be crowded out by the in-video snapshot stream
         // rather than by the quality.
+        // ZT Camera: 60 fps was asked for and given up: said once, like a dropped quality
+        val dropped60fps = GroupableFeature.FPS_60 in requested && GroupableFeature.FPS_60 !in selected
+
         val message = droppedQuality?.let {
             mActivity.getString(R.string.quality_unsupported, it)
-        }
+        } ?: if (dropped60fps) mActivity.getString(R.string.fps60_unsupported) else null
 
         if (message == null) {
             lastReportedDivergence.remove(boundLensFacing)
@@ -1700,15 +1738,25 @@ class CamConfig(private val mActivity: MainActivity) {
         // supports no stabilization at all has nothing to negotiate: it takes the plain fallback
         // path directly, which produces the identical output without a needless feature-group
         // round.
-        val usesFeatureGroup = isVideoMode && enableEIS && canApplyVideoStabilization()
+        // ZT Camera: 60 fps is asked for through the same feature group, after the quality and
+        // before stabilization, so it is given up before the quality and kept over stabilization.
+        val wants60fps = isVideoMode && video60fps && supports60fps()
+        val wantsEis = isVideoMode && enableEIS && canApplyVideoStabilization()
+        val usesFeatureGroup = wantsEis || wants60fps
         val videoQualityFeature: GroupableFeature? = when {
             usesFeatureGroup -> videoQualityAsGroupableFeature()
             else -> null
         }
 
+        // ZT Camera: Ultra HDR photos, in the plain photo mode only (not with a vendor extension,
+        // nor for the snapshot taken while recording)
+        val usesUltraHdr = !isVideoMode && !isQRMode && appliedExtension == null && ultraHdr &&
+                supportsUltraHdr()
+
         val captureMode = when {
             waitForFocusLock -> ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
-            enableZsl -> ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG
+            // Zero shutter lag reprocesses a plain frame and can't make a gain map
+            enableZsl && !usesUltraHdr -> ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG
             else -> ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY
         }
 
@@ -1806,6 +1854,10 @@ class CamConfig(private val mActivity: MainActivity) {
 
                     it.setJpegQuality(photoQuality)
 
+                    if (usesUltraHdr) {
+                        it.setOutputFormat(ImageCapture.OUTPUT_FORMAT_JPEG_ULTRA_HDR)
+                    }
+
                     it.build()
                 }
 
@@ -1868,8 +1920,13 @@ class CamConfig(private val mActivity: MainActivity) {
 
         if (usesFeatureGroup) {
             videoQualityFeature?.let { preferredFeatures.add(it) }
-            preferredFeatures.add(GroupableFeature.PREVIEW_STABILIZATION)
-            preferredFeatures.add(GroupableFeatures.VIDEO_STABILIZATION)
+            if (wants60fps) {
+                preferredFeatures.add(GroupableFeature.FPS_60)
+            }
+            if (wantsEis) {
+                preferredFeatures.add(GroupableFeature.PREVIEW_STABILIZATION)
+                preferredFeatures.add(GroupableFeatures.VIDEO_STABILIZATION)
+            }
         }
 
         // Not every camera can run video, photo and preview at once. Ask before binding rather
@@ -1886,7 +1943,8 @@ class CamConfig(private val mActivity: MainActivity) {
         val snapshotUseCase = imageCapture
         if (isVideoMode && snapshotUseCase != null) {
             val probeKey = SnapshotProbeKey(
-                lensFacing, videoQuality, usesFeatureGroup, captureMode, selectHighestResolution
+                lensFacing, videoQuality, usesFeatureGroup, captureMode, selectHighestResolution,
+                wants60fps
             )
 
             if (!snapshotDropReason.containsKey(probeKey)) {

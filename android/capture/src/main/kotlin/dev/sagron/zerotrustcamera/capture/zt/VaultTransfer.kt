@@ -2,25 +2,18 @@ package dev.sagron.zerotrustcamera.capture.zt
 
 import android.content.ContentValues
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.ImageDecoder
 import android.net.Uri
 import android.provider.MediaStore
 import android.util.Log
-import androidxc.exifinterface.media.ExifInterface
 import dev.sagron.zerotrustcamera.capture.CamConfig
-import dev.sagron.zerotrustcamera.capture.MetadataPolicy
-import dev.sagron.zerotrustcamera.capture.applyMetadataPolicy
 import dev.sagron.zerotrustcamera.capture.capturer.DEFAULT_MEDIA_STORE_CAPTURE_PATH
 import java.io.File
 import java.io.FileOutputStream
-import java.io.RandomAccessFile
-import java.util.Date
 
 /**
  * Moving things in and out of the Private vault: import from the gallery, save to the gallery and
- * share. What leaves the vault is cleaned first: a photo keeps no Exif at all (no place, time or
- * phone), a video has its recording times cleared.
+ * share. What leaves the vault is cleaned first (see MediaCleaner): a photo keeps no place, time
+ * or phone details, a video has its recording times and tag boxes cleared.
  */
 object VaultTransfer {
     private const val TAG = "VaultTransfer"
@@ -28,9 +21,11 @@ object VaultTransfer {
     /** Plain files waiting to be shared, under the cache (see the FileProvider paths). */
     fun shareDir(ctx: Context): File = File(ctx.cacheDir, "vault-share").apply { mkdirs() }
 
-    /** Wipes plain copies left from earlier shares. */
-    fun clearShared(ctx: Context) {
-        shareDir(ctx).listFiles()?.forEach { VaultStore.wipe(it) }
+    /** Wipes plain copies left from earlier shares, or only those older than [olderThanMs]. */
+    fun clearShared(ctx: Context, olderThanMs: Long = 0) {
+        val before = System.currentTimeMillis() - olderThanMs
+        shareDir(ctx).listFiles()?.filter { olderThanMs == 0L || it.lastModified() < before }
+            ?.forEach { VaultStore.wipe(it) }
     }
 
     /** A cleaned plain copy of an item, for sharing or saving. Returns the file and its type. */
@@ -39,35 +34,24 @@ object VaultTransfer {
         val mime = meta.optString("mime", "image/jpeg")
         val isVideo = meta.optString("type") == VaultStore.TYPE_VIDEO
         // The name says nothing about when it was taken: a random one, not the capture time.
-        val ext = if (isVideo) "mp4" else "jpg"
-        val name = (if (isVideo) "VID_" else "IMG_") + randomName() + "." + ext
-        val out = File(into, name)
+        val base = File(into, (if (isVideo) "VID_" else "IMG_") + randomName())
         if (isVideo) {
+            val out = File(base.path + ".mp4")
             VaultStore.openTo(ctx, id, priv, out)
-            RandomAccessFile(out, "rw").use { raf ->
-                Mp4TimeScrubber.scrub(raf.channel, raf.channel)
-            }
+            MediaCleaner.cleanVideo(out)
             return out to "video/mp4"
         }
-        if (mime == "image/jpeg") {
-            VaultStore.openTo(ctx, id, priv, out)
-            val exif = ExifInterface(out)
-            exif.applyMetadataPolicy(MetadataPolicy.NOTHING, Date())
-            exif.saveAttributes()
-        } else {
-            // Any other picture (HEIC, PNG, WebP from an import) is redrawn as a JPEG, which
-            // carries nothing over.
-            val bytes = VaultStore.media(ctx, id, priv)
-            val bmp = ImageDecoder.decodeBitmap(ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes)))
-            FileOutputStream(out).use { bmp.compress(Bitmap.CompressFormat.JPEG, 95, it) }
+        val bytes = VaultStore.media(ctx, id, priv)
+        try {
+            return MediaCleaner.cleanImage(bytes, mime, base)
+        } finally {
             bytes.fill(0)
         }
-        return out to "image/jpeg"
     }
 
     private val random = java.security.SecureRandom()
 
-    private fun randomName(): String {
+    fun randomName(): String {
         val b = ByteArray(6)
         random.nextBytes(b)
         return b.joinToString("") { "%02x".format(it) }

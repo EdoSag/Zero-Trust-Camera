@@ -209,4 +209,20 @@
     <string name="vault_mode_on">תמונות וסרטונים חדשים נשמרים בכספת הפרטית</string>
     <string name="vault_unlock_phone_first">צריך לבטל את נעילת הטלפון כדי לראות את הכספת הפרטית</string>
     <string name="vault_video_failed">אי אפשר להפעיל את הסרטון הזה</string>
+    <!-- ZT Camera: אפשרויות תמונה ווידאו -->
+    <string name="ultra_hdr_title">תמונות Ultra HDR</string>
+    <string name="ultra_hdr_subtitle">אזורים בהירים יותר במסכים שתומכים בזה. רק במצב צילום</string>
+    <string name="video_60fps_title">60 פריימים בשנייה</string>
+    <string name="video_60fps_subtitle">וידאו חלק יותר, קבצים גדולים יותר</string>
+    <string name="fps60_unsupported">המצלמה הזו לא יכולה לצלם 60 פריימים בשנייה בהגדרות האלה</string>
+    <!-- ZT Camera: ניקוי ושיתוף -->
+    <string name="clean_share_label">ניקוי ושיתוף</string>
+    <string name="clean_share_title">להסיר קודם את הפרטים?</string>
+    <string name="clean_share_message">מיקום, תאריך, שעה ופרטי הטלפון מוסרים מעותק. המקור נשאר כמו שהוא.</string>
+    <string name="clean_share_send">שיתוף העותק הנקי</string>
+    <string name="clean_share_to_vault">שמירה בכספת הפרטית</string>
+    <string name="clean_share_working">מנקה…</string>
+    <string name="clean_share_none">לא היה כאן משהו שאפשר לנקות. אפשר לנקות תמונות וסרטוני MP4.</string>
+    <string name="clean_share_skipped">לא ניתן היה לנקות %1$d, והם לא צורפו</string>
+    <string name="clean_share_added_to_vault">נוסף לכספת הפרטית</string>
 </resources>

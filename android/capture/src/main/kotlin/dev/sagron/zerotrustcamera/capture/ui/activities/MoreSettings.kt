@@ -203,6 +203,25 @@ open class MoreSettings : ZtBaseActivity(), TextView.OnEditorActionListener {
             }
         }
 
+        // ZT Camera: Ultra HDR photos and 60 fps video, shown only where this camera can
+        val extraSwitches = listOf(
+            Triple(binding.ultraHdrSetting, binding.ultraHdrToggle, camConfig.supportsUltraHdr()),
+            Triple(binding.video60fpsSetting, binding.video60fpsToggle, camConfig.supports60fps()),
+        )
+        for ((index, entry) in extraSwitches.withIndex()) {
+            val (row, toggle, supported) = entry
+            if (!supported) {
+                row.visibility = View.GONE
+                continue
+            }
+            toggle.isChecked = if (index == 0) camConfig.ultraHdr else camConfig.video60fps
+            row.setOnClickListener { toggle.performClick() }
+            toggle.setOnClickListener {
+                if (index == 0) camConfig.ultraHdr = toggle.isChecked
+                else camConfig.video60fps = toggle.isChecked
+            }
+        }
+
         // Account, language and about live in the app's other half (Flutter, on the shared
         // Zero-Trust core). Not offered from the lock screen: that screen needs the phone unlocked.
         val ztAppSetting = binding.ztAppSetting
