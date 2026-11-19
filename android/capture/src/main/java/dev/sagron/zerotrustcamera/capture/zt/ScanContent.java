@@ -205,6 +205,11 @@ public final class ScanContent {
     }
 
     static LinkCheck checkLink(String url) {
+        // Browsers read a backslash in a web address as a slash, and drop tabs and line breaks:
+        // check the address the way the browser will read it.
+        url = url.replaceAll("[\\t\\n\\r]", "");
+        String lowerScheme = url.toLowerCase(Locale.ROOT);
+        if (lowerScheme.startsWith("http:") || lowerScheme.startsWith("https:")) url = url.replace('\\', '/');
         LinkCheck c = new LinkCheck();
         c.fields.put("url", url);
         String scheme = url.substring(0, Math.max(0, url.indexOf(':'))).toLowerCase(Locale.ROOT);
@@ -404,11 +409,12 @@ public final class ScanContent {
             String name = line.substring(0, colon);
             int semi = name.indexOf(';');
             String prop = (semi >= 0 ? name.substring(0, semi) : name).toUpperCase(Locale.ROOT);
+            String zone = semi >= 0 ? param(name.substring(semi + 1), "TZID") : null;
             String value = unescape(line.substring(colon + 1));
             switch (prop) {
                 case "SUMMARY": f.put("title", value); break;
-                case "DTSTART": f.put("start", value); putIf(f, "startMs", iCalTime(value)); break;
-                case "DTEND": f.put("end", value); putIf(f, "endMs", iCalTime(value)); break;
+                case "DTSTART": f.put("start", value); putIf(f, "startMs", iCalTime(value, zone)); break;
+                case "DTEND": f.put("end", value); putIf(f, "endMs", iCalTime(value, zone)); break;
                 case "LOCATION": f.put("location", value); break;
                 case "DESCRIPTION": f.put("description", value); break;
                 default: break;
@@ -418,13 +424,37 @@ public final class ScanContent {
         if (start != null && start.length() == 8) f.put("allDay", "true");
     }
 
-    /** 20261119T180000Z, 20261119T180000 (phone's time) or 20261119 (all day), in ms as text. */
+    /** A parameter such as TZID out of "TZID=Asia/Jerusalem;VALUE=DATE-TIME". */
+    private static String param(String params, String key) {
+        for (String p : params.split(";")) {
+            int eq = p.indexOf('=');
+            if (eq > 0 && p.substring(0, eq).trim().equalsIgnoreCase(key)) {
+                return p.substring(eq + 1).trim().replace("\"", "");
+            }
+        }
+        return null;
+    }
+
     static String iCalTime(String v) {
+        return iCalTime(v, null);
+    }
+
+    /**
+     * 20261119T180000Z, 20261119T180000 in [zone] (an IANA name from TZID, or the phone's time
+     * when there is none or it is unknown) or 20261119 (all day), in ms as text.
+     */
+    static String iCalTime(String v, String zone) {
         Matcher m = Pattern.compile("^(\\d{4})(\\d{2})(\\d{2})(?:T(\\d{2})(\\d{2})(\\d{2})?(Z)?)?$").matcher(v.trim());
         if (!m.matches()) return null;
-        java.util.Calendar cal = m.group(7) != null
-            ? java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC"))
-            : java.util.Calendar.getInstance();
+        java.util.TimeZone tz = java.util.TimeZone.getDefault();
+        if (m.group(7) != null) {
+            tz = java.util.TimeZone.getTimeZone("UTC");
+        } else if (zone != null && m.group(4) != null) {
+            java.util.TimeZone named = java.util.TimeZone.getTimeZone(zone);
+            // getTimeZone answers GMT for a name it doesn't know: keep the phone's time then.
+            if (!named.getID().equals("GMT") || zone.equalsIgnoreCase("GMT")) tz = named;
+        }
+        java.util.Calendar cal = java.util.Calendar.getInstance(tz);
         cal.clear();
         cal.set(Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2)) - 1, Integer.parseInt(m.group(3)),
             m.group(4) != null ? Integer.parseInt(m.group(4)) : 0,
