@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Downloads the Tesseract language files ZT Camera bundles for reading text on the phone
 # (document scanner, "Copy text" in the Private vault). From tessdata_fast, the small and
-# quick models, at a fixed release tag. Each file is checked against tool/tessdata.sha256
-# when that file lists it; a new language prints its hash to add there.
+# quick models, at a fixed release tag. Each file must match its SHA-256 in
+# tool/tessdata.sha256; a language missing there prints its hash to add.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 TAG=4.1.0

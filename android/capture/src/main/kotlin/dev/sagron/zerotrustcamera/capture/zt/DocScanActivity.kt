@@ -171,7 +171,7 @@ class DocScanActivity : ZtBaseActivity() {
             setOnClickListener { take() }
         }
         row.addView(shutter, LinearLayout.LayoutParams(0, WRAP, 1f))
-        val done = MaterialButton(this, null, com.google.android.material.R.attr.borderlessButtonStyle).apply {
+        val done = MaterialButton(this, null, androidx.appcompat.R.attr.borderlessButtonStyle).apply {
             text = if (pages.isEmpty()) "" else resources.getQuantityString(R.plurals.doc_pages, pages.size, pages.size)
             isEnabled = pages.isNotEmpty()
             setTextColor(Color.WHITE)
