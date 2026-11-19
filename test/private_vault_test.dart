@@ -147,9 +147,13 @@ class FakeVault implements VaultBackend {
 
   String? textInPhoto;
 
+  /// Locks the vault while the text is being read, as leaving the app would.
+  bool lockWhileReading = false;
+
   @override
   Future<String?> readText(String id) async {
     _check();
+    if (lockWhileReading) unlocked = false;
     return textInPhoto;
   }
 
@@ -434,6 +438,33 @@ void main() {
       expect(vault.edited, ['a']);
       expect(find.byTooltip('Edit a copy'), findsNothing);
       expect(find.byKey(const ValueKey('a')), findsOneWidget);
+    });
+
+    testWidgets('Copy text shows the text, but not once the vault locked', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)])
+        ..textInPhoto = 'Invoice 1234';
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Copy text'));
+      await tester.pumpAndSettle();
+      expect(find.text('Invoice 1234'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Invoice 1234'))).pop();
+      await tester.pumpAndSettle();
+
+      vault.lockWhileReading = true;
+      await tester.tap(find.byTooltip('Copy text'));
+      await tester.pumpAndSettle();
+      expect(find.text('Invoice 1234'), findsNothing);
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {

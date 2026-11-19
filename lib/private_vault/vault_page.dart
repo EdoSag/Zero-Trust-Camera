@@ -41,6 +41,10 @@ class PrivateVaultPage extends ConsumerStatefulWidget {
 class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     with WidgetsBindingObserver {
   VaultStatus? _status;
+
+  /// Goes up every time the vault is shown locked, so a slow answer that started before can
+  /// tell it is stale.
+  int _lockCount = 0;
   List<VaultItem> _items = const [];
   VaultLibrary _library = VaultLibrary();
   VaultFilter _filter = VaultFilter.all;
@@ -97,6 +101,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     if (me != null && !me.isCurrent) {
       Navigator.of(context).popUntil((r) => r == me);
     }
+    _lockCount++;
     setState(() {
       _items = const [];
       _library = VaultLibrary();
@@ -320,9 +325,13 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   /// Reads the text in a photo (on the phone) and shows it to copy.
   Future<void> _readText(String id) async {
     setState(() => _busy = true);
+    final locks = _lockCount;
     String? text;
     try {
       text = await _vault.readText(id);
+      // Reading can take a while. If the vault locked meanwhile (the app was left), the text
+      // must not show up over the locked vault.
+      if (locks != _lockCount || !(await _vault.status()).unlocked) return;
     } on Object {
       _say((l) => l.vaultFailed);
       return;
