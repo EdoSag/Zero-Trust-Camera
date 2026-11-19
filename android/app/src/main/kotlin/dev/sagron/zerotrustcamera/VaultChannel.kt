@@ -10,6 +10,7 @@ import androidx.core.content.FileProvider
 import androidx.fragment.app.FragmentActivity
 import dev.sagron.zerotrustcamera.capture.CamConfig
 import dev.sagron.zerotrustcamera.capture.zt.Ocr
+import dev.sagron.zerotrustcamera.capture.zt.PhotoEditActivity
 import dev.sagron.zerotrustcamera.capture.zt.VaultKeys
 import dev.sagron.zerotrustcamera.capture.zt.VaultSession
 import dev.sagron.zerotrustcamera.capture.zt.VaultStore
@@ -104,6 +105,16 @@ class VaultChannel(
                 ) { d, _, _ -> d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE }
                 bytes.fill(0)
                 Ocr.read(ctx, bmp).also { bmp.recycle() }
+            }
+            "editPhoto" -> {
+                if (!VaultSession.isUnlocked) {
+                    result.error("locked", null, null)
+                    return
+                }
+                // The editor locks the vault itself if it is left for another app.
+                keepOpenUntilResume = true
+                PhotoEditActivity.openVault(activity, call.argument<String>("id")!!)
+                result.success(null)
             }
             "scans" -> unlocked(result) { priv -> VaultStore.listScans(ctx, priv) }
             "deleteScans" -> background(result) {

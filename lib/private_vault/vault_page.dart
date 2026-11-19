@@ -313,6 +313,15 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     }
   }
 
+  /// Opens the photo editor. The edited copy shows up in the vault when this page comes back.
+  Future<void> _edit(String id) async {
+    try {
+      await _vault.editPhoto(id);
+    } on Object {
+      _say((l) => l.vaultFailed);
+    }
+  }
+
   /// Reads the text in a photo (on the phone) and shows it to copy.
   Future<void> _readText(String id) async {
     setState(() => _busy = true);
@@ -449,6 +458,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
           onSave: (id) => _saveToGallery([id]),
           onShare: (id) => _share([id]),
           onReadText: _readText,
+          onEdit: _edit,
         ),
       ),
     );

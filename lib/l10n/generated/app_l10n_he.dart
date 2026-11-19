@@ -267,6 +267,9 @@ class AppL10nHe extends AppL10n {
   String get vaultCopyText => 'העתקת טקסט';
 
   @override
+  String get vaultEdit => 'עריכת עותק';
+
+  @override
   String get vaultNoText => 'לא נמצא טקסט בתמונה';
 
   @override

@@ -156,6 +156,14 @@ class FakeVault implements VaultBackend {
     if (lockWhileReading) unlocked = false;
     return textInPhoto;
   }
+
+  final edited = <String>[];
+
+  @override
+  Future<void> editPhoto(String id) async {
+    _check();
+    edited.add(id);
+  }
 }
 
 VaultItem _item(String id, DateTime at, {bool video = false}) =>
@@ -402,6 +410,34 @@ void main() {
         ['a'],
       ]);
       expect(find.textContaining('without location, date'), findsOneWidget);
+    });
+
+    testWidgets('Edit a copy opens the editor and closes the photo', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      final edit = find.byTooltip('Edit a copy');
+      expect(edit, findsOneWidget);
+      // Edit sits in the viewer's top bar, next to Copy text.
+      expect(
+        tester.getCenter(edit).dy,
+        tester.getCenter(find.byTooltip('Copy text')).dy,
+      );
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+      expect(vault.edited, ['a']);
+      expect(find.byTooltip('Edit a copy'), findsNothing);
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
     });
 
     testWidgets('Copy text shows the text, but not once the vault locked', (

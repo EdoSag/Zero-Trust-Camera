@@ -269,6 +269,9 @@ class AppL10nEn extends AppL10n {
   String get vaultCopyText => 'Copy text';
 
   @override
+  String get vaultEdit => 'Edit a copy';
+
+  @override
   String get vaultNoText => 'No text found in this photo';
 
   @override

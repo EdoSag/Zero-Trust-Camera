@@ -119,6 +119,9 @@ abstract class VaultBackend {
 
   /// The text in a photo, read on the phone; null when there is none.
   Future<String?> readText(String id);
+
+  /// Opens the photo editor; the edited copy is saved into the vault as a new photo.
+  Future<void> editPhoto(String id);
 }
 
 class ChannelVaultBackend implements VaultBackend {
@@ -244,6 +247,9 @@ class ChannelVaultBackend implements VaultBackend {
 
   @override
   Future<String?> readText(String id) => _call<String>('readText', {'id': id});
+
+  @override
+  Future<void> editPhoto(String id) => _call<void>('editPhoto', {'id': id});
 }
 
 final vaultBackendProvider = Provider<VaultBackend>(
