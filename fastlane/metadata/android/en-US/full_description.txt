@@ -1,0 +1,27 @@
+Zero-Trust Camera is a camera that keeps your photos yours. Every photo is saved without the hidden details that say where and how it was taken, and the ones that matter most go straight into an encrypted vault.
+
+WHAT IT DOES
+• Photos and video, front and back cameras, zoom, flash, timer, grid, Night and HDR where the phone supports them, Ultra HDR and 60 fps video.
+• Clean by default: location, device details and other hidden metadata are left out of every photo.
+• Private vault: photos and videos are encrypted before they reach storage. You can shoot into the vault from the lock screen, and only your fingerprint, face or PIN opens it.
+• Albums, favourites and a 30-day trash inside the vault.
+• Clean and share: send any photo from any app through the camera to strip its metadata first.
+• Encrypted vault backup to your Zero-Trust account, if you turn it on. Files are encrypted on the phone, so the server can't see them. Restore on a new phone.
+• QR and barcode scanner with safe-link checks, Wi-Fi join, and actions into Zero-Trust Contacts, Calendar, Phone and Browser.
+• Document scanner: edges found for you, filters, multi-page PDF, and text recognition on the phone in English and Hebrew.
+• Copy text from a photo, on the phone.
+• Photo editor: crop, rotate, adjust, draw, and hide faces or anything else before sharing.
+• Pro camera: manual ISO, shutter, focus and white balance, with RAW (DNG) on phones that support it.
+
+WHY ZERO-TRUST
+• End-to-end encrypted: everything is encrypted on your phone before it syncs. We can't read it, and neither can anyone who breaks into the server.
+• Works without an account. An account is only needed for backup.
+• Nothing is sent anywhere to be analysed: scanning, text recognition and face hiding all run on the phone.
+• No ads, no trackers, no analytics, no data sold. Ever.
+• Open source (AGPL-3.0), so anyone can check what the app does.
+• English and Hebrew, with full right-to-left support.
+
+Part of the Zero-Trust suite: Notes, Tasks, Calendar, Contacts, Phone, Fitness, Meds, Time and Browser. One account opens them all.
+
+Privacy policy: https://zerotrust.bz/privacy/
+Support: support@zerotrust.bz
