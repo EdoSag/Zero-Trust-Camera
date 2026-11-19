@@ -120,6 +120,54 @@ class VaultChannel(
                     }
                 }
             }
+            "original" -> unlocked(result) { priv ->
+                // The file as sealed, for the encrypted backup (Dart encrypts it again with its
+                // own key before anything leaves the phone).
+                val id = call.argument<String>("id")!!
+                mapOf(
+                    "bytes" to VaultStore.media(ctx, id, priv),
+                    "mime" to VaultStore.meta(ctx, id, priv).optString("mime", "image/jpeg"),
+                )
+            }
+            "restore" -> background(result) {
+                val pub = VaultKeys.publicKey(ctx) ?: throw IllegalStateException("no vault")
+                val bytes = call.argument<ByteArray>("bytes")!!
+                val mime = call.argument<String>("mime") ?: "image/jpeg"
+                val takenAt = call.argument<Number>("takenAt")?.toLong() ?: System.currentTimeMillis()
+                try {
+                    when {
+                        call.argument<Boolean>("video") == true -> {
+                            val f = VaultStore.newTempFile(ctx, ".mp4")
+                            f.writeBytes(bytes)
+                            VaultStore.saveVideo(ctx, pub, f, takenAt)?.first
+                                ?: throw java.io.IOException("video not sealed")
+                        }
+                        mime == VaultStore.MIME_DNG -> {
+                            val small = android.graphics.ImageDecoder.decodeBitmap(
+                                android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+                            ) { d, info, _ ->
+                                d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                                val long = maxOf(info.size.width, info.size.height)
+                                if (long > 2048) {
+                                    val f = 2048f / long
+                                    d.setTargetSize((info.size.width * f).toInt(), (info.size.height * f).toInt())
+                                }
+                            }
+                            val jpeg = java.io.ByteArrayOutputStream().use { out ->
+                                small.compress(android.graphics.Bitmap.CompressFormat.JPEG, 90, out)
+                                small.recycle()
+                                out.toByteArray()
+                            }
+                            val f = VaultStore.newTempFile(ctx, ".dng")
+                            f.writeBytes(bytes)
+                            VaultStore.saveRaw(ctx, pub, f, jpeg, takenAt)
+                        }
+                        else -> VaultStore.savePhoto(ctx, pub, bytes, takenAt, mime = mime).first
+                    }
+                } finally {
+                    bytes.fill(0)
+                }
+            }
             "readText" -> unlocked(result) { priv ->
                 val bytes = VaultStore.media(ctx, call.argument<String>("id")!!, priv)
                 val bmp = android.graphics.ImageDecoder.decodeBitmap(

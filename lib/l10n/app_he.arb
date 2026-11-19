@@ -119,5 +119,72 @@
   "vaultEdit": "עריכת עותק",
   "vaultNoText": "לא נמצא טקסט בתמונה",
   "vaultTextTitle": "טקסט",
-  "vaultCopy": "העתקה"
+  "vaultCopy": "העתקה",
+  "vaultBackup": "גיבוי מוצפן",
+  "backupTitle": "גיבוי מוצפן",
+  "backupIntro": "כל תמונה מוצפנת בטלפון הזה במפתח משלה לפני שהיא עוברת לחשבון Zero Trust שלך. השרת לא יכול לראות אותה. אפשר לשחזר אותה בטלפון חדש עם החשבון.",
+  "backupSignIn": "כדי לגבות את הכספת, צריך להתחבר לחשבון Zero Trust במסך הבית.",
+  "backupOn": "גיבוי הכספת",
+  "backupCount": "{done} מתוך {total} גובו",
+  "@backupCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "backupEverything": "כל מה שבכספת",
+  "backupAlbums": "רק האלבומים האלה",
+  "backupVideos": "גם סרטונים",
+  "backupVideosSubtitle": "עד 20MB לכל סרטון. סרטונים ארוכים יותר נשארים רק בטלפון הזה.",
+  "backupNow": "גיבוי עכשיו",
+  "backupRestore": "שחזור לטלפון הזה",
+  "backupRestoreSubtitle": "מחזיר תמונות מהחשבון שלא נמצאות בטלפון הזה",
+  "backupDone": "{count} גובו",
+  "@backupDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestored": "{count} שוחזרו",
+  "@backupRestored": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupTooLarge": "{count} גדולים מדי, נשמרים רק בטלפון הזה",
+  "@backupTooLarge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupFailed": "{count} לא עברו. ננסה שוב בפעם הבאה.",
+  "@backupFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupFull": "האחסון בחשבון מלא. השאר יחכה.",
+  "backupProgress": "{done} מתוך {total}",
+  "@backupProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
 }

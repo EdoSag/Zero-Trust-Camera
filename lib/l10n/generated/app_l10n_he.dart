@@ -284,4 +284,77 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get vaultCopy => 'העתקה';
+
+  @override
+  String get vaultBackup => 'גיבוי מוצפן';
+
+  @override
+  String get backupTitle => 'גיבוי מוצפן';
+
+  @override
+  String get backupIntro =>
+      'כל תמונה מוצפנת בטלפון הזה במפתח משלה לפני שהיא עוברת לחשבון Zero Trust שלך. השרת לא יכול לראות אותה. אפשר לשחזר אותה בטלפון חדש עם החשבון.';
+
+  @override
+  String get backupSignIn =>
+      'כדי לגבות את הכספת, צריך להתחבר לחשבון Zero Trust במסך הבית.';
+
+  @override
+  String get backupOn => 'גיבוי הכספת';
+
+  @override
+  String backupCount(int done, int total) {
+    return '$done מתוך $total גובו';
+  }
+
+  @override
+  String get backupEverything => 'כל מה שבכספת';
+
+  @override
+  String get backupAlbums => 'רק האלבומים האלה';
+
+  @override
+  String get backupVideos => 'גם סרטונים';
+
+  @override
+  String get backupVideosSubtitle =>
+      'עד 20MB לכל סרטון. סרטונים ארוכים יותר נשארים רק בטלפון הזה.';
+
+  @override
+  String get backupNow => 'גיבוי עכשיו';
+
+  @override
+  String get backupRestore => 'שחזור לטלפון הזה';
+
+  @override
+  String get backupRestoreSubtitle =>
+      'מחזיר תמונות מהחשבון שלא נמצאות בטלפון הזה';
+
+  @override
+  String backupDone(int count) {
+    return '$count גובו';
+  }
+
+  @override
+  String backupRestored(int count) {
+    return '$count שוחזרו';
+  }
+
+  @override
+  String backupTooLarge(int count) {
+    return '$count גדולים מדי, נשמרים רק בטלפון הזה';
+  }
+
+  @override
+  String backupFailed(int count) {
+    return '$count לא עברו. ננסה שוב בפעם הבאה.';
+  }
+
+  @override
+  String get backupFull => 'האחסון בחשבון מלא. השאר יחכה.';
+
+  @override
+  String backupProgress(int done, int total) {
+    return '$done מתוך $total';
+  }
 }
