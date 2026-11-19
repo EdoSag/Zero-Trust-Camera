@@ -68,6 +68,10 @@ object ScanSheet {
                         run()
                     } catch (e: ActivityNotFoundException) {
                         Toast.makeText(ctx, R.string.scan_no_app, Toast.LENGTH_SHORT).show()
+                    } catch (e: RuntimeException) {
+                        // A code with values Android refuses must not close the camera.
+                        android.util.Log.w("ScanSheet", "action", e)
+                        Toast.makeText(ctx, R.string.scan_no_app, Toast.LENGTH_SHORT).show()
                     }
                 }
             }
@@ -314,15 +318,26 @@ object ScanSheet {
         val ssid = c.get("ssid")!!
         val password = c.get("password")
         val security = c.get("security")
-        if (Build.VERSION.SDK_INT >= 30 && security != "WEP") {
-            // Android's own "save this network?" sheet: no Wi-Fi permission needed.
-            val b = WifiNetworkSuggestion.Builder().setSsid(ssid)
-            if (password != null) {
-                if (security == "SAE" || security == "WPA3") b.setWpa3Passphrase(password) else b.setWpa2Passphrase(password)
+        // Android's own "save this network?" sheet: no Wi-Fi permission needed. The builder
+        // refuses a name or password Android can't use (a WPA password under 8 characters, say);
+        // then the password is copied and the Wi-Fi list opened instead.
+        val suggestion = if (Build.VERSION.SDK_INT >= 30 && security != "WEP") {
+            try {
+                val b = WifiNetworkSuggestion.Builder().setSsid(ssid)
+                if (password != null) {
+                    if (security == "SAE" || security == "WPA3") b.setWpa3Passphrase(password) else b.setWpa2Passphrase(password)
+                }
+                if (c.get("hidden") == "true") b.setIsHiddenSsid(true)
+                b.build()
+            } catch (e: IllegalArgumentException) {
+                null
+            } catch (e: IllegalStateException) {
+                null
             }
-            if (c.get("hidden") == "true") b.setIsHiddenSsid(true)
+        } else null
+        if (suggestion != null) {
             val intent = Intent(Settings.ACTION_WIFI_ADD_NETWORKS)
-                .putParcelableArrayListExtra(Settings.EXTRA_WIFI_NETWORK_LIST, arrayListOf(b.build()))
+                .putParcelableArrayListExtra(Settings.EXTRA_WIFI_NETWORK_LIST, arrayListOf(suggestion))
             ctx.startActivity(intent)
         } else {
             // Older Android, or WEP: copy the password and open the Wi-Fi list.
