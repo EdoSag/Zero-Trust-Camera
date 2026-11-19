@@ -11,6 +11,11 @@ import 'package:zerotrust_camera/private_vault/vault_page.dart';
 import 'support/app.dart';
 
 /// The vault without the phone: items, state and what was asked of it.
+// A real 1x1 PNG, so the viewer can open a photo in tests.
+final _onePixelPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+);
+
 class FakeVault implements VaultBackend {
   FakeVault({
     this.setUpDone = true,
@@ -85,7 +90,7 @@ class FakeVault implements VaultBackend {
   @override
   Future<Uint8List> photo(String id) async {
     _check();
-    return Uint8List(0);
+    return _onePixelPng;
   }
 
   @override
@@ -146,6 +151,14 @@ class FakeVault implements VaultBackend {
   Future<String?> readText(String id) async {
     _check();
     return textInPhoto;
+  }
+
+  final edited = <String>[];
+
+  @override
+  Future<void> editPhoto(String id) async {
+    _check();
+    edited.add(id);
   }
 }
 
@@ -393,6 +406,34 @@ void main() {
         ['a'],
       ]);
       expect(find.textContaining('without location, date'), findsOneWidget);
+    });
+
+    testWidgets('Edit a copy opens the editor and closes the photo', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      final edit = find.byTooltip('Edit a copy');
+      expect(edit, findsOneWidget);
+      // Edit sits in the viewer's top bar, next to Copy text.
+      expect(
+        tester.getCenter(edit).dy,
+        tester.getCenter(find.byTooltip('Copy text')).dy,
+      );
+      await tester.tap(edit);
+      await tester.pumpAndSettle();
+      expect(vault.edited, ['a']);
+      expect(find.byTooltip('Edit a copy'), findsNothing);
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {

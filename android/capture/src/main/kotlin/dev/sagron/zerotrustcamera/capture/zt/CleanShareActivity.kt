@@ -48,6 +48,14 @@ class CleanShareActivity : ZtBaseActivity() {
         if (VaultKeys.isSetUp(this)) {
             dialog.setNeutralButton(R.string.clean_share_to_vault) { _, _ -> keep(uris) }
         }
+        // One photo can be cropped, or have faces and other things hidden, before it goes.
+        val single = uris.singleOrNull()
+        if (single != null && contentResolver.getType(single)?.startsWith("image/") == true) {
+            dialog.setNegativeButton(R.string.clean_share_edit) { _, _ ->
+                PhotoEditActivity.openForShare(this, single)
+                finish()
+            }
+        }
         dialog.show()
     }
 

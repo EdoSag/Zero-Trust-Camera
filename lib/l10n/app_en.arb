@@ -114,6 +114,7 @@
   "homeScanDocument": "Scan a document",
   "homeScanDocumentSubtitle": "Straight, clean pages as a PDF, with the text read on your phone",
   "vaultCopyText": "Copy text",
+  "vaultEdit": "Edit a copy",
   "vaultNoText": "No text found in this photo",
   "vaultTextTitle": "Text",
   "vaultCopy": "Copy"

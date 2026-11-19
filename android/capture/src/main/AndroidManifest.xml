@@ -241,6 +241,19 @@
 
         <!-- ZT Camera: the document scanner -->
         <activity
+            android:name=".zt.PhotoEditActivity"
+            android:label="@string/edit_label"
+            android:theme="@style/Theme.App"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
+        <activity
             android:name=".zt.DocScanActivity"
             android:theme="@style/Theme.App"
             android:screenOrientation="portrait"

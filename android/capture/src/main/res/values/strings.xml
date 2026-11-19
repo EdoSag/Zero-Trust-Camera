@@ -376,4 +376,32 @@
         <item quantity="one">%1$d page</item>
         <item quantity="other">%1$d pages</item>
     </plurals>
+    <!-- Photo editor -->
+    <string name="edit_label">Edit privately</string>
+    <string name="edit_undo">Undo</string>
+    <string name="edit_save">Save copy</string>
+    <string name="edit_apply">Apply</string>
+    <string name="edit_crop">Crop</string>
+    <string name="edit_rotate">Rotate</string>
+    <string name="edit_adjust">Adjust</string>
+    <string name="edit_hide">Hide</string>
+    <string name="edit_draw">Draw</string>
+    <string name="edit_crop_hint">Drag the corners or edges of the frame.</string>
+    <string name="edit_brightness">Brightness</string>
+    <string name="edit_contrast">Contrast</string>
+    <string name="edit_saturation">Colour</string>
+    <string name="edit_warmth">Warmth</string>
+    <string name="edit_hide_hint">Drag over faces, number plates or anything else to cover it. Tap a box to remove it.</string>
+    <string name="edit_find_faces">Find faces</string>
+    <string name="edit_faces_none">No faces found. Drag over them by hand.</string>
+    <plurals name="edit_faces_found">
+        <item quantity="one">1 face found</item>
+        <item quantity="other">%d faces found</item>
+    </plurals>
+    <string name="edit_saved_vault">Saved as a new photo in the vault. The original is unchanged.</string>
+    <string name="edit_saved_gallery">Saved as a new photo in your gallery, with no location or phone details.</string>
+    <string name="edit_failed">Couldn\'t edit this photo</string>
+    <string name="edit_discard_title">Discard your changes?</string>
+    <string name="edit_discard">Discard</string>
+    <string name="clean_share_edit">Edit first</string>
 </resources>

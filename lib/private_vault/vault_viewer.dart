@@ -27,6 +27,7 @@ class VaultViewer extends ConsumerStatefulWidget {
     required this.onSave,
     required this.onShare,
     required this.onReadText,
+    required this.onEdit,
   });
 
   final List<VaultItem> items;
@@ -41,6 +42,7 @@ class VaultViewer extends ConsumerStatefulWidget {
   final Future<void> Function(String id) onSave;
   final Future<void> Function(String id) onShare;
   final Future<void> Function(String id) onReadText;
+  final Future<void> Function(String id) onEdit;
 
   @override
   ConsumerState<VaultViewer> createState() => _VaultViewerState();
@@ -169,6 +171,12 @@ class _VaultViewerState extends ConsumerState<VaultViewer> {
                       tooltip: l.vaultShare,
                       onPressed: () => widget.onShare(item.id),
                     ),
+                    if (!item.isVideo)
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: l.vaultEdit,
+                        onPressed: () => _thenClose(widget.onEdit),
+                      ),
                     if (!item.isVideo)
                       IconButton(
                         icon: const Icon(Icons.text_snippet_outlined),

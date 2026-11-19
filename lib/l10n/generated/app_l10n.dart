@@ -529,6 +529,12 @@ abstract class AppL10n {
   /// **'Copy text'**
   String get vaultCopyText;
 
+  /// No description provided for @vaultEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit a copy'**
+  String get vaultEdit;
+
   /// No description provided for @vaultNoText.
   ///
   /// In en, this message translates to:
