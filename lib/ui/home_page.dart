@@ -89,6 +89,13 @@ class HomePage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => Navigator.of(context).push(PrivateVaultPage.route()),
           ),
+          ListTile(
+            leading: const Icon(Icons.document_scanner_outlined),
+            title: Text(l.homeScanDocument),
+            subtitle: Text(l.homeScanDocumentSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => ref.read(cameraBridgeProvider).openDocScanner(),
+          ),
 
           _Header(l.privacySection),
           ListTile(

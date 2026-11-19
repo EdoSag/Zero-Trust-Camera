@@ -5,7 +5,7 @@ videos are saved without location, time or device details unless you choose
 to keep them. Same account, settings and look as the other Zero-Trust apps,
 built on [Zero-Trust-Core](https://github.com/EdoSag/Zero-Trust-Core).
 
-## What it does (0.4)
+## What it does (0.5)
 
 - **Photo and video**, with the phone's own camera extensions where it has
   them (Night, HDR, Portrait, Face retouch, Auto), zoom, tap to focus,
@@ -47,11 +47,20 @@ built on [Zero-Trust-Core](https://github.com/EdoSag/Zero-Trust-Core).
 - **60 fps video** (new in 0.3, where the camera can do it with the chosen
   quality). A switch under More settings; when a combination can't do 60,
   the app says so and records at 30.
+- **Document scanner** (new in 0.5). From the home screen or a long press
+  on the launcher icon. It finds the page and takes it once it holds still
+  (or on a tap), lets the corners be dragged, straightens it, and offers
+  Enhanced, Original, Grayscale and Black and white looks. Pages become one
+  PDF in Documents/ZT Camera, or go into the Private vault in Private mode;
+  they can also be shared as a PDF or sent to ZT Notes with their text.
+- **Text from photos** (new in 0.5), read on the phone with Tesseract
+  (English and Hebrew): "Copy text" for scanned pages and for photos in the
+  Private vault. Nothing is uploaded.
 - **No account needed.** Signing in is optional and only matters for what
   comes next.
 - **English and Hebrew**, with right-to-left layout.
 
-Not in 0.4 yet: encrypted backup of the vault, the document scanner and ZT app actions for scanned codes. The plan is in the project's
+Not in 0.5 yet: encrypted backup of the vault, the photo editor, pro controls and RAW and ZT app actions for scanned codes. The plan is in the project's
 `zt-camera-plan.md`.
 
 ## How it is built

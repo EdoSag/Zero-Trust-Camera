@@ -34,6 +34,17 @@ class CameraBridge {
     }
   }
 
+  /// Opens the document scanner (native, in the capture module).
+  Future<void> openDocScanner() async {
+    try {
+      await _channel.invokeMethod<void>('openDocScanner');
+    } on PlatformException {
+      // Nothing opens; the home screen stays.
+    } on MissingPluginException {
+      // Not on Android.
+    }
+  }
+
   /// Closes these screens, back to the viewfinder.
   Future<void> close() async {
     try {

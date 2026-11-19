@@ -57,6 +57,10 @@ dependencies {
     implementation("com.google.crypto.tink:tink-android:1.18.0")
     implementation("androidx.biometric:biometric:1.1.0")
 
+    // ZT Camera document scanner and "Copy text": Tesseract OCR, on the phone. The language
+    // files are bundled at build time (tool/fetch_tessdata.sh).
+    implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.crypto.tink:tink:1.18.0")
 }

@@ -3,6 +3,7 @@ package dev.sagron.zerotrustcamera
 import android.content.Intent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import dev.sagron.zerotrustcamera.capture.zt.DocScanActivity
 import dev.sagron.zerotrustcamera.capture.zt.VaultSession
 import dev.sagron.zerotrustcamera.capture.zt.ZtApp
 import dev.sagron.zerotrustcamera.capture.zt.ZtLocale
@@ -59,6 +60,10 @@ class ZtAppActivity : FlutterFragmentActivity() {
                     // Back to the viewfinder.
                     "close" -> {
                         finish()
+                        result.success(null)
+                    }
+                    "openDocScanner" -> {
+                        startActivity(Intent(this, DocScanActivity::class.java))
                         result.success(null)
                     }
                     "takeScreen" -> {

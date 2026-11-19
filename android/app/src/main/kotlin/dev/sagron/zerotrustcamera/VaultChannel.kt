@@ -9,6 +9,7 @@ import android.view.WindowManager
 import androidx.core.content.FileProvider
 import androidx.fragment.app.FragmentActivity
 import dev.sagron.zerotrustcamera.capture.CamConfig
+import dev.sagron.zerotrustcamera.capture.zt.Ocr
 import dev.sagron.zerotrustcamera.capture.zt.VaultKeys
 import dev.sagron.zerotrustcamera.capture.zt.VaultSession
 import dev.sagron.zerotrustcamera.capture.zt.VaultStore
@@ -96,6 +97,14 @@ class VaultChannel(
             }
             "thumb" -> unlocked(result) { priv -> VaultStore.thumb(ctx, call.argument<String>("id")!!, priv) }
             "photo" -> unlocked(result) { priv -> VaultStore.media(ctx, call.argument<String>("id")!!, priv) }
+            "readText" -> unlocked(result) { priv ->
+                val bytes = VaultStore.media(ctx, call.argument<String>("id")!!, priv)
+                val bmp = android.graphics.ImageDecoder.decodeBitmap(
+                    android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+                ) { d, _, _ -> d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE }
+                bytes.fill(0)
+                Ocr.read(ctx, bmp).also { bmp.recycle() }
+            }
             "scans" -> unlocked(result) { priv -> VaultStore.listScans(ctx, priv) }
             "deleteScans" -> background(result) {
                 call.argument<List<String>>("ids")!!.forEach { VaultStore.deleteScan(ctx, it) }

@@ -59,6 +59,17 @@ Licences.
   code and offers one action per type, with link safety checks. Scan history
   is sealed into the vault as `<id>.scan` files.
 
+- **Document scanner** (`zt/DocScanActivity.kt`, `zt/DocQuadView.kt`,
+  `zt/DocPages.kt`, `zt/DocDetect.java`, `zt/DocFilters.java`): its own
+  CameraX screen. The page is found in plain Java (blur, Otsu threshold,
+  largest light region, extreme points, then a fill and edge check), made
+  flat with `Matrix.setPolyToPoly`, and written as a PDF with
+  `PdfDocument`. No OpenCV.
+- **Text reading** (`zt/Ocr.kt`): Tesseract4Android from JitPack (only that
+  group may come from JitPack, see `android/build.gradle.kts`). The English
+  and Hebrew `tessdata_fast` files are fetched at build time by
+  `tool/fetch_tessdata.sh` into `src/main/assets/tessdata` (not committed).
+
 Everything added for Zero-Trust lives under `zt/`, to keep upstream files as
 close to the original as possible.
 
@@ -78,5 +89,5 @@ close to the original as possible.
 `./gradlew :capture:testDebugUnitTest` from `android/` runs the JVM tests,
 including `MediaVaultTest` (sealing round trips at every chunk boundary, any
 changed byte, cut, dropped or swapped chunks, ranged reads, the RFC 7748
-X25519 vector and a fixed vector for the file format), `JpegMetadataStripperTest`, `ScanContentTest`,
+X25519 vector and a fixed vector for the file format), `JpegMetadataStripperTest`, `ScanContentTest`, `DocDetectTest`, `DocFiltersTest`,
 `Mp4MetadataStripperTest` and `Mp4TimeScrubberTest`.

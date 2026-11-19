@@ -72,6 +72,8 @@
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <!-- ZT Camera: "Scan a document" on long-press of the launcher icon -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/zt_shortcuts" />
 
         </activity>
 
@@ -236,6 +238,15 @@
                 <data android:mimeType="image/*" />
             </intent-filter>
         </activity>
+
+        <!-- ZT Camera: the document scanner -->
+        <activity
+            android:name=".zt.DocScanActivity"
+            android:theme="@style/Theme.App"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
 
         <activity
             android:name=".ui.activities.InAppGallery"

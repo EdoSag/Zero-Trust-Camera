@@ -131,6 +131,11 @@ jobs:
 
       - run: flutter pub get
 
+      # The text-reading language files (English, Hebrew) are bundled into the app, so
+      # nothing is downloaded on the phone. Checked against pinned SHA-256 values.
+      - name: Fetch the OCR language files
+        run: tool/fetch_tessdata.sh
+
       - name: Release checks
         # Shared by every Zero-Trust app (Zero-Trust-Core,
         # packages/zt_release_checks): key, sync and sign-in vectors run with

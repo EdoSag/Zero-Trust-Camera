@@ -11,6 +11,11 @@ import 'package:zerotrust_camera/private_vault/vault_page.dart';
 import 'support/app.dart';
 
 /// The vault without the phone: items, state and what was asked of it.
+// A real 1x1 PNG, so the viewer can open a photo in tests.
+final _onePixelPng = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+);
+
 class FakeVault implements VaultBackend {
   FakeVault({
     this.setUpDone = true,
@@ -85,7 +90,7 @@ class FakeVault implements VaultBackend {
   @override
   Future<Uint8List> photo(String id) async {
     _check();
-    return Uint8List(0);
+    return _onePixelPng;
   }
 
   @override
@@ -139,6 +144,18 @@ class FakeVault implements VaultBackend {
   @override
   Future<void> deleteScans(List<String> ids) async =>
       scanRecords.removeWhere((s) => ids.contains(s.id));
+
+  String? textInPhoto;
+
+  /// Locks the vault while the text is being read, as leaving the app would.
+  bool lockWhileReading = false;
+
+  @override
+  Future<String?> readText(String id) async {
+    _check();
+    if (lockWhileReading) unlocked = false;
+    return textInPhoto;
+  }
 }
 
 VaultItem _item(String id, DateTime at, {bool video = false}) =>
@@ -385,6 +402,33 @@ void main() {
         ['a'],
       ]);
       expect(find.textContaining('without location, date'), findsOneWidget);
+    });
+
+    testWidgets('Copy text shows the text, but not once the vault locked', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)])
+        ..textInPhoto = 'Invoice 1234';
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('Copy text'));
+      await tester.pumpAndSettle();
+      expect(find.text('Invoice 1234'), findsOneWidget);
+      Navigator.of(tester.element(find.text('Invoice 1234'))).pop();
+      await tester.pumpAndSettle();
+
+      vault.lockWhileReading = true;
+      await tester.tap(find.byTooltip('Copy text'));
+      await tester.pumpAndSettle();
+      expect(find.text('Invoice 1234'), findsNothing);
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {
