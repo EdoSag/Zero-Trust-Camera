@@ -105,6 +105,10 @@ object VaultTransfer {
         val resolver = ctx.contentResolver
         val mime = resolver.getType(uri) ?: ""
         val takenAt = takenAt(ctx, uri) ?: System.currentTimeMillis()
+        // Only videos the export cleaner understands (MP4 and its relatives); a WebM or MKV would
+        // leave the vault with its details still in it.
+        if (mime.startsWith("video/") && mime !in IMPORT_VIDEO_TYPES) return false
+        if (!mime.startsWith("video/") && !mime.startsWith("image/")) return false
         return try {
             if (mime.startsWith("video/")) {
                 val temp = VaultStore.newTempFile(ctx, ".mp4")
@@ -124,6 +128,8 @@ object VaultTransfer {
             false
         }
     }
+
+    private val IMPORT_VIDEO_TYPES = setOf("video/mp4", "video/quicktime", "video/3gpp")
 
     private fun takenAt(ctx: Context, uri: Uri): Long? = try {
         ctx.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DATE_TAKEN), null, null, null)
