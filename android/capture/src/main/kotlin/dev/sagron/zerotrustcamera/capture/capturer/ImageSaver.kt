@@ -106,7 +106,16 @@ class ImageSaver(
             cropRect = if (ImageUtil.shouldCropImage(image)) image.cropRect else null
             val imageFormat = image.format
 
-            origJpegBytes = if (imageFormat == ImageFormat.JPEG) {
+            // ZT Camera: an Ultra HDR photo (JPEG_R) is a JPEG with a gain map after it
+            isUltraHdr = imageFormat == ImageFormat.JPEG_R
+            origJpegBytes = if (isUltraHdr) {
+                // Read as it is: the gain map sits after the main picture in the same buffer
+                val buffer = image.planes[0].buffer
+                buffer.rewind()
+                val bytes = ByteArray(buffer.remaining())
+                buffer.get(bytes)
+                withoutTrailingPadding(bytes)
+            } else if (imageFormat == ImageFormat.JPEG) {
                 withoutTrailingPadding(ImageUtil.jpegImageToJpegByteArray(image))
             } else if (imageFormat == ImageFormat.YUV_420_888) {
                 ImageUtil.yuvImageToJpegByteArray(image, cropRect, jpegQuality, 0)
@@ -161,6 +170,7 @@ class ImageSaver(
     private var origJpegBytes: ByteArray? = null
     private lateinit var processedJpegBytes: ByteArray
     private var shouldUseExifOrientation = false
+    private var isUltraHdr = false
     private var orientation = 0
 
     @Throws(ImageSaverException::class)
@@ -277,7 +287,7 @@ class ImageSaver(
 
         // ZT Camera: everything is removed, then only what the person chose to keep is put back.
         // A location is never written.
-        exifInterface.applyMetadataPolicy(metadataPolicy, captureTime)
+        exifInterface.applyMetadataPolicy(metadataPolicy, captureTime, keepXmp = isUltraHdr)
 
         val baos = ByteArrayOutputStream(origJpegBytes!!.size +
                 // make sure buffer doesn't need to be resized due to additional EXIF attributes

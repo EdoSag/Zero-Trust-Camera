@@ -183,9 +183,9 @@ private fun exifOffsetTime(offsetMillis: Int): String {
     return String.format(Locale.US, "%c%02d:%02d", sign, totalMins / 60, totalMins % 60)
 }
 
-fun ExifInterface.clearExif() {
+fun ExifInterface.clearExif(keep: Set<String> = emptySet()) {
     for (exifTag in exifAttributes) {
-        removeAttribute(exifTag)
+        if (exifTag !in keep) removeAttribute(exifTag)
     }
 }
 
@@ -263,11 +263,17 @@ data class MetadataPolicy(val keepDateTime: Boolean, val keepCameraModel: Boolea
  * Removes every EXIF attribute (orientation stays: without it the photo shows sideways), then
  * puts back only what [policy] allows.
  */
-fun ExifInterface.applyMetadataPolicy(policy: MetadataPolicy, captureTime: Date) {
+fun ExifInterface.applyMetadataPolicy(
+    policy: MetadataPolicy,
+    captureTime: Date,
+    // An Ultra HDR photo describes its gain map in XMP; without it the photo shows as plain SDR.
+    // Only for this app's own captures, where the camera wrote that XMP and nothing else.
+    keepXmp: Boolean = false,
+) {
     val make = getAttribute(ExifInterface.TAG_MAKE)
     val model = getAttribute(ExifInterface.TAG_MODEL)
 
-    clearExif()
+    clearExif(if (keepXmp) setOf(ExifInterface.TAG_XMP) else emptySet())
 
     if (policy.keepDateTime) {
         fixExif(captureTime)

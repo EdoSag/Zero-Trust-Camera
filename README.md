@@ -5,7 +5,7 @@ videos are saved without location, time or device details unless you choose
 to keep them. Same account, settings and look as the other Zero-Trust apps,
 built on [Zero-Trust-Core](https://github.com/EdoSag/Zero-Trust-Core).
 
-## What it does (0.2)
+## What it does (0.3)
 
 - **Photo and video**, with the phone's own camera extensions where it has
   them (Night, HDR, Portrait, Face retouch, Auto), zoom, tap to focus,
@@ -28,12 +28,22 @@ built on [Zero-Trust-Core](https://github.com/EdoSag/Zero-Trust-Core).
   grid, viewer, video player, favourites, albums, a trash that empties after
   30 days, import from the gallery, and save or share copies with no
   metadata. Details below.
+- **Clean and share** (new in 0.3). In every app's share sheet for photos
+  and videos: it shares copies with no place, time or phone details instead
+  of the originals, or keeps them in the Private vault. A JPEG keeps its
+  pixels exactly (only the details are cut out, along with anything hidden
+  after the picture); other pictures are redrawn; MP4, MOV and 3GP videos
+  lose their recording times and tag boxes. The originals are never changed.
+- **Ultra HDR photos** (new in 0.3, on phones that have them, Android 14 and
+  up). A switch under More settings. Off by default.
+- **60 fps video** (new in 0.3, where the camera can do it with the chosen
+  quality). A switch under More settings; when a combination can't do 60,
+  the app says so and records at 30.
 - **No account needed.** Signing in is optional and only matters for what
   comes next.
 - **English and Hebrew**, with right-to-left layout.
 
-Not in 0.2 yet: encrypted backup of the vault, Clean and share from other
-apps, the document scanner and ZT app actions for scanned codes. The plan is in the project's
+Not in 0.3 yet: encrypted backup of the vault, the document scanner and ZT app actions for scanned codes. The plan is in the project's
 `zt-camera-plan.md`.
 
 ## How it is built
@@ -72,9 +82,11 @@ Two parts in one APK:
   three sealed files (media, thumbnail, details) under `noBackupFilesDir`,
   plus one sealed file for albums, favourites and the trash. The JVM tests
   pin the format with a fixed vector.
-- **Leaving the vault.** Save to gallery and Share make a cleaned copy: a JPEG
-  loses all Exif, other pictures are redrawn as JPEG, a video has its times
-  cleared. Shared copies sit in the app's cache and are wiped on the next
+- **Leaving the vault.** Save to gallery and Share make a cleaned copy
+  (`zt/MediaCleaner.kt`): a JPEG loses every APP1 to APP15 segment, comments
+  and trailing data but keeps its orientation, other pictures are redrawn, a
+  video has its times and tag boxes cleared. An Ultra HDR photo leaves as a
+  plain photo, since its HDR part lives in the details that are cut out. Shared copies sit in the app's cache and are wiped on the next
   unlock. Imported originals stay in the gallery (Android's photo picker can't
   delete them), and the app says so.
 

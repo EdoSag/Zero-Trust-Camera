@@ -261,4 +261,20 @@
     <string name="vault_mode_on">New photos and videos go to the Private vault</string>
     <string name="vault_unlock_phone_first">Unlock your phone to see the Private vault</string>
     <string name="vault_video_failed">This video can\'t be played</string>
+    <!-- ZT Camera: picture and video options -->
+    <string name="ultra_hdr_title">Ultra HDR photos</string>
+    <string name="ultra_hdr_subtitle">Brighter highlights on screens that can show them. Photo mode only</string>
+    <string name="video_60fps_title">60 frames a second</string>
+    <string name="video_60fps_subtitle">Smoother video, larger files</string>
+    <string name="fps60_unsupported">This camera can\'t record at 60 frames a second with these settings</string>
+    <!-- ZT Camera: Clean and share (from the share sheet of other apps) -->
+    <string name="clean_share_label">Clean and share</string>
+    <string name="clean_share_title">Remove the details first?</string>
+    <string name="clean_share_message">Location, date, time and phone details are taken out of a copy. The original stays as it is.</string>
+    <string name="clean_share_send">Share the clean copy</string>
+    <string name="clean_share_to_vault">Keep in Private vault</string>
+    <string name="clean_share_working">Cleaning…</string>
+    <string name="clean_share_none">Nothing here could be cleaned. Photos and MP4 videos can.</string>
+    <string name="clean_share_skipped">%1$d couldn\'t be cleaned and were left out</string>
+    <string name="clean_share_added_to_vault">Added to the Private vault</string>
 </resources>

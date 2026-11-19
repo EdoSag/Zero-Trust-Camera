@@ -15,6 +15,15 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 
+    <!-- Clean and share: only its dialog shows, over the app that shared. -->
+    <style name="Theme.CleanShare" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@null</item>
+    </style>
+
     <style name="Theme.SettingsDialog" parent="ThemeOverlay.Material3.MaterialAlertDialog.Centered">
         <item name="android:windowMinWidthMinor">100%</item>
         <item name="android:windowMinWidthMajor">100%</item>

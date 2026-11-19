@@ -41,6 +41,18 @@ Licences.
   the viewfinder no longer shows the gallery's last photo. More settings has a
   Private vault switch, and the first start asks gallery or vault.
 
+- **Clean and share** (`zt/CleanShareActivity.kt`, `zt/MediaCleaner.kt`,
+  `zt/JpegMetadataStripper.java`, `zt/Mp4MetadataStripper.java`): a share
+  target for image/* and video/*. JPEGs are walked segment by segment, other
+  pictures are redrawn, videos are scrubbed and their `udta`, `meta` and
+  `uuid` boxes become `free` boxes of zeros (offsets stay valid).
+- **Ultra HDR** (`CamConfig.ultraHdr`, `ImageSaver`): photo mode without an
+  extension uses `OUTPUT_FORMAT_JPEG_ULTRA_HDR` when the switch is on; the
+  saved file keeps its XMP (the gain map description) and nothing else.
+- **60 fps** (`CamConfig.video60fps`): asks CameraX for
+  `GroupableFeature.FPS_60` as a preferred feature next to stabilization, so
+  an unsupported combination falls back instead of failing.
+
 Everything added for Zero-Trust lives under `zt/`, to keep upstream files as
 close to the original as possible.
 
@@ -60,4 +72,5 @@ close to the original as possible.
 `./gradlew :capture:testDebugUnitTest` from `android/` runs the JVM tests,
 including `MediaVaultTest` (sealing round trips at every chunk boundary, any
 changed byte, cut, dropped or swapped chunks, ranged reads, the RFC 7748
-X25519 vector and a fixed vector for the file format).
+X25519 vector and a fixed vector for the file format), `JpegMetadataStripperTest`,
+`Mp4MetadataStripperTest` and `Mp4TimeScrubberTest`.

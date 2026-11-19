@@ -178,6 +178,23 @@
             android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
             android:exported="false"/>
 
+        <!-- ZT Camera: "Clean and share" in every app's share sheet for photos and videos -->
+        <activity
+            android:name=".zt.CleanShareActivity"
+            android:label="@string/clean_share_label"
+            android:theme="@style/Theme.CleanShare"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".ui.activities.InAppGallery"
             android:theme="@style/Theme.Viewer"
