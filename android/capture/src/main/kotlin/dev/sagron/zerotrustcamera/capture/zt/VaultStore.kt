@@ -28,6 +28,7 @@ import org.json.JSONObject
  * so a crash never leaves half an item.
  */
 object VaultStore {
+    const val MIME_DNG = "image/x-adobe-dng"
     private const val TAG = "VaultStore"
     const val TYPE_PHOTO = "photo"
     const val TYPE_VIDEO = "video"
@@ -78,6 +79,31 @@ object VaultStore {
         thumb?.let { writeSealed(file(ctx, id, "thumb"), pub, ByteArrayInputStream(it.first)) }
         writeSealed(file(ctx, id, "meta"), pub, ByteArrayInputStream(meta.toString().toByteArray()))
         return id to thumb?.let { BitmapHolder.decode(it.first) }
+    }
+
+    /**
+     * Seals a RAW photo (DNG) from the pro camera, with the thumbnail and size taken from the JPEG
+     * shot alongside it, and wipes the plain DNG file. Returns the item id.
+     */
+    fun saveRaw(ctx: Context, pub: ByteArray, dng: File, jpeg: ByteArray, takenAt: Long): String {
+        try {
+            val id = newId()
+            val thumb = photoThumbnail(jpeg)
+            val meta = JSONObject()
+                .put("v", 1)
+                .put("type", TYPE_PHOTO)
+                .put("mime", MIME_DNG)
+                .put("takenAt", takenAt)
+                .put("size", dng.length())
+                .put("imported", false)
+            thumb?.let { meta.put("width", it.second.first).put("height", it.second.second) }
+            FileInputStream(dng).use { writeSealed(file(ctx, id, "media"), pub, it) }
+            thumb?.let { writeSealed(file(ctx, id, "thumb"), pub, ByteArrayInputStream(it.first)) }
+            writeSealed(file(ctx, id, "meta"), pub, ByteArrayInputStream(meta.toString().toByteArray()))
+            return id
+        } finally {
+            wipe(dng)
+        }
     }
 
     /**

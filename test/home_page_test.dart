@@ -92,4 +92,26 @@ void main() {
     );
     expect(container.read(ztLanguageProvider), ZtLanguages.hebrew);
   });
+
+  testWidgets('the scanner and the pro camera open from their own rows', (
+    tester,
+  ) async {
+    _phone(tester);
+    await tester.pumpWidget(app(const HomePage()));
+    await tester.pumpAndSettle();
+
+    final scan = tester.getTopLeft(find.text('Scan a document')).dy;
+    final pro = tester.getTopLeft(find.text('Pro camera')).dy;
+    expect(pro, greaterThan(scan));
+    expect(tester.getTopLeft(find.text('Location')).dy, greaterThan(pro));
+
+    await tester.tap(find.text('Pro camera'));
+    await tester.pumpAndSettle();
+    expect(bridge.proCamera, 1);
+    expect(bridge.docScanner, 0);
+
+    await tester.tap(find.text('Scan a document'));
+    await tester.pumpAndSettle();
+    expect(bridge.docScanner, 1);
+  });
 }

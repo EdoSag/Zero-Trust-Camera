@@ -356,4 +356,21 @@
     <string name="edit_discard_title">לבטל את השינויים?</string>
     <string name="edit_discard">ביטול השינויים</string>
     <string name="clean_share_edit">עריכה קודם</string>
+    <!-- Pro camera -->
+    <string name="pro_shortcut">מצלמה מקצועית</string>
+    <string name="pro_take">צילום</string>
+    <string name="pro_auto">אוטומטי</string>
+    <string name="pro_iso_auto">ISO אוטומטי</string>
+    <string name="pro_shutter_auto">תריס אוטומטי</string>
+    <string name="pro_focus_auto">מיקוד אוטומטי</string>
+    <string name="pro_wb_auto">תאורה: אוטומטי</string>
+    <string name="pro_wb_daylight">אור יום</string>
+    <string name="pro_wb_cloudy">מעונן</string>
+    <string name="pro_wb_indoor">נורות בבית</string>
+    <string name="pro_wb_fluorescent">פלורסנט</string>
+    <string name="pro_raw_off">RAW כבוי</string>
+    <string name="pro_raw_on">RAW פעיל</string>
+    <string name="pro_saved">נשמר בגלריה</string>
+    <string name="pro_saved_vault">נשמר בכספת הפרטית</string>
+    <string name="pro_failed">לא ניתן לצלם</string>
 </resources>

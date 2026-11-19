@@ -266,6 +266,13 @@ class AppL10nEn extends AppL10n {
       'Straight, clean pages as a PDF, with the text read on your phone';
 
   @override
+  String get homeProCamera => 'Pro camera';
+
+  @override
+  String get homeProCameraSubtitle =>
+      'ISO, shutter speed, focus and white balance by hand, and RAW photos';
+
+  @override
   String get vaultCopyText => 'Copy text';
 
   @override

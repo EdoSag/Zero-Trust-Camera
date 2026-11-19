@@ -97,7 +97,29 @@ class VaultChannel(
                 }
             }
             "thumb" -> unlocked(result) { priv -> VaultStore.thumb(ctx, call.argument<String>("id")!!, priv) }
-            "photo" -> unlocked(result) { priv -> VaultStore.media(ctx, call.argument<String>("id")!!, priv) }
+            "photo" -> unlocked(result) { priv ->
+                val id = call.argument<String>("id")!!
+                val bytes = VaultStore.media(ctx, id, priv)
+                if (VaultStore.meta(ctx, id, priv).optString("mime") != VaultStore.MIME_DNG) bytes else {
+                    // RAW photos are shown as a JPEG drawn here; Flutter can't read DNG.
+                    val bmp = android.graphics.ImageDecoder.decodeBitmap(
+                        android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+                    ) { d, info, _ ->
+                        d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        val long = maxOf(info.size.width, info.size.height)
+                        if (long > 4096) {
+                            val f = 4096f / long
+                            d.setTargetSize((info.size.width * f).toInt(), (info.size.height * f).toInt())
+                        }
+                    }
+                    bytes.fill(0)
+                    java.io.ByteArrayOutputStream().use { out ->
+                        bmp.compress(android.graphics.Bitmap.CompressFormat.JPEG, 92, out)
+                        bmp.recycle()
+                        out.toByteArray()
+                    }
+                }
+            }
             "readText" -> unlocked(result) { priv ->
                 val bytes = VaultStore.media(ctx, call.argument<String>("id")!!, priv)
                 val bmp = android.graphics.ImageDecoder.decodeBitmap(

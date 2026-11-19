@@ -264,6 +264,13 @@ class AppL10nHe extends AppL10n {
       'דפים ישרים ונקיים כ-PDF, והטקסט נקרא בטלפון עצמו';
 
   @override
+  String get homeProCamera => 'מצלמה מקצועית';
+
+  @override
+  String get homeProCameraSubtitle =>
+      'ISO, מהירות תריס, מיקוד ואיזון לבן ידניים, וצילומי RAW';
+
+  @override
   String get vaultCopyText => 'העתקת טקסט';
 
   @override
