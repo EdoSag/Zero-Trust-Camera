@@ -54,6 +54,8 @@ import androidx.activity.result.contract.ActivityResultContracts.RequestMultiple
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
+import dev.sagron.zerotrustcamera.capture.zt.PrivateVaultSetup
+import dev.sagron.zerotrustcamera.capture.zt.ZtApp
 import dev.sagron.zerotrustcamera.capture.zt.ZtBaseActivity
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.MeteringPointFactory
@@ -565,8 +567,22 @@ open class MainActivity : ZtBaseActivity(),
         return duration != 0f && transition != 0f
     }
 
+    // ZT Camera: true when new captures are sealed into the Private vault
+    private val savesToVault: Boolean
+        get() = camConfig.vaultKeyForCapture() != null
+
     private fun openGallery() {
         check(this !is CaptureActivity)
+
+        if (savesToVault) {
+            if (this is SecureActivity) {
+                // The vault opens only with the phone unlocked
+                showMessage(R.string.vault_unlock_phone_first)
+            } else {
+                ZtApp.openVault(this)
+            }
+            return
+        }
 
         Intent(this, InAppGallery::class.java).let {
             if (this is SecureMainActivity) {
@@ -723,6 +739,14 @@ open class MainActivity : ZtBaseActivity(),
         }
 
         updateThumbnail()
+
+        // ZT Camera: asked once, gallery or Private vault. Not over the lock screen, not for a
+        // photo or video another app asked for, and not on top of the camera permission prompt.
+        if (this !is SecureActivity && this !is VideoCaptureActivity && !camConfig.isInCaptureMode
+            && !camConfig.savePlaceChosen && !savePlaceAsked && hasCameraPermission()) {
+            savePlaceAsked = true
+            PrivateVaultSetup.askWhereToSave(this, camConfig)
+        }
 
         if (camConfig.requireLocation) {
             requestLocation()
@@ -892,6 +916,9 @@ open class MainActivity : ZtBaseActivity(),
         thirdCircle.setOnLongClickListener {
             if (videoCapturer.isRecording) {
                 imageCapturer.takePicture()
+            } else if (savesToVault) {
+                // Sharing from the vault happens inside it, after an unlock
+                openGallery()
             } else {
                 shareLatestMedia()
 
@@ -2013,7 +2040,16 @@ open class MainActivity : ZtBaseActivity(),
         thumbnailItem = if (bitmap != null) item else null
     }
 
+    private var savePlaceAsked = false
+
     fun updateThumbnail() {
+        // In Private mode the gallery's last photo isn't shown. Only what was just sealed into the
+        // vault is, until the camera is left.
+        if (savesToVault) {
+            if (thumbnailItem != null) showThumbnail(null, null)
+            return
+        }
+
         val item = camConfig.lastCapturedItem
         val preview = imagePreview
         isThumbnailLoaded = false

@@ -63,6 +63,7 @@ import dev.sagron.zerotrustcamera.capture.ui.activities.MoreSettings
 import dev.sagron.zerotrustcamera.capture.ui.activities.SecureActivity
 import dev.sagron.zerotrustcamera.capture.ui.activities.SecureMainActivity
 import dev.sagron.zerotrustcamera.capture.ui.activities.VideoCaptureActivity
+import dev.sagron.zerotrustcamera.capture.zt.VaultKeys
 import dev.sagron.zerotrustcamera.capture.ui.activities.VideoOnlyActivity
 import dev.sagron.zerotrustcamera.capture.ui.showIgnoringShortEdgeMode
 import dev.sagron.zerotrustcamera.capture.util.edit
@@ -126,6 +127,10 @@ class CamConfig(private val mActivity: MainActivity) {
             // ZT Camera: what a saved photo or video may still say about itself
             const val KEEP_DATE_TIME = "zt_keep_date_time"
             const val KEEP_CAMERA_MODEL = "zt_keep_camera_model"
+            // ZT Camera: new captures go into the encrypted Private vault, and whether the person
+            // has been asked where they should go
+            const val PRIVATE_VAULT = "zt_private_vault"
+            const val SAVE_PLACE_CHOSEN = "zt_save_place_chosen"
 
             const val GYROSCOPE_SUGGESTIONS = "gyroscope_suggestions"
 
@@ -214,6 +219,17 @@ class CamConfig(private val mActivity: MainActivity) {
         val DEFAULT_CAMERA_MODE = CameraMode.CAMERA
 
         const val COMMON_SHARED_PREFS_NAME = "commons"
+
+        // ZT Camera: the Private mode switch, for the vault screens (outside any camera screen)
+        fun isPrivateVaultOn(ctx: Context): Boolean =
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(SettingValues.Key.PRIVATE_VAULT, false)
+
+        fun setPrivateVaultOn(ctx: Context, on: Boolean) {
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putBoolean(SettingValues.Key.PRIVATE_VAULT, on)
+                .putBoolean(SettingValues.Key.SAVE_PLACE_CHOSEN, true).apply()
+        }
 
         val FRONT_CAMERA_SELECTOR = CameraSelector.Builder()
             .requireLensFacing(CameraSelector.LENS_FACING_FRONT)
@@ -657,6 +673,24 @@ class CamConfig(private val mActivity: MainActivity) {
         set(value) {
             commonPref.edit().putBoolean(SettingValues.Key.KEEP_CAMERA_MODEL, value).apply()
         }
+
+    // ZT Camera: new photos and videos are sealed into the Private vault instead of the gallery.
+    // Only when the vault is set up; never for a photo or video taken for another app.
+    var privateVault: Boolean
+        get() = commonPref.getBoolean(SettingValues.Key.PRIVATE_VAULT, false)
+        set(value) {
+            commonPref.edit().putBoolean(SettingValues.Key.PRIVATE_VAULT, value)
+                .putBoolean(SettingValues.Key.SAVE_PLACE_CHOSEN, true).apply()
+        }
+
+    val savePlaceChosen: Boolean
+        get() = commonPref.getBoolean(SettingValues.Key.SAVE_PLACE_CHOSEN, false)
+
+    /** The key a new capture is sealed to, or null when it goes to the gallery. */
+    fun vaultKeyForCapture(): ByteArray? =
+        if (privateVault && !isInCaptureMode && mActivity !is VideoCaptureActivity)
+            VaultKeys.publicKey(mActivity)
+        else null
 
     var gSuggestions: Boolean
         get() {

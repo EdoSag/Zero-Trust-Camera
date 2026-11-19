@@ -124,7 +124,7 @@ abstract class AppL10n {
   /// No description provided for @accountOptional.
   ///
   /// In en, this message translates to:
-  /// **'Optional: the camera works without one. An account will be needed for the private vault and encrypted backup, which come in a later version.'**
+  /// **'Optional: the camera and the Private vault work without one. An account will be needed for encrypted backup, which comes in a later version.'**
   String get accountOptional;
 
   /// No description provided for @accountManage.
@@ -186,6 +186,276 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'The camera screens started from GrapheneOS Camera (MIT licence). ZT Camera is not made or endorsed by GrapheneOS.'**
   String get cameraScreensLicence;
+
+  /// No description provided for @homeVault.
+  ///
+  /// In en, this message translates to:
+  /// **'Private vault'**
+  String get homeVault;
+
+  /// No description provided for @homeVaultSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted photos and videos, only in this app'**
+  String get homeVaultSubtitle;
+
+  /// No description provided for @vaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private vault'**
+  String get vaultTitle;
+
+  /// No description provided for @vaultLocked.
+  ///
+  /// In en, this message translates to:
+  /// **'The vault is locked'**
+  String get vaultLocked;
+
+  /// No description provided for @vaultLockedBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos and videos here are encrypted. Open them with your fingerprint, face or screen lock.'**
+  String get vaultLockedBody;
+
+  /// No description provided for @vaultUnlock.
+  ///
+  /// In en, this message translates to:
+  /// **'Unlock'**
+  String get vaultUnlock;
+
+  /// No description provided for @vaultLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock'**
+  String get vaultLock;
+
+  /// No description provided for @vaultSetUpTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep photos in a Private vault'**
+  String get vaultSetUpTitle;
+
+  /// No description provided for @vaultSetUpBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New photos and videos are encrypted on this phone and open only here, after your fingerprint, face or screen lock. The gallery and other apps never see them. No account is needed.\n\nIf you remove your phone\'s screen lock, the vault can\'t be opened again.'**
+  String get vaultSetUpBody;
+
+  /// No description provided for @vaultSetUp.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up the vault'**
+  String get vaultSetUp;
+
+  /// No description provided for @vaultNeedsScreenLock.
+  ///
+  /// In en, this message translates to:
+  /// **'Set a screen lock on your phone first. The vault opens with it.'**
+  String get vaultNeedsScreenLock;
+
+  /// No description provided for @vaultKeyLost.
+  ///
+  /// In en, this message translates to:
+  /// **'The vault\'s key is gone because the phone\'s screen lock was removed, so its photos can\'t be opened.'**
+  String get vaultKeyLost;
+
+  /// No description provided for @vaultFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t work. Try again.'**
+  String get vaultFailed;
+
+  /// No description provided for @vaultAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All'**
+  String get vaultAll;
+
+  /// No description provided for @vaultFavourites.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourites'**
+  String get vaultFavourites;
+
+  /// No description provided for @vaultAlbums.
+  ///
+  /// In en, this message translates to:
+  /// **'Albums'**
+  String get vaultAlbums;
+
+  /// No description provided for @vaultTrash.
+  ///
+  /// In en, this message translates to:
+  /// **'Trash'**
+  String get vaultTrash;
+
+  /// No description provided for @vaultEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing here yet. Photos and videos you take in Private mode, and ones you import, show up here.'**
+  String get vaultEmpty;
+
+  /// No description provided for @vaultTrashEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'The trash is empty'**
+  String get vaultTrashEmpty;
+
+  /// No description provided for @vaultTrashNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Items in the trash are deleted for good after 30 days.'**
+  String get vaultTrashNote;
+
+  /// No description provided for @vaultImport.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from gallery'**
+  String get vaultImport;
+
+  /// No description provided for @vaultImported.
+  ///
+  /// In en, this message translates to:
+  /// **'Added {count}. The originals are still in your gallery: delete them there if you want them gone.'**
+  String vaultImported(int count);
+
+  /// No description provided for @vaultPrivateMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Private mode for new photos'**
+  String get vaultPrivateMode;
+
+  /// No description provided for @vaultPrivateModeOn.
+  ///
+  /// In en, this message translates to:
+  /// **'New photos and videos go here'**
+  String get vaultPrivateModeOn;
+
+  /// No description provided for @vaultPrivateModeOff.
+  ///
+  /// In en, this message translates to:
+  /// **'New photos and videos go to the gallery'**
+  String get vaultPrivateModeOff;
+
+  /// No description provided for @vaultFavourite.
+  ///
+  /// In en, this message translates to:
+  /// **'Favourite'**
+  String get vaultFavourite;
+
+  /// No description provided for @vaultAddToAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to album'**
+  String get vaultAddToAlbum;
+
+  /// No description provided for @vaultNewAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'New album'**
+  String get vaultNewAlbum;
+
+  /// No description provided for @vaultAlbumName.
+  ///
+  /// In en, this message translates to:
+  /// **'Album name'**
+  String get vaultAlbumName;
+
+  /// No description provided for @vaultCreate.
+  ///
+  /// In en, this message translates to:
+  /// **'Create'**
+  String get vaultCreate;
+
+  /// No description provided for @vaultCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get vaultCancel;
+
+  /// No description provided for @vaultDelete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get vaultDelete;
+
+  /// No description provided for @vaultSaveToGallery.
+  ///
+  /// In en, this message translates to:
+  /// **'Save to gallery'**
+  String get vaultSaveToGallery;
+
+  /// No description provided for @vaultSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved {count} to the gallery, without location, date or phone details'**
+  String vaultSaved(int count);
+
+  /// No description provided for @vaultShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Share without details'**
+  String get vaultShare;
+
+  /// No description provided for @vaultMoveToTrash.
+  ///
+  /// In en, this message translates to:
+  /// **'Move to trash'**
+  String get vaultMoveToTrash;
+
+  /// No description provided for @vaultRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore'**
+  String get vaultRestore;
+
+  /// No description provided for @vaultDeleteForever.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete for good'**
+  String get vaultDeleteForever;
+
+  /// No description provided for @vaultDeleteForeverConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete {count, plural, =1{this item} other{{count} items}} for good? This can\'t be undone.'**
+  String vaultDeleteForeverConfirm(int count);
+
+  /// No description provided for @vaultSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} selected'**
+  String vaultSelected(int count);
+
+  /// No description provided for @vaultRemoveFromAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from album'**
+  String get vaultRemoveFromAlbum;
+
+  /// No description provided for @vaultDeleteAlbum.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete album'**
+  String get vaultDeleteAlbum;
+
+  /// No description provided for @vaultAlbumCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item} other{{count} items}}'**
+  String vaultAlbumCount(int count);
+
+  /// No description provided for @vaultNoAlbums.
+  ///
+  /// In en, this message translates to:
+  /// **'No albums yet'**
+  String get vaultNoAlbums;
+
+  /// No description provided for @vaultPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get vaultPlay;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

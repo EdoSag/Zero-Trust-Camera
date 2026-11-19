@@ -171,6 +171,13 @@
             android:excludeFromRecents="true"
             android:exported="false"/>
 
+        <!-- ZT Camera: plays a video from the Private vault without opening it to storage -->
+        <activity
+            android:name=".zt.VaultVideoActivity"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"/>
+
         <activity
             android:name=".ui.activities.InAppGallery"
             android:theme="@style/Theme.Viewer"

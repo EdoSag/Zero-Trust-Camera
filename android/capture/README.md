@@ -32,6 +32,15 @@ Licences.
   language picked in the Flutter settings. Hebrew strings were added
   (`res/values-iw`).
 
+- **Private vault** (`zt/MediaVault.java`, `zt/VaultKeys.kt`,
+  `zt/VaultStore.kt`, `zt/VaultTransfer.kt`, `zt/VaultVideoActivity.kt`,
+  `zt/PrivateVaultSetup.kt`): in Private mode `ImageSaver` seals the finished
+  JPEG instead of writing it to MediaStore, and `VideoCapturer` records into a
+  file inside the app that is sealed and wiped when recording stops. The
+  gallery button opens the vault (Flutter) instead of the in-app gallery, and
+  the viewfinder no longer shows the gallery's last photo. More settings has a
+  Private vault switch, and the first start asks gallery or vault.
+
 Everything added for Zero-Trust lives under `zt/`, to keep upstream files as
 close to the original as possible.
 
@@ -48,4 +57,7 @@ close to the original as possible.
 
 ## Tests
 
-`./gradlew :capture:testDebugUnitTest` from `android/` runs the JVM tests.
+`./gradlew :capture:testDebugUnitTest` from `android/` runs the JVM tests,
+including `MediaVaultTest` (sealing round trips at every chunk boundary, any
+changed byte, cut, dropped or swapped chunks, ranged reads, the RFC 7748
+X25519 vector and a fixed vector for the file format).

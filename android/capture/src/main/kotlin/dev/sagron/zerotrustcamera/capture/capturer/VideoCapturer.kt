@@ -50,6 +50,8 @@ import dev.sagron.zerotrustcamera.capture.util.removePendingFlagFromUri
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import dev.sagron.zerotrustcamera.capture.zt.VaultStore
+import java.io.File
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 
@@ -112,6 +114,10 @@ class VideoCapturer(private val mActivity: MainActivity) {
         val fileDescriptor: ParcelFileDescriptor,
         val shouldAddToGallery: Boolean,
         val isPendingMediaStoreUri: Boolean,
+        // ZT Camera, Private mode: the recording goes to this file inside the app, and is sealed
+        // to vaultKey and wiped as soon as it stops. It never reaches the gallery.
+        val vaultTemp: File? = null,
+        val vaultKey: ByteArray? = null,
     ) {
         var isFinalized = false
 
@@ -127,7 +133,17 @@ class VideoCapturer(private val mActivity: MainActivity) {
         fileName: String,
         foreignUri: Uri?,
         storageLocation: String,
+        vaultKey: ByteArray?,
     ): RecordingContext? {
+        if (vaultKey != null && foreignUri == null) {
+            val temp = VaultStore.newTempFile(mActivity, videoFileFormat)
+            val pfd = ParcelFileDescriptor.open(temp,
+                ParcelFileDescriptor.MODE_READ_WRITE or ParcelFileDescriptor.MODE_CREATE or
+                        ParcelFileDescriptor.MODE_TRUNCATE)
+            return RecordingContext(Uri.fromFile(temp), pfd, shouldAddToGallery = false,
+                isPendingMediaStoreUri = false, vaultTemp = temp, vaultKey = vaultKey)
+        }
+
         val mimeType =
             MimeTypeMap.getSingleton().getMimeTypeFromExtension(videoFileFormat) ?: "video/mp4"
 
@@ -211,6 +227,8 @@ class VideoCapturer(private val mActivity: MainActivity) {
             null
         }
         val storageLocation = camConfig.storageLocation
+        val vaultKey = if (foreignUri == null) camConfig.vaultKeyForCapture() else null
+        val startedAt = System.currentTimeMillis()
 
         beforeRecordingStarts()
 
@@ -229,7 +247,7 @@ class VideoCapturer(private val mActivity: MainActivity) {
 
         outputExecutor.execute {
             val recordingCtx = try {
-                createRecordingContext(fileName, foreignUri, storageLocation)
+                createRecordingContext(fileName, foreignUri, storageLocation, vaultKey)
             } catch (e: Exception) {
                 e.printStackTrace()
                 null
@@ -250,7 +268,7 @@ class VideoCapturer(private val mActivity: MainActivity) {
 
                 if (recordingCtx == null || pendingRecording == null) {
                     recordingCtx?.let { abandonOutput(it) }
-                    if (foreignUri == null) {
+                    if (foreignUri == null && vaultKey == null) {
                         camConfig.onStorageLocationNotFound()
                     }
                     ctx.showMessage(R.string.unable_to_access_output_file)
@@ -274,7 +292,7 @@ class VideoCapturer(private val mActivity: MainActivity) {
                     cancelDeferredStart = null
 
                     recording = pendingRecording.start(ctx.mainExecutor) { event ->
-                        onRecordEvent(event, recordingCtx, dateString)
+                        onRecordEvent(event, recordingCtx, dateString, startedAt)
                     }
 
                     // The Recording didn't exist yet when the mute/pause setters ran.
@@ -290,7 +308,12 @@ class VideoCapturer(private val mActivity: MainActivity) {
         }
     }
 
-    private fun onRecordEvent(event: VideoRecordEvent, recordingCtx: RecordingContext, dateString: String) {
+    private fun onRecordEvent(
+        event: VideoRecordEvent,
+        recordingCtx: RecordingContext,
+        dateString: String,
+        startedAt: Long,
+    ) {
         val ctx = mActivity
 
         if (event is VideoRecordEvent.Start) {
@@ -323,7 +346,7 @@ class VideoCapturer(private val mActivity: MainActivity) {
                         // does. A muxer that runs out of storage still writes the index into the
                         // room it kept for it, and an encoder that dies leaves the muxer to stop
                         // normally, so what was recorded up to then often plays.
-                        saveOutput(recordingCtx, dateString, failedWithError = event.error)
+                        saveOutput(recordingCtx, dateString, startedAt, failedWithError = event.error)
                         return
                     }
                     else -> {
@@ -339,7 +362,7 @@ class VideoCapturer(private val mActivity: MainActivity) {
                 }
             }
 
-            saveOutput(recordingCtx, dateString)
+            saveOutput(recordingCtx, dateString, startedAt)
         }
     }
 
@@ -381,6 +404,7 @@ class VideoCapturer(private val mActivity: MainActivity) {
     private fun saveOutput(
         recordingCtx: RecordingContext,
         dateString: String,
+        startedAt: Long,
         failedWithError: Int? = null,
     ) {
         // Off the main thread for the same reason the output is created there
@@ -403,6 +427,25 @@ class VideoCapturer(private val mActivity: MainActivity) {
             val forOtherApp = mActivity is VideoCaptureActivity
             val timeCleared =
                 !(forOtherApp || !camConfig.keepDateTime) || clearRecordingDate(recordingCtx.uri)
+
+            val vaultTemp = recordingCtx.vaultTemp
+            if (vaultTemp != null) {
+                val sealed = VaultStore.saveVideo(mActivity, recordingCtx.vaultKey!!, vaultTemp, startedAt)
+                handler.post {
+                    if (sealed == null) {
+                        mActivity.showMessage(R.string.unable_to_save_video)
+                        return@post
+                    }
+                    failedWithError?.let {
+                        mActivity.showMessage(mActivity.getString(R.string.error_during_recording, it))
+                    }
+                    if (!timeCleared) {
+                        mActivity.showMessage(R.string.video_time_not_cleared)
+                    }
+                    mActivity.showThumbnail(null, sealed.second)
+                }
+                return@execute
+            }
 
             if (!timeCleared && forOtherApp) {
                 // The other app was promised a file with no recording time, and its file can't
@@ -667,6 +710,11 @@ class VideoCapturer(private val mActivity: MainActivity) {
     }
 
     private fun discardUnusedOutput(recordingCtx: RecordingContext) {
+        recordingCtx.vaultTemp?.let {
+            VaultStore.wipe(it)
+            return
+        }
+
         if (!recordingCtx.shouldAddToGallery) {
             return
         }

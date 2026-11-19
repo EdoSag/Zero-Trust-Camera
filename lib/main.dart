@@ -14,9 +14,11 @@ import 'app/camera_bridge.dart';
 import 'app/camera_config.dart';
 import 'app/email_links.dart';
 import 'l10n/l10n.dart';
+import 'private_vault/vault_page.dart';
 import 'ui/home_page.dart';
 
-/// The Flutter half of ZT Camera: account, language, appearance and about.
+/// The Flutter half of ZT Camera: the Private vault, and account, language,
+/// appearance and about.
 /// The camera itself (viewfinder, shutter, gallery, camera settings) is
 /// native Android code in `android/capture`, and is what the launcher opens;
 /// these screens open from its settings.
@@ -54,17 +56,47 @@ class ZeroTrustCameraApp extends ConsumerStatefulWidget {
   ConsumerState<ZeroTrustCameraApp> createState() => _ZeroTrustCameraAppState();
 }
 
-class _ZeroTrustCameraAppState extends ConsumerState<ZeroTrustCameraApp> {
+class _ZeroTrustCameraAppState extends ConsumerState<ZeroTrustCameraApp>
+    with WidgetsBindingObserver {
   final _navigator = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    // The camera's gallery button opens these screens on the Private vault.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _showRequestedScreen());
     // The camera screens follow the language picked here: now, and (in
     // build) every time it changes.
     ref
         .read(cameraBridgeProvider)
         .setLanguage(ref.read(ztLanguageProvider)?.languageCode);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _showRequestedScreen();
+  }
+
+  Future<void> _showRequestedScreen() async {
+    final screen = await ref.read(cameraBridgeProvider).takeScreen();
+    if (screen != 'vault') return;
+    final nav = _navigator.currentState;
+    if (nav == null) return;
+    var onVault = false;
+    nav.popUntil((Route<dynamic> r) {
+      onVault = r.settings.name == PrivateVaultPage.routeName;
+      return onVault || r.isFirst;
+    });
+    if (!onVault) {
+      unawaited(nav.push(PrivateVaultPage.route(fromCamera: true)));
+    }
   }
 
   @override

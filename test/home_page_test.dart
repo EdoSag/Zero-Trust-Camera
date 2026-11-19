@@ -25,7 +25,10 @@ void main() {
     expect(find.text('Zero-Trust Camera'), findsOneWidget);
     // The account is offered, not demanded.
     expect(find.text('Sign in or create an account'), findsOneWidget);
-    expect(find.textContaining('the camera works without one'), findsOneWidget);
+    expect(
+      find.textContaining('Private vault work without one'),
+      findsOneWidget,
+    );
 
     // Location first, and never; the two choices are off unless turned on.
     final location = tester.getTopLeft(find.text('Location')).dy;

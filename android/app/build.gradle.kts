@@ -80,4 +80,7 @@ flutter {
 dependencies {
     // The native camera screens: viewfinder, shutter, gallery, camera settings.
     implementation(project(":capture"))
+    // The Private vault's photo picker (VaultChannel) and share file provider.
+    implementation("androidx.activity:activity:1.9.3")
+    implementation("androidx.core:core-ktx:1.19.1")
 }

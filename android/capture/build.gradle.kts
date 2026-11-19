@@ -52,5 +52,11 @@ dependencies {
     // QR and barcode decoding, on the phone.
     implementation("com.google.zxing:core:3.5.4")
 
+    // ZT Camera Private vault: X25519 and HKDF in plain Java (Android's own X25519 needs
+    // Android 13), and the fingerprint, face or screen lock prompt that opens the vault.
+    implementation("com.google.crypto.tink:tink-android:1.18.0")
+    implementation("androidx.biometric:biometric:1.1.0")
+
     testImplementation("junit:junit:4.13.2")
+    testImplementation("com.google.crypto.tink:tink:1.18.0")
 }

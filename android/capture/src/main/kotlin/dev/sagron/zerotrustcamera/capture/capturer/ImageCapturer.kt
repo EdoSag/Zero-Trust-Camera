@@ -109,6 +109,7 @@ class ImageCapturer(val mActivity: MainActivity) {
             // A photo taken for another app (capture mode) keeps nothing
             if (camConfig.isInCaptureMode) MetadataPolicy.NOTHING
             else MetadataPolicy(camConfig.keepDateTime, camConfig.keepCameraModel),
+            vaultKey = camConfig.vaultKeyForCapture(),
             targetThumbnailWidth = preview.width,
             targetThumbnailHeight = preview.height,
         )
@@ -184,6 +185,13 @@ class ImageCapturer(val mActivity: MainActivity) {
         if (mActivity is SecureMainActivity) {
             mActivity.capturedItems.add(item)
         }
+    }
+
+    // A photo sealed into the Private vault: no gallery item, only its thumbnail on the
+    // viewfinder until the camera is left.
+    fun onVaultPhotoSaved(thumbnail: Bitmap?) {
+        mActivity.previewLoader.visibility = View.GONE
+        mActivity.showThumbnail(null, thumbnail)
     }
 
     fun onStorageLocationNotFound() {

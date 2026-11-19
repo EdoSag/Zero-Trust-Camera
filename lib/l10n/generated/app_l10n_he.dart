@@ -23,7 +23,7 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get accountOptional =>
-      'לא חובה: המצלמה עובדת גם בלי חשבון. חשבון יידרש לכספת הפרטית ולגיבוי המוצפן, שיגיעו בגרסה מאוחרת יותר.';
+      'לא חובה: המצלמה והכספת הפרטית עובדות בלי חשבון. חשבון יידרש לגיבוי מוצפן, שיגיע בגרסה מאוחרת יותר.';
 
   @override
   String get accountManage => 'סיסמה, אבטחה ויציאה מהחשבון';
@@ -57,4 +57,166 @@ class AppL10nHe extends AppL10n {
   @override
   String get cameraScreensLicence =>
       'מסכי המצלמה התחילו מ-GrapheneOS Camera (רישיון MIT). ZT Camera לא נוצרה על ידי GrapheneOS ואינה מאושרת על ידה.';
+
+  @override
+  String get homeVault => 'כספת פרטית';
+
+  @override
+  String get homeVaultSubtitle => 'תמונות וסרטונים מוצפנים, רק באפליקציה הזו';
+
+  @override
+  String get vaultTitle => 'כספת פרטית';
+
+  @override
+  String get vaultLocked => 'הכספת נעולה';
+
+  @override
+  String get vaultLockedBody =>
+      'התמונות והסרטונים כאן מוצפנים. פותחים אותם בטביעת אצבע, בפנים או בנעילת המסך.';
+
+  @override
+  String get vaultUnlock => 'פתיחה';
+
+  @override
+  String get vaultLock => 'נעילה';
+
+  @override
+  String get vaultSetUpTitle => 'שמירת תמונות בכספת פרטית';
+
+  @override
+  String get vaultSetUpBody =>
+      'תמונות וסרטונים חדשים מוצפנים בטלפון ונפתחים רק כאן, אחרי טביעת אצבע, פנים או נעילת מסך. הגלריה ואפליקציות אחרות לא רואות אותם. לא צריך חשבון.\n\nאם תסירו את נעילת המסך של הטלפון, לא ניתן יהיה לפתוח את הכספת שוב.';
+
+  @override
+  String get vaultSetUp => 'הגדרת הכספת';
+
+  @override
+  String get vaultNeedsScreenLock =>
+      'קודם צריך להגדיר נעילת מסך בטלפון. הכספת נפתחת איתה.';
+
+  @override
+  String get vaultKeyLost =>
+      'המפתח של הכספת נמחק כי נעילת המסך של הטלפון הוסרה, ולכן אי אפשר לפתוח את התמונות שבה.';
+
+  @override
+  String get vaultFailed => 'זה לא הצליח. נסו שוב.';
+
+  @override
+  String get vaultAll => 'הכול';
+
+  @override
+  String get vaultFavourites => 'מועדפים';
+
+  @override
+  String get vaultAlbums => 'אלבומים';
+
+  @override
+  String get vaultTrash => 'אשפה';
+
+  @override
+  String get vaultEmpty =>
+      'עדיין אין כאן כלום. תמונות וסרטונים שצולמו במצב פרטי, ומה שייובא, יופיעו כאן.';
+
+  @override
+  String get vaultTrashEmpty => 'האשפה ריקה';
+
+  @override
+  String get vaultTrashNote => 'פריטים באשפה נמחקים לתמיד אחרי 30 יום.';
+
+  @override
+  String get vaultImport => 'ייבוא מהגלריה';
+
+  @override
+  String vaultImported(int count) {
+    return 'נוספו $count. המקור עדיין בגלריה: אפשר למחוק אותו שם.';
+  }
+
+  @override
+  String get vaultPrivateMode => 'מצב פרטי לתמונות חדשות';
+
+  @override
+  String get vaultPrivateModeOn => 'תמונות וסרטונים חדשים נשמרים כאן';
+
+  @override
+  String get vaultPrivateModeOff => 'תמונות וסרטונים חדשים נשמרים בגלריה';
+
+  @override
+  String get vaultFavourite => 'מועדף';
+
+  @override
+  String get vaultAddToAlbum => 'הוספה לאלבום';
+
+  @override
+  String get vaultNewAlbum => 'אלבום חדש';
+
+  @override
+  String get vaultAlbumName => 'שם האלבום';
+
+  @override
+  String get vaultCreate => 'יצירה';
+
+  @override
+  String get vaultCancel => 'ביטול';
+
+  @override
+  String get vaultDelete => 'מחיקה';
+
+  @override
+  String get vaultSaveToGallery => 'שמירה בגלריה';
+
+  @override
+  String vaultSaved(int count) {
+    return 'נשמרו $count בגלריה, בלי מיקום, תאריך או פרטי טלפון';
+  }
+
+  @override
+  String get vaultShare => 'שיתוף בלי פרטים';
+
+  @override
+  String get vaultMoveToTrash => 'העברה לאשפה';
+
+  @override
+  String get vaultRestore => 'שחזור';
+
+  @override
+  String get vaultDeleteForever => 'מחיקה לתמיד';
+
+  @override
+  String vaultDeleteForeverConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פריטים',
+      one: 'את הפריט הזה',
+    );
+    return 'למחוק $_temp0 לתמיד? אי אפשר לבטל.';
+  }
+
+  @override
+  String vaultSelected(int count) {
+    return '$count נבחרו';
+  }
+
+  @override
+  String get vaultRemoveFromAlbum => 'הסרה מהאלבום';
+
+  @override
+  String get vaultDeleteAlbum => 'מחיקת האלבום';
+
+  @override
+  String vaultAlbumCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count פריטים',
+      one: 'פריט אחד',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get vaultNoAlbums => 'עדיין אין אלבומים';
+
+  @override
+  String get vaultPlay => 'הפעלה';
 }

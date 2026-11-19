@@ -23,7 +23,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get accountOptional =>
-      'Optional: the camera works without one. An account will be needed for the private vault and encrypted backup, which come in a later version.';
+      'Optional: the camera and the Private vault work without one. An account will be needed for encrypted backup, which comes in a later version.';
 
   @override
   String get accountManage => 'Password, security and sign out';
@@ -57,4 +57,168 @@ class AppL10nEn extends AppL10n {
   @override
   String get cameraScreensLicence =>
       'The camera screens started from GrapheneOS Camera (MIT licence). ZT Camera is not made or endorsed by GrapheneOS.';
+
+  @override
+  String get homeVault => 'Private vault';
+
+  @override
+  String get homeVaultSubtitle =>
+      'Encrypted photos and videos, only in this app';
+
+  @override
+  String get vaultTitle => 'Private vault';
+
+  @override
+  String get vaultLocked => 'The vault is locked';
+
+  @override
+  String get vaultLockedBody =>
+      'Photos and videos here are encrypted. Open them with your fingerprint, face or screen lock.';
+
+  @override
+  String get vaultUnlock => 'Unlock';
+
+  @override
+  String get vaultLock => 'Lock';
+
+  @override
+  String get vaultSetUpTitle => 'Keep photos in a Private vault';
+
+  @override
+  String get vaultSetUpBody =>
+      'New photos and videos are encrypted on this phone and open only here, after your fingerprint, face or screen lock. The gallery and other apps never see them. No account is needed.\n\nIf you remove your phone\'s screen lock, the vault can\'t be opened again.';
+
+  @override
+  String get vaultSetUp => 'Set up the vault';
+
+  @override
+  String get vaultNeedsScreenLock =>
+      'Set a screen lock on your phone first. The vault opens with it.';
+
+  @override
+  String get vaultKeyLost =>
+      'The vault\'s key is gone because the phone\'s screen lock was removed, so its photos can\'t be opened.';
+
+  @override
+  String get vaultFailed => 'That didn\'t work. Try again.';
+
+  @override
+  String get vaultAll => 'All';
+
+  @override
+  String get vaultFavourites => 'Favourites';
+
+  @override
+  String get vaultAlbums => 'Albums';
+
+  @override
+  String get vaultTrash => 'Trash';
+
+  @override
+  String get vaultEmpty =>
+      'Nothing here yet. Photos and videos you take in Private mode, and ones you import, show up here.';
+
+  @override
+  String get vaultTrashEmpty => 'The trash is empty';
+
+  @override
+  String get vaultTrashNote =>
+      'Items in the trash are deleted for good after 30 days.';
+
+  @override
+  String get vaultImport => 'Import from gallery';
+
+  @override
+  String vaultImported(int count) {
+    return 'Added $count. The originals are still in your gallery: delete them there if you want them gone.';
+  }
+
+  @override
+  String get vaultPrivateMode => 'Private mode for new photos';
+
+  @override
+  String get vaultPrivateModeOn => 'New photos and videos go here';
+
+  @override
+  String get vaultPrivateModeOff => 'New photos and videos go to the gallery';
+
+  @override
+  String get vaultFavourite => 'Favourite';
+
+  @override
+  String get vaultAddToAlbum => 'Add to album';
+
+  @override
+  String get vaultNewAlbum => 'New album';
+
+  @override
+  String get vaultAlbumName => 'Album name';
+
+  @override
+  String get vaultCreate => 'Create';
+
+  @override
+  String get vaultCancel => 'Cancel';
+
+  @override
+  String get vaultDelete => 'Delete';
+
+  @override
+  String get vaultSaveToGallery => 'Save to gallery';
+
+  @override
+  String vaultSaved(int count) {
+    return 'Saved $count to the gallery, without location, date or phone details';
+  }
+
+  @override
+  String get vaultShare => 'Share without details';
+
+  @override
+  String get vaultMoveToTrash => 'Move to trash';
+
+  @override
+  String get vaultRestore => 'Restore';
+
+  @override
+  String get vaultDeleteForever => 'Delete for good';
+
+  @override
+  String vaultDeleteForeverConfirm(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: 'this item',
+    );
+    return 'Delete $_temp0 for good? This can\'t be undone.';
+  }
+
+  @override
+  String vaultSelected(int count) {
+    return '$count selected';
+  }
+
+  @override
+  String get vaultRemoveFromAlbum => 'Remove from album';
+
+  @override
+  String get vaultDeleteAlbum => 'Delete album';
+
+  @override
+  String vaultAlbumCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items',
+      one: '1 item',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get vaultNoAlbums => 'No albums yet';
+
+  @override
+  String get vaultPlay => 'Play';
 }

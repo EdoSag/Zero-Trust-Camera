@@ -30,6 +30,7 @@ import dev.sagron.zerotrustcamera.capture.util.ImageResizer
 import dev.sagron.zerotrustcamera.capture.util.executeIfAlive
 import dev.sagron.zerotrustcamera.capture.util.getTreeDocumentUri
 import dev.sagron.zerotrustcamera.capture.util.removePendingFlagFromUri
+import dev.sagron.zerotrustcamera.capture.zt.VaultStore
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.IOException
@@ -66,6 +67,9 @@ class ImageSaver(
     val imageFileFormat: String,
     val imageCaptureMetadata: ImageCapture.Metadata,
     val metadataPolicy: MetadataPolicy,
+    // ZT Camera: set in Private mode. The photo is sealed to this key in memory and never written
+    // to storage in a form that can be read.
+    val vaultKey: ByteArray?,
     @Px val targetThumbnailWidth: Int,
     @Px val targetThumbnailHeight: Int,
 ) : ImageCapture.OnImageCapturedCallback()
@@ -148,7 +152,7 @@ class ImageSaver(
         } catch (e: ImageSaverException) {
             handleError(e)
             return
-        }
+        } ?: return
 
         imageCapturer.mActivity.thumbnailLoaderExecutor.executeIfAlive { generateThumbnail(item) }
     }
@@ -160,7 +164,7 @@ class ImageSaver(
     private var orientation = 0
 
     @Throws(ImageSaverException::class)
-    private fun saveImageInner(): CapturedItem {
+    private fun saveImageInner(): CapturedItem? {
         val uncroppedJpegBytes = origJpegBytes!!
         if (cropRect != null) {
             try {
@@ -177,6 +181,17 @@ class ImageSaver(
         }
 
         processedJpegBytes = processExif(uncroppedJpegBytes)
+
+        if (vaultKey != null) {
+            val thumbnail = try {
+                VaultStore.savePhoto(appContext, vaultKey, processedJpegBytes, captureTime.time).second
+            } catch (e: Exception) {
+                throw ImageSaverException(Place.FILE_WRITE, e)
+            }
+            processedJpegBytes = ByteArray(0)
+            mainThreadExecutor.execute { imageCapturer.onVaultPhotoSaved(thumbnail) }
+            return null
+        }
 
         val startOfWriting = timestamp()
 
