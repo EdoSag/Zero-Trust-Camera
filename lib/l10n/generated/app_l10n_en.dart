@@ -320,7 +320,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get backupVideosSubtitle =>
-      'Each up to 20 MB. Longer videos stay on this phone only.';
+      'Videos take a lot of storage. Each up to 2 GB; longer ones stay on this phone only.';
 
   @override
   String get backupNow => 'Back up now';

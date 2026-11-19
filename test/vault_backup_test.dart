@@ -15,6 +15,39 @@ class _Vault implements VaultBackend {
   Future<VaultOriginal> original(String id) async => files[id]!;
 
   @override
+  Future<Uint8List> originalPart(String id, int offset, int length) async {
+    partReads++;
+    return Uint8List.sublistView(files[id]!.bytes, offset, offset + length);
+  }
+
+  int partReads = 0;
+  final parts = <String, List<int>>{};
+  final cancelled = <String>[];
+  bool failFinish = false;
+
+  @override
+  Future<void> restorePart(String token, Uint8List bytes) async =>
+      (parts[token] ??= []).addAll(bytes);
+
+  @override
+  Future<String> restoreFinish(String token, DateTime takenAt) async {
+    if (failFinish) throw Exception('not sealed');
+    final id = 'new${restored.length + 1}';
+    restored[id] = (
+      Uint8List.fromList(parts.remove(token)!),
+      'video/mp4',
+      true,
+    );
+    return id;
+  }
+
+  @override
+  Future<void> restoreCancel(String token) async {
+    parts.remove(token);
+    cancelled.add(token);
+  }
+
+  @override
   Future<String> restore(
     Uint8List bytes, {
     required String mime,
@@ -54,12 +87,21 @@ class _Account implements BackupStore {
   @override
   Future<void> deleteMedia(CameraMedia m) async {
     media_.remove(m.id);
-    files.remove(m.file.id);
+    for (final f in m.files) {
+      files.remove(f.id);
+    }
   }
+
+  @override
+  Future<void> discard(ZtAttachmentRef ref) async => files.remove(ref.id);
+
+  /// Uploads start failing after this many.
+  int? failAfter;
 
   @override
   Future<ZtAttachmentRef> upload(Uint8List bytes, String mime) async {
     if (full) throw Exception('Storage quota exceeded');
+    if (failAfter != null && uploads >= failAfter!) throw Exception('offline');
     uploads++;
     final id = 'f$uploads';
     files[id] = bytes;
@@ -201,10 +243,74 @@ void main() {
     expect(backup.eligible(lib, items).map((i) => i.id), ['a', 'v']);
   });
 
-  test('files over the limit stay on the phone and are counted', () async {
+  test('a large video goes up in parts and comes back whole', () async {
     final lib = _on()..backup.videos = true;
-    final r = await backup.backUp(lib, [_video('big', size: 11)]);
-    expect(r.tooLarge, 1);
+    final bytes = Uint8List.fromList(List.generate(25, (i) => i));
+    vault.files['v'] = VaultOriginal(bytes, 'video/mp4');
+    lib.favourites.add('v');
+
+    final r = await backup.backUp(lib, [_video('v', size: 25)]);
+    expect(r.done, 1);
+    expect(r.tooLarge, 0);
+    // 10 + 10 + 5, never the whole file at once.
+    expect(account.uploads, 3);
+    expect(vault.partReads, 3);
+    final m = account.media_[lib.backedUp['v']]!;
+    expect(m.parts.map((p) => p.size), [10, 10, 5]);
+    expect(m.file.id, m.parts.first.id);
+    expect(m.size, 25);
+
+    // It survives being stored, and a second run uploads nothing.
+    final stored = CameraMedia.fromJson(m.id, m.toJson(), _t);
+    expect(stored.parts.map((p) => p.id), m.parts.map((p) => p.id));
+    await backup.backUp(lib, [_video('v', size: 25)]);
+    expect(account.uploads, 3);
+
+    // A new phone gets the same bytes back, as one video.
+    final fresh = VaultLibrary();
+    final back = await backup.restore(fresh);
+    expect(back.done, 1);
+    expect(vault.restored.values.single.$1, bytes);
+    expect(vault.restored.values.single.$3, isTrue);
+    expect(fresh.favourites, hasLength(1));
+
+    // Deleted for good on the phone: every part leaves the account.
+    lib.forget(['v']);
+    await backup.backUp(lib, []);
+    expect(account.media_, isEmpty);
+    expect(account.files, isEmpty);
+  });
+
+  test('a large video that fails half way leaves nothing behind', () async {
+    final lib = _on()..backup.videos = true;
+    vault.files['v'] = VaultOriginal(Uint8List(25), 'video/mp4');
+    account.failAfter = 2;
+    final r = await backup.backUp(lib, [_video('v', size: 25)]);
+    expect(r.done, 0);
+    expect(r.failed, 1);
+    expect(account.files, isEmpty);
+    expect(account.media_, isEmpty);
+    expect(lib.backedUp, isEmpty);
+  });
+
+  test('a large restore that fails wipes its parts', () async {
+    final lib = _on()..backup.videos = true;
+    vault.files['v'] = VaultOriginal(Uint8List(25), 'video/mp4');
+    await backup.backUp(lib, [_video('v', size: 25)]);
+    vault.failFinish = true;
+    final r = await backup.restore(VaultLibrary());
+    expect(r.failed, 1);
+    expect(vault.cancelled, hasLength(1));
+    expect(vault.restored, isEmpty);
+  });
+
+  test('a large photo, or a video past the cap, stays on the phone', () async {
+    final lib = _on()..backup.videos = true;
+    final r = await backup.backUp(lib, [
+      _photo('raw', size: 11),
+      _video('huge', size: 10 * VaultBackup.maxParts + 1),
+    ]);
+    expect(r.tooLarge, 2);
     expect(account.uploads, 0);
   });
 

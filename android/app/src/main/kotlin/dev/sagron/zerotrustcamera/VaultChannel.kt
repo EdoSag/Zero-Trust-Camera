@@ -129,6 +129,40 @@ class VaultChannel(
                     "mime" to VaultStore.meta(ctx, id, priv).optString("mime", "image/jpeg"),
                 )
             }
+            "originalPart" -> unlocked(result) { priv ->
+                // One piece of a large video, for the encrypted backup.
+                VaultStore.mediaPart(
+                    ctx,
+                    call.argument<String>("id")!!,
+                    priv,
+                    call.argument<Number>("offset")!!.toLong(),
+                    call.argument<Number>("length")!!.toInt(),
+                )
+            }
+            "restorePart" -> background(result) {
+                // A large video comes back in pieces, put together in the vault's temp folder
+                // (app-private, wiped once sealed) like a recording.
+                val bytes = call.argument<ByteArray>("bytes")!!
+                try {
+                    java.io.FileOutputStream(
+                        VaultStore.restoreFile(ctx, call.argument<String>("token")!!), true
+                    ).use { it.write(bytes) }
+                } finally {
+                    bytes.fill(0)
+                }
+                null
+            }
+            "restoreFinish" -> background(result) {
+                val pub = VaultKeys.publicKey(ctx) ?: throw IllegalStateException("no vault")
+                val f = VaultStore.restoreFile(ctx, call.argument<String>("token")!!)
+                val takenAt = call.argument<Number>("takenAt")?.toLong() ?: System.currentTimeMillis()
+                VaultStore.saveVideo(ctx, pub, f, takenAt)?.first
+                    ?: throw java.io.IOException("video not sealed")
+            }
+            "restoreCancel" -> background(result) {
+                VaultStore.wipe(VaultStore.restoreFile(ctx, call.argument<String>("token")!!))
+                null
+            }
             "restore" -> background(result) {
                 val pub = VaultKeys.publicKey(ctx) ?: throw IllegalStateException("no vault")
                 val bytes = call.argument<ByteArray>("bytes")!!

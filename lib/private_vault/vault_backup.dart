@@ -22,6 +22,7 @@ class CameraMedia {
     required this.takenAt,
     required this.size,
     required this.file,
+    this.parts = const [],
     this.favourite = false,
     this.albums = const [],
   });
@@ -34,12 +35,19 @@ class CameraMedia {
   final DateTime takenAt;
   final int size;
   final ZtAttachmentRef file;
+
+  /// A video over the attachment size limit is kept as several files, in
+  /// order; [file] is then the first of them. Empty for everything else.
+  final List<ZtAttachmentRef> parts;
   final bool favourite;
 
   /// Ids of [CameraAlbum]s this item is in.
   final List<String> albums;
 
   bool get isVideo => type == 'video';
+
+  /// Every file this item is kept in.
+  List<ZtAttachmentRef> get files => parts.isEmpty ? [file] : parts;
 
   CameraMedia copyWith({bool? favourite, List<String>? albums}) => CameraMedia(
     id: id,
@@ -48,6 +56,7 @@ class CameraMedia {
     takenAt: takenAt,
     size: size,
     file: file,
+    parts: parts,
     favourite: favourite ?? this.favourite,
     albums: albums ?? this.albums,
   );
@@ -59,6 +68,7 @@ class CameraMedia {
     'takenAt': takenAt.millisecondsSinceEpoch,
     'size': size,
     'file': file.toJson(),
+    if (parts.isNotEmpty) 'parts': [for (final p in parts) p.toJson()],
     'favourite': favourite,
     'albums': albums,
   };
@@ -75,6 +85,10 @@ class CameraMedia {
         file: ZtAttachmentRef.fromJson(
           (j['file']! as Map).cast<String, Object?>(),
         ),
+        parts: [
+          for (final p in (j['parts'] as List<Object?>? ?? const []))
+            if (p is Map) ZtAttachmentRef.fromJson(p.cast<String, Object?>()),
+        ],
         favourite: j['favourite'] == true,
         albums: [
           for (final a in (j['albums'] as List<Object?>? ?? const []))
@@ -120,6 +134,9 @@ abstract class BackupStore {
   Future<void> deleteMedia(CameraMedia m);
   Future<ZtAttachmentRef> upload(Uint8List bytes, String mime);
   Future<Uint8List> download(ZtAttachmentRef ref);
+
+  /// Deletes an uploaded file that no item ended up using.
+  Future<void> discard(ZtAttachmentRef ref);
 }
 
 /// [BackupStore] on the core: synced items plus [ZtAttachments]. Needs the
@@ -151,9 +168,15 @@ class CoreBackupStore implements BackupStore {
 
   @override
   Future<void> deleteMedia(CameraMedia m) async {
-    await (await _files).delete(m.file);
+    final files = await _files;
+    for (final f in m.files) {
+      await files.delete(f);
+    }
     await cameraMediaCollection.delete(_sync, m.id);
   }
+
+  @override
+  Future<void> discard(ZtAttachmentRef ref) async => (await _files).delete(ref);
 
   @override
   Future<ZtAttachmentRef> upload(Uint8List bytes, String mime) async =>
@@ -177,7 +200,7 @@ class BackupResult {
   /// Items newly backed up (or restored).
   final int done;
 
-  /// Videos over the attachment size limit, left on the phone only.
+  /// Files too large to back up, left on the phone only.
   final int tooLarge;
   final int failed;
 
@@ -201,7 +224,13 @@ class VaultBackup {
 
   /// The signed-in user's id: where [store] reads and writes.
   final String account;
+
+  /// The most one file in the account can hold. A larger video goes up as
+  /// several files of this size.
   final int maxBytes;
+
+  /// The most files one video may be split into (2 GB at the usual limit).
+  static const maxParts = 100;
 
   /// True while a backup or restore runs, anywhere in the app.
   static final running = ValueNotifier<bool>(false);
@@ -266,7 +295,51 @@ class VaultBackup {
         continue;
       }
       if (item.size > maxBytes) {
-        tooLarge++;
+        if (!item.isVideo || item.size > maxBytes * maxParts) {
+          tooLarge++;
+          continue;
+        }
+        final uploaded = <ZtAttachmentRef>[];
+        try {
+          for (var at = 0; at < item.size; at += maxBytes) {
+            final want = min(maxBytes, item.size - at);
+            final bytes = await vault.originalPart(item.id, at, want);
+            if (bytes.length != want) throw StateError('short read');
+            uploaded.add(await store.upload(bytes, 'video/mp4'));
+          }
+          final media = CameraMedia(
+            id: newBackupId(),
+            type: 'video',
+            mime: 'video/mp4',
+            takenAt: item.takenAt,
+            size: item.size,
+            file: uploaded.first,
+            parts: uploaded,
+            favourite: favourite,
+            albums: albums,
+          );
+          await store.saveMedia(media);
+          library.backedUp[item.id] = media.id;
+          done++;
+        } on Object catch (e) {
+          // Half a video is no use: what went up comes down again.
+          for (final ref in uploaded) {
+            try {
+              await store.discard(ref);
+            } on Object {
+              // Left behind; it counts toward storage until deleted.
+            }
+          }
+          if (_isQuota(e)) {
+            return BackupResult(
+              done: done,
+              tooLarge: tooLarge,
+              failed: failed,
+              full: true,
+            );
+          }
+          failed++;
+        }
         continue;
       }
       try {
@@ -325,13 +398,26 @@ class VaultBackup {
     for (final m in missing) {
       progress?.call(step++, missing.length);
       try {
-        final bytes = await store.download(m.file);
-        final id = await vault.restore(
-          bytes,
-          mime: m.mime,
-          isVideo: m.isVideo,
-          takenAt: m.takenAt,
-        );
+        final String id;
+        if (m.parts.length > 1) {
+          final token = newBackupId();
+          try {
+            for (final part in m.parts) {
+              await vault.restorePart(token, await store.download(part));
+            }
+            id = await vault.restoreFinish(token, m.takenAt);
+          } on Object {
+            await vault.restoreCancel(token);
+            rethrow;
+          }
+        } else {
+          id = await vault.restore(
+            await store.download(m.file),
+            mime: m.mime,
+            isVideo: m.isVideo,
+            takenAt: m.takenAt,
+          );
+        }
         library.backedUp[id] = m.id;
         if (m.favourite) library.favourites.add(id);
         for (final albumId in m.albums) {
