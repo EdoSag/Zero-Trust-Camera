@@ -1,0 +1,424 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="camera_permission_dialog_title">Camera permission required</string>
+    <string name="camera_permission_dialog_message">
+        The app needs permission to access the camera to function. Please provide the required permission via Settings in order to use this app.
+    </string>
+
+    <string name="audio_permission_dialog_title">Audio permission required</string>
+    <string name="audio_permission_dialog_message">The app needs permission to access the microphone to record a video that contains audio. Please provide the required permission via Settings in order to proceed with this configuration. If you do not require your video to contain audio, you could just disable it (and enable it back later in the settings).</string>
+
+    <string name="location_permission_dialog_title">Location permission required</string>
+    <string name="location_permission_dialog_message">
+        The app needs location permission for geo-tagging. Please provide the required permission via Settings in order to use this app.
+    </string>
+
+    <string name="flip_camera">Flip Camera</string>
+    <string name="loading_camera">Loading camera</string>
+    <string name="flash_mode">Flash Mode</string>
+    <string name="start_value_timer" translatable="false">00:00</string>
+    <string name="zoom">Zoom</string>
+    <string name="exposure_compensation">Exposure compensation</string>
+    <string name="geo_tagging">Geo-tagging</string>
+    <string name="torch">Torch</string>
+    <string name="scan_result">Scan Result</string>
+    <string name="share_qr_text">Share QR Text</string>
+    <string name="open_with">Open with</string>
+    <string name="copy_to_clipboard">Copy to clipboard</string>
+    <string name="retake">Retake</string>
+    <string name="capture">Capture</string>
+    <string name="confirm">Confirm</string>
+    <string name="open_gallery">Open gallery</string>
+    <string name="pause_recording">Pause recording</string>
+    <string name="resume_recording">Resume recording</string>
+    <string name="start_recording">Start recording</string>
+    <string name="stop_recording">Stop recording</string>
+    <string name="turn_torch_on">Turn torch on</string>
+    <string name="turn_torch_off">Turn torch off</string>
+    <string name="mute_audio">Mute audio</string>
+    <string name="unmute_audio">Unmute audio</string>
+    <!-- The flash and grid controls cycle through several states rather than toggling between
+         two, so their labels name the state they are currently in; naming the next action
+         instead would leave a screen reader user unable to tell where in the cycle they are. -->
+    <string name="flash_off">Flash off</string>
+    <string name="flash_on">Flash on</string>
+    <string name="flash_auto">Flash auto</string>
+    <string name="grid_off">Grid off</string>
+    <string name="grid_3x3">Grid 3 by 3</string>
+    <string name="grid_4x4">Grid 4 by 4</string>
+    <string name="grid_golden_ratio">Grid golden ratio</string>
+    <string name="scan_all_formats">Scan all barcode formats</string>
+    <string name="stop_scanning_all_formats">Stop scanning all barcode formats</string>
+    <string name="play_preview">Play Preview</string>
+    <string name="aspect_ratio">Aspect Ratio</string>
+    <string name="include_audio">Include Audio</string>
+    <string name="enable_eis">Enable EIS</string>
+    <string name="video_quality">Video Quality</string>
+    <string name="optimize_for">Optimize for</string>
+    <string name="quality">Quality</string>
+    <string name="latency">Latency</string>
+    <string name="preview">Preview</string>
+    <string name="play_video">Play video</string>
+    <string name="file_info">File Info</string>
+    <string name="delete_file">Delete file</string>
+    <string name="edit">Edit</string>
+    <string name="self_illumination">Self Illumination</string>
+    <string name="focus_timeout">Focus Timeout</string>
+    <string name="timer">Timer</string>
+    <string name="cancel_timer">Cancel Timer</string>
+    <string name="video_capture_label">Record Video</string>
+
+    <string name="camera">CAMERA</string>
+    <string name="video">VIDEO</string>
+    <string name="portrait_mode">PORTRAIT</string>
+    <string name="hdr_mode" translatable="false">HDR</string>
+    <string name="night_mode">NIGHT</string>
+    <string name="face_retouch_mode">FACE RETOUCH</string>
+    <string name="auto_mode">AUTO</string>
+    <string name="qr_scan_mode">QR SCAN</string>
+    <string name="aspect_ratio_16_9" translatable="false">16:9</string>
+    <string name="aspect_ratio_4_3" translatable="false">4:3</string>
+    <string name="share_media">Share Media</string>
+    <string name="edit_with">Edit with</string>
+    <string name="rec_without_audio">Start recording without audio</string>
+    <string name="qr_scan">QR Code</string>
+    <string name="data_matrix" translatable="false">Data Matrix</string>
+    <string name="aztec_code" translatable="false">Aztec Code</string>
+    <string name="more_options">More Options</string>
+    <string name="pdf_417" translatable="false">PDF 417</string>
+    <string name="more_settings">More Settings</string>
+
+    <string name="general">General</string>
+
+    <string name="save_image_as_previewed">Save image as previewed</string>
+    <string name="save_as_image_preview_desc">Save output image as visible on preview (fixes inversion in front camera)</string>
+
+    <string name="save_video_as_previewed">Save video as previewed</string>
+    <string name="save_as_video_preview_desc">Save output video as visible on preview (fixes inversion in front camera)</string>
+
+    <string name="gyroscope_suggestions">Gyroscope Suggestions</string>
+    <string name="gyroscope_setting_desc">Occasionally get visual suggestions for straight/well-angled images</string>
+
+    <string name="camera_sounds">Camera Sounds</string>
+    <string name="camera_sounds_desc">Shutter sound and other audio cues</string>
+
+    <string name="storage">Storage</string>
+    <string name="storage_location">Storage Location</string>
+    <string name="revert_back_to_dcim">Revert back to DCIM</string>
+
+    <string name="image_quality">Image Quality</string>
+    <string name="image_quality_desc" formatted="false">Adjust the quality of an image captured by the app from 1% to 100%.</string>
+    <string name="photo">Photo</string>
+    <string name="video_setting_title">Video</string>
+    <string name="degree_format" translatable="false">%d°</string>
+    <string name="percent_symbol" translatable="false">%</string>
+
+    <string name="location_is_disabled">Location is disabled</string>
+    <string name="settings">Settings</string>
+    <string name="enable">Enable</string>
+    <string name="ok">OK</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+    <string name="disable_audio">Disable Audio</string>
+    <string name="copied_text_to_clipboard">Copied text to clipboard</string>
+    <string name="share_text_via">Share text via</string>
+
+    <string name="unable_to_obtain_file_details">Unable to obtain file details</string>
+
+    <string name="no_editor_app_error">You may not have a proper app for editing this content</string>
+    <string name="edit_not_allowed">Editing images in secure mode is not allowed.</string>
+    <string name="sharing_not_allowed">Sharing images in secure mode is not allowed.</string>
+    <string name="edit_image">Edit Image</string>
+    <string name="share_image">Share Image</string>
+    <string name="unable_to_share_media">Unable to share this file</string>
+    <string name="unable_to_edit_media">Unable to edit this file</string>
+    <string name="delete">Delete</string>
+    <string name="delete_title">Are you sure?</string>
+    <string name="deleted_successfully">File deleted successfully</string>
+    <string name="deleting_unexpected_error">An unexpected error occurred while deleting this file</string>
+    <string name="delete_description">"Do you really want to delete this file (%s)?"</string>
+    <string name="cancel">Cancel</string>
+    <string name="no_image">Please capture a photo/video before trying to view them.</string>
+
+    <string name="empty_gallery">Captured photos/videos not found</string>
+
+    <string name="bind_failure">Failed to open camera due to an OS or hardware issue. Try rebooting.</string>
+    <!-- Shown after a camera-extension mode (e.g. Night) is applied but its vendor implementation
+         fails to bind: the mode is disabled and the camera falls back to a normal mode. Unlike
+         bind_failure this is a handled, mode-specific recovery, not an OS/hardware failure, so it
+         does not suggest rebooting. -->
+    <string name="extension_mode_unavailable">This mode is unavailable on this device.</string>
+
+    <!-- Shown when the camera can't record at the video quality the settings currently ask for,
+         so that the settings screen doesn't keep claiming a quality that isn't actually in effect.
+         %1$s is a quality such as "2160p (UHD)". A dropped quality is described as "a different
+         quality" rather than a lower one because the fallback is Recorder's default order (1080p,
+         then 720p, then 480p), which is higher than the requested quality if 480p was what got
+         dropped. Stabilization outcomes are deliberately never surfaced (see onFeaturesSelected). -->
+    <string name="quality_unsupported">%1$s isn\'t supported on this camera. Recording at a different quality.</string>
+    <string name="camera_provider_init_failure">Failed to load camera provider due to OS or hardware issue. Try rebooting.</string>
+    <string name="extensions_manager_init_failure">Failed to load extensions manager due to OS or hardware issue. Extensions modes are unavailable. Try rebooting.</string>
+    <string name="unsupported_taking_picture_while_recording">Your device doesn\'t support taking pictures while recording video with the current settings.</string>
+    <string name="location_unavailable">Couldn\'t attach location to image/video since it\'s  currently unavailable</string>
+    <string name="existing_no_image">No image found. Exiting in-app gallery.</string>
+    <string name="no_barcode_selected">Please ensure that at least one barcode is selected in manual mode</string>
+    <string name="flash_unavailable_in_selected_mode">Flash is unavailable for the current mode.</string>
+    <string name="front_camera_unavailable">Could not detect front camera. Please try again later!</string>
+    <string name="rear_camera_unavailable">Could not detect rear camera. Please try again later!</string>
+    <string name="qr_rear_camera_unavailable">The rear camera seems to be unavailable. Using front camera for QR mode instead.</string>
+    <string name="folder_not_found">Storage location not found</string>
+    <string name="reverting_to_default_folder">Reverting back to default DCIM directory since the custom storage location that was previously selected seems to have been deleted. Please change the storage location to another folder (if required).</string>
+    <string name="more_settings_unavailable_during_recording">Cannot switch activities when recording</string>
+    <string name="toggle_geo_tagging_unsupported_while_recording">Can\'t toggle geo-tagging for ongoing recording</string>
+    <string name="flash_switch_unsupported">Cannot switch flash mode in this mode</string>
+    <string name="four_by_three_unsupported_in_video">4:3 is not supported in video mode</string>
+    <string name="flash_unavailable_in_current_mode">Flash/Torch is unavailable for this mode</string>
+    <string name="unexpected_error_while_setting_focus_timeout">An unexpected error occurred while setting focus timeout</string>
+    <string name="unexpected_error_while_setting_timer_duration">An unexpected error occurred while setting the self-timer duration</string>
+    <string name="storage_location_updated">Storage location successfully updated to %s</string>
+    <string name="no_directory_selected">No directory was selected by the picker</string>
+    <string name="choose_storage_location">Choose storage location</string>
+    <string name="are_you_sure">Are you sure?</string>
+    <string name="revert_to_default_directory">Do you want to revert back to the default directory?</string>
+    <string name="reverted_to_default_directory">Switched back to the default storage location</string>
+    <string name="already_using_default_directory">Already using the default storage location</string>
+    <string name="photo_quality_number_limit" tools:ignore="PluralsCandidate">Photo quality can only be between %1$d and %2$d</string>
+    <string name="image_taken_in_this_mode_does_not_contain_extra_data">Photos and videos taken for another app never keep these details</string>
+    <string name="file_already_exists">File exists at %s</string>
+    <string name="file_does_not_exist">File does not exist at %s</string>
+    <string name="couldnt_exclude_qr_format">Couldn\'t exclude %s format. Please ensure at least one format is selected in manual mode.</string>
+
+    <string name="capturing_image">Capturing Image…</string>
+    <string name="image_captured_successfully">Image captured successfully</string>
+    <string name="unable_to_capture_image">Unable to capture image</string>
+    <string name="unable_to_capture_image_verbose">Unable to capture image, error code: %d</string>
+    <string name="unable_to_save_image">Unable to save the image</string>
+    <string name="unable_to_save_image_verbose">Unable to save the image, error occurred during: %s</string>
+    <string name="show_details">Show details</string>
+    <string name="recording_too_short_to_be_saved">Recording too short to be saved</string>
+    <string name="unable_to_save_video">Unable to save this video</string>
+    <string name="video_time_not_cleared">Saved, but the recording time could not be removed from this video</string>
+    <string name="unable_to_save_video_verbose">Unable to save this video, error code: %d</string>
+    <string name="unable_to_play_video">Unable to play this video</string>
+    <string name="recording_stopped_storage_almost_full">Recording stopped because the storage is almost full</string>
+    <string name="recording_stopped_camera_lost">Recording stopped because the camera stopped working</string>
+    <string name="recording_not_started_camera_lost">Recording could not start because the camera stopped working</string>
+    <string name="error_during_recording">A error has occurred finishing the current recording, error code: %d</string>
+    <string name="unable_to_access_output_file">Unable to access output file</string>
+    <string name="please_wait_for_image_to_get_captured_before_sharing">Please wait for the image to get captured before attempting to share via long tap</string>
+
+    <string name="file_details">File Details</string>
+    <string name="file_name_generic">File Name: </string>
+    <string name="not_found_generic">Not Found</string>
+    <string name="file_size">File Size: </string>
+    <string name="file_path">File Path: </string>
+    <string name="resolution">Resolution: </string>
+    <string name="duration">Duration: </string>
+    <string name="file_created_on">File Created On: </string>
+    <string name="last_modified_on">Last Modified On: </string>
+
+    <string name="inaccessible_image">Photo %s is inaccessible</string>
+    <string name="inaccessible_video">Video %s is inaccessible</string>
+
+    <string name="main_storage">Main storage</string>
+
+    <string name="zsl_setting_title">Enable Zero Shutter Lag</string>
+    <string name="zsl_setting_desc">Uses Zero Shutter Lag (ZSL) for faster image capture. Ignores wait for focus setting. Certain devices may have a buggy implementation for this.</string>
+    <string name="audio_permission_failed_in_recording">Unable to request for audio permission in between a recording</string>
+
+    <string name="tap_to_mute_audio">Tap to mute audio</string>
+    <string name="tap_to_unmute_audio">Tap to unmute audio</string>
+
+    <string name="video_audio_recording_muted">The video\'s audio recording has been muted</string>
+    <string name="video_audio_recording_unmuted">The video\'s audio recording has been unmuted</string>
+
+    <string name="highest_res_setting">Use highest photo resolution</string>
+    <string name="highest_res_setting_desc">Enable using the highest supported resolution for images instead of the default. This can lead to very large images on certain devices.</string>
+
+    <string name="wait_for_focus_lock">Wait for Focus Lock</string>
+    <string name="invalid_photo_quality_value">Invalid value set for photo quality</string>
+
+    <!-- ZT Camera -->
+    <string name="zt_app_setting_title">Account, language and about</string>
+    <string name="zt_app_setting_subtitle">Your Zero-Trust account, app language, appearance and licences</string>
+    <string name="metadata_note">Photos and videos are saved without location, date or phone details. Location is never added.</string>
+    <string name="keep_date_time_title">Keep date and time</string>
+    <string name="keep_date_time_subtitle">Save when a photo or video was taken inside the file</string>
+    <string name="keep_camera_model_title">Keep phone model</string>
+    <string name="keep_camera_model_subtitle">Save the phone\'s make and model inside photos</string>
+    <string name="audio_cannot_be_enabled_while_recording">Audio can\'t be turned on during a recording that started without it</string>
+    <!-- ZT Camera: Private vault -->
+    <string name="private_vault_title">Private vault</string>
+    <string name="private_vault_subtitle">Save new photos and videos encrypted, only inside this app</string>
+    <string name="vault_choose_title">Where should photos go?</string>
+    <string name="vault_choose_message">Gallery: photos and videos go to your phone\'s gallery, as usual.\n\nPrivate vault: they are encrypted on this phone and open only in ZT Camera, after your fingerprint, face or screen lock. The gallery and other apps never see them.\n\nIf you remove your phone\'s screen lock, the vault can\'t be opened again. You can change this later in More settings.</string>
+    <string name="vault_choose_gallery">Gallery</string>
+    <string name="vault_choose_private">Private vault</string>
+    <string name="vault_setup_prompt_title">Set up the Private vault</string>
+    <string name="vault_unlock_prompt_title">Open the Private vault</string>
+    <string name="vault_prompt_subtitle">Confirm it\'s you</string>
+    <string name="vault_needs_screen_lock">Set a screen lock on your phone first. The Private vault opens with it.</string>
+    <string name="vault_setup_failed">The Private vault couldn\'t be set up. Photos keep going to the gallery.</string>
+    <string name="vault_mode_on">New photos and videos go to the Private vault</string>
+    <string name="vault_unlock_phone_first">Unlock your phone to see the Private vault</string>
+    <string name="vault_video_failed">This video can\'t be played</string>
+    <!-- ZT Camera: picture and video options -->
+    <string name="ultra_hdr_title">Ultra HDR photos</string>
+    <string name="ultra_hdr_subtitle">Brighter highlights on screens that can show them. Photo mode only</string>
+    <string name="video_60fps_title">60 frames a second</string>
+    <string name="video_60fps_subtitle">Smoother video, larger files</string>
+    <string name="fps60_unsupported">This camera can\'t record at 60 frames a second with these settings</string>
+    <!-- ZT Camera: Clean and share (from the share sheet of other apps) -->
+    <string name="clean_share_label">Clean and share</string>
+    <string name="clean_share_title">Remove the details first?</string>
+    <string name="clean_share_message">Location, date, time and phone details are taken out of a copy. The original stays as it is.</string>
+    <string name="clean_share_send">Share the clean copy</string>
+    <string name="clean_share_to_vault">Keep in Private vault</string>
+    <string name="clean_share_working">Cleaning…</string>
+    <string name="clean_share_none">Nothing here could be cleaned. Photos and MP4 videos can.</string>
+    <string name="clean_share_skipped">%1$d couldn\'t be cleaned and were left out</string>
+    <string name="clean_share_added_to_vault">Added to the Private vault</string>
+
+    <!-- ZT Camera: scanned codes (zt/ScanSheet.kt) -->
+    <string name="scan_title_link">Link</string>
+    <string name="scan_title_invite">Zero Trust invite</string>
+    <string name="scan_title_wifi">Wi-Fi network</string>
+    <string name="scan_title_contact">Contact</string>
+    <string name="scan_title_event">Event</string>
+    <string name="scan_title_phone">Phone number</string>
+    <string name="scan_title_sms">Text message</string>
+    <string name="scan_title_email">Email</string>
+    <string name="scan_title_place">Place</string>
+    <string name="scan_title_otp">Two-factor secret</string>
+    <string name="scan_title_text">Text</string>
+    <string name="scan_warn_not_encrypted">Not encrypted (http). Others on the network can see and change this page.</string>
+    <string name="scan_warn_punycode">The address uses letters from other alphabets. It may imitate a site you know.</string>
+    <string name="scan_warn_shortener">A short link. It hides where it really goes.</string>
+    <string name="scan_warn_ip">A bare number instead of a site name.</string>
+    <string name="scan_warn_user_info">The start of this address is a decoy. It really goes to %1$s.</string>
+    <string name="scan_warn_lookalike">Has \"%1$s\" in it, but it isn\'t that company\'s site.</string>
+    <string name="scan_warn_not_web">Not a web link. Opening it may start something in another app.</string>
+    <string name="scan_open_zt_browser">Open in ZT Browser</string>
+    <string name="scan_open_browser">Open in browser</string>
+    <string name="scan_open_anyway">Open anyway</string>
+    <string name="scan_open_in_app">Open in ZT %1$s</string>
+    <string name="scan_invite_message">An invite to ZT %1$s.</string>
+    <string name="scan_wifi_join">Join network</string>
+    <string name="scan_copy_password">Copy password</string>
+    <string name="scan_wifi_network">Network</string>
+    <string name="scan_wifi_security">Security</string>
+    <string name="scan_wifi_password">Password</string>
+    <string name="scan_wifi_open">Open, no password</string>
+    <string name="scan_add_contact">Add to contacts</string>
+    <string name="scan_add_event">Add to calendar</string>
+    <string name="scan_call">Call</string>
+    <string name="scan_send_text">Write a text</string>
+    <string name="scan_send_email">Write an email</string>
+    <string name="scan_open_map">Open in maps</string>
+    <string name="scan_otp_message">This code holds a secret for signing in. Anyone who sees it can make your sign-in codes, so it isn\'t shown here. Add it only in an authenticator app you trust.</string>
+    <string name="scan_otp_open">Add to an authenticator</string>
+    <string name="scan_copy">Copy</string>
+    <string name="scan_share">Share</string>
+    <string name="scan_close">Close</string>
+    <string name="scan_no_app">No app on this phone can open this</string>
+    <string name="scan_field_name">Name</string>
+    <string name="scan_field_phone">Phone</string>
+    <string name="scan_field_email">Email</string>
+    <string name="scan_field_org">Company</string>
+    <string name="scan_field_address">Address</string>
+    <string name="scan_field_link">Link</string>
+    <string name="scan_field_title">Title</string>
+    <string name="scan_field_when">When</string>
+    <string name="scan_field_place">Place</string>
+    <string name="scan_field_note">Note</string>
+    <string name="scan_field_message">Message</string>
+    <string name="scan_field_subject">Subject</string>
+    <string name="scan_image_label">Scan code</string>
+    <string name="scan_image_none">No code found in this picture</string>
+
+    <!-- ZT Camera: document scanner (zt/DocScanActivity.kt) -->
+    <string name="doc_shortcut">Scan a document</string>
+    <string name="doc_hint_find">Point at a page</string>
+    <string name="doc_hint_hold">Hold still…</string>
+    <string name="doc_hint_corners">Drag the corners to the edges of the page</string>
+    <string name="doc_auto">Auto</string>
+    <string name="doc_take">Take</string>
+    <string name="doc_retake">Retake</string>
+    <string name="doc_next">Next</string>
+    <string name="doc_adjust">Corners</string>
+    <string name="doc_rotate">Rotate</string>
+    <string name="doc_add_page">Add page</string>
+    <string name="doc_done">Done</string>
+    <string name="doc_filter_original">Original</string>
+    <string name="doc_filter_enhanced">Enhanced</string>
+    <string name="doc_filter_gray">Grayscale</string>
+    <string name="doc_filter_bw">Black and white</string>
+    <string name="doc_save_pdf">Save PDF</string>
+    <string name="doc_save_vault">Save to Private vault</string>
+    <string name="doc_share_pdf">Share PDF</string>
+    <string name="doc_send_notes">Send to ZT Notes</string>
+    <string name="doc_copy_text">Copy text</string>
+    <string name="doc_scan_more">Scan more</string>
+    <string name="doc_reading">Reading the text…</string>
+    <string name="doc_no_text">No text found</string>
+    <string name="doc_text_title">Text</string>
+    <string name="doc_copy">Copy</string>
+    <string name="doc_text_copied">Text copied</string>
+    <string name="doc_saved_pdf">Saved to Documents/ZT Camera</string>
+    <string name="doc_saved_vault">Saved to the Private vault</string>
+    <string name="doc_failed">Something went wrong. Try again.</string>
+    <string name="doc_camera_needed">Scanning needs the camera permission</string>
+    <string name="doc_delete_page">Remove this page?</string>
+    <string name="doc_delete">Remove</string>
+    <string name="doc_discard_title">Discard the scanned pages?</string>
+    <string name="doc_discard">Discard</string>
+    <string name="doc_page_number">Page %1$d</string>
+    <plurals name="doc_pages">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
+    <!-- Photo editor -->
+    <string name="edit_label">Edit privately</string>
+    <string name="edit_undo">Undo</string>
+    <string name="edit_save">Save copy</string>
+    <string name="edit_apply">Apply</string>
+    <string name="edit_crop">Crop</string>
+    <string name="edit_rotate">Rotate</string>
+    <string name="edit_adjust">Adjust</string>
+    <string name="edit_hide">Hide</string>
+    <string name="edit_draw">Draw</string>
+    <string name="edit_crop_hint">Drag the corners or edges of the frame.</string>
+    <string name="edit_brightness">Brightness</string>
+    <string name="edit_contrast">Contrast</string>
+    <string name="edit_saturation">Colour</string>
+    <string name="edit_warmth">Warmth</string>
+    <string name="edit_hide_hint">Drag over faces, number plates or anything else to cover it. Tap a box to remove it.</string>
+    <string name="edit_find_faces">Find faces</string>
+    <string name="edit_faces_none">No faces found. Drag over them by hand.</string>
+    <plurals name="edit_faces_found">
+        <item quantity="one">1 face found</item>
+        <item quantity="other">%d faces found</item>
+    </plurals>
+    <string name="edit_saved_vault">Saved as a new photo in the vault. The original is unchanged.</string>
+    <string name="edit_saved_gallery">Saved as a new photo in your gallery, with no location or phone details.</string>
+    <string name="edit_failed">Couldn\'t edit this photo</string>
+    <string name="edit_discard_title">Discard your changes?</string>
+    <string name="edit_discard">Discard</string>
+    <string name="clean_share_edit">Edit first</string>
+    <!-- Pro camera -->
+    <string name="pro_shortcut">Pro camera</string>
+    <string name="pro_take">Take photo</string>
+    <string name="pro_auto">Auto</string>
+    <string name="pro_iso_auto">ISO auto</string>
+    <string name="pro_shutter_auto">Shutter auto</string>
+    <string name="pro_focus_auto">Focus auto</string>
+    <string name="pro_wb_auto">Light: auto</string>
+    <string name="pro_wb_daylight">Daylight</string>
+    <string name="pro_wb_cloudy">Cloudy</string>
+    <string name="pro_wb_indoor">Indoor bulbs</string>
+    <string name="pro_wb_fluorescent">Fluorescent</string>
+    <string name="pro_raw_off">RAW off</string>
+    <string name="pro_raw_on">RAW on</string>
+    <string name="pro_saved">Saved to your gallery</string>
+    <string name="pro_saved_vault">Saved to the Private vault</string>
+    <string name="pro_failed">Couldn\'t take the photo</string>
+</resources>

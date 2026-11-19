@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The camera screens of ZT Camera (see ../README.md). The app module's manifest adds the
+  application itself, the Flutter screens and the internet permission those need.
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-feature android:name="android.hardware.camera.any"/>
+
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.DISABLE_KEYGUARD"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.WAKE_LOCK"/>
+
+    <!--
+      androidx.media3:media3-common declares this for ExoPlayer's network playback. We only pull
+      media3 in transitively through camera-video, which uses media3-muxer to write MP4s locally,
+      so nothing we ship reads it and the app has no INTERNET permission to pair it with.
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove"/>
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="*" />
+        </intent>
+        <!-- ZT Camera: scanned codes are handed to the ZT apps when they are installed -->
+        <package android:name="dev.sagron.zerotrustbrowser" />
+        <package android:name="dev.sagron.zerotrustcontacts" />
+        <package android:name="dev.sagron.zerotrustcalendar" />
+        <package android:name="dev.sagron.zerotrustphone" />
+        <package android:name="dev.sagron.zerotrusttasks" />
+        <package android:name="dev.sagron.zerotrustnotes" />
+        <package android:name="dev.sagron.zerotrustmeds" />
+        <package android:name="dev.sagron.zerotrustfitness" />
+        <package android:name="dev.sagron.zerotrustfamily" />
+        <package android:name="dev.sagron.zerotrusthome" />
+        <package android:name="dev.sagron.zerotrustclock" />
+        <package android:name="dev.sagron.zerotrusttime" />
+        <package android:name="dev.sagron.zerotrustquests" />
+        <intent>
+            <action android:name="android.intent.action.INSERT" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.DIAL" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SENDTO" />
+            <data android:scheme="*" />
+        </intent>
+    </queries>
+
+    <application>
+
+        <!-- The main activity of the app (supports all modes) -->
+        <activity
+            android:name=".ui.activities.MainActivity"
+            android:taskAffinity=".ui.activities.MainActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:screenOrientation="nosensor"
+            android:exported="true"
+            android:theme="@style/Theme.Camera"
+            tools:ignore="DiscouragedApi">
+
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+            <!-- ZT Camera: "Scan a document" on long-press of the launcher icon -->
+            <meta-data android:name="android.app.shortcuts" android:resource="@xml/zt_shortcuts" />
+
+        </activity>
+
+        <!-- Helps in supporting double-tap power button (in non-secure/unlocked phone state) -->
+        <activity-alias
+            android:name=".ui.activities.CameraLauncher"
+            android:targetActivity=".ui.activities.MainActivity"
+            android:exported="true">
+
+            <intent-filter>
+                <action android:name="android.media.action.STILL_IMAGE_CAMERA"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+
+        </activity-alias>
+
+        <!-- The main activity of the app (supports all modes) -->
+        <activity
+            android:name=".ui.activities.SecureMainActivity"
+            android:taskAffinity=".ui.activities.SecureMainActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:screenOrientation="nosensor"
+            android:showWhenLocked="true"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            android:theme="@style/Theme.Camera"
+            tools:ignore="DiscouragedApi">
+
+            <intent-filter>
+                <action android:name="android.media.action.STILL_IMAGE_CAMERA_SECURE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+
+        </activity>
+
+        <!-- An extension of the MainActivity that completely enforces video mode
+        https://developer.android.com/reference/android/provider/MediaStore#INTENT_ACTION_VIDEO_CAMERA
+        -->
+        <activity
+            android:name=".ui.activities.VideoOnlyActivity"
+            android:taskAffinity=".ui.activities.VideoOnlyActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:screenOrientation="nosensor"
+            android:exported="true"
+            tools:ignore="DiscouragedApi">
+
+            <intent-filter>
+                <action android:name="android.media.action.VIDEO_CAMERA"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+
+        </activity>
+
+
+        <!-- Capture image that shall be sent to another app
+        https://developer.android.com/reference/android/provider/MediaStore#ACTION_IMAGE_CAPTURE
+        -->
+        <activity
+            android:name=".ui.activities.CaptureActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:screenOrientation="nosensor"
+            android:visibleToInstantApps="true"
+            android:exported="true"
+            tools:ignore="DiscouragedApi">
+
+            <intent-filter>
+                <action android:name="android.media.action.IMAGE_CAPTURE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+
+        </activity>
+
+        <!-- Capture image to be sent to another app (when the phone is in secure/locked state)
+         https://developer.android.com/reference/android/provider/MediaStore#ACTION_IMAGE_CAPTURE_SECURE
+         -->
+        <activity
+            android:name=".ui.activities.SecureCaptureActivity"
+            android:taskAffinity=".ui.activities.SecureCaptureActivity"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:screenOrientation="nosensor"
+            android:showWhenLocked="true"
+            android:excludeFromRecents="true"
+            android:exported="true"
+            tools:ignore="DiscouragedApi">
+
+            <intent-filter>
+                <action android:name="android.media.action.IMAGE_CAPTURE_SECURE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+
+        </activity>
+
+        <!-- Deals with VideoCapture intent; To record a video to be sent to another app
+        https://developer.android.com/reference/android/provider/MediaStore#ACTION_VIDEO_CAPTURE
+             (No secure video capture intent is present/defined in Android)-->
+        <activity
+            android:name=".ui.activities.VideoCaptureActivity"
+            android:taskAffinity=".ui.activities.VideoCaptureActivity"
+            android:label="@string/video_capture_label"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="stateAlwaysHidden|adjustPan"
+            android:screenOrientation="nosensor"
+            android:visibleToInstantApps="true"
+            android:exported="true"
+            tools:ignore="DiscouragedApi">
+
+            <intent-filter>
+                <action android:name="android.media.action.VIDEO_CAPTURE"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+
+        </activity>
+
+        <activity
+            android:name=".ui.activities.VideoPlayer"
+            android:theme="@style/Theme.Viewer"
+            android:taskAffinity=".ui.activities.VideoPlayer"
+            android:excludeFromRecents="true"
+            android:exported="false"/>
+
+        <!-- ZT Camera: plays a video from the Private vault without opening it to storage -->
+        <activity
+            android:name=".zt.VaultVideoActivity"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"/>
+
+        <!-- ZT Camera: "Clean and share" in every app's share sheet for photos and videos -->
+        <activity
+            android:name=".zt.CleanShareActivity"
+            android:label="@string/clean_share_label"
+            android:theme="@style/Theme.CleanShare"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|uiMode|density"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+                <data android:mimeType="video/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- ZT Camera: "Scan code" in the share sheet for pictures (screenshots of QR codes) -->
+        <activity
+            android:name=".zt.ScanImageActivity"
+            android:label="@string/scan_image_label"
+            android:theme="@style/Theme.CleanShare"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|uiMode|density"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- ZT Camera: the document scanner -->
+        <activity
+            android:name=".zt.PhotoEditActivity"
+            android:label="@string/edit_label"
+            android:theme="@style/Theme.App"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.EDIT" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".zt.ProCameraActivity"
+            android:theme="@style/Theme.App"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+
+        <activity
+            android:name=".zt.DocScanActivity"
+            android:theme="@style/Theme.App"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+
+        <activity
+            android:name=".ui.activities.InAppGallery"
+            android:theme="@style/Theme.Viewer"
+            android:taskAffinity=".ui.activities.InAppGallery"
+            android:excludeFromRecents="true"
+            android:exported="false"/>
+
+        <activity
+            android:name=".ui.activities.MoreSettings"
+            android:theme="@style/Theme.App"
+            android:taskAffinity=".ui.activities.InAppGallery"
+            android:excludeFromRecents="true"
+            android:windowSoftInputMode="adjustResize"
+            android:exported="false"/>
+
+        <activity
+            android:name=".ui.activities.MoreSettingsSecure"
+            android:theme="@style/Theme.App"
+            android:taskAffinity=".ui.activities.InAppGallery"
+            android:excludeFromRecents="true"
+            android:showWhenLocked="true"
+            android:exported="false"/>
+
+        <activity
+            android:name=".ui.activities.QrTile"
+            android:exported="true"
+            android:showWhenLocked="true"
+            android:screenOrientation="nosensor"
+            android:excludeFromRecents="true"
+            tools:ignore="DiscouragedApi" />
+
+    </application>
+
+</manifest>

@@ -1,0 +1,148 @@
+{
+  "@@locale": "en",
+  "homeTitle": "ZT Camera",
+  "homeTagline": "Photos and videos are saved without location, date or phone details.",
+  "backToCamera": "Back to camera",
+  "accountSignIn": "Sign in or create an account",
+  "accountOptional": "Optional: the camera and the Private vault work without one. An account will be needed for encrypted backup, which comes in a later version.",
+  "accountManage": "Password, security and sign out",
+  "privacySection": "What your photos keep",
+  "privacyLocation": "Location",
+  "privacyLocationNever": "Never saved. The app has no location permission.",
+  "privacyDateTime": "Date and time",
+  "privacyModel": "Phone make and model",
+  "privacyOffByDefault": "Not saved, unless you turn it on in the camera's settings",
+  "privacyOtherApps": "Photos taken for other apps",
+  "privacyOtherAppsNever": "Always saved with nothing extra",
+  "cameraScreensLicence": "The camera screens started from GrapheneOS Camera (MIT licence). ZT Camera is not made or endorsed by GrapheneOS.",
+  "homeVault": "Private vault",
+  "homeVaultSubtitle": "Encrypted photos and videos, only in this app",
+  "vaultTitle": "Private vault",
+  "vaultLocked": "The vault is locked",
+  "vaultLockedBody": "Photos and videos here are encrypted. Open them with your fingerprint, face or screen lock.",
+  "vaultUnlock": "Unlock",
+  "vaultLock": "Lock",
+  "vaultSetUpTitle": "Keep photos in a Private vault",
+  "vaultSetUpBody": "New photos and videos are encrypted on this phone and open only here, after your fingerprint, face or screen lock. The gallery and other apps never see them. No account is needed.\n\nIf you remove your phone's screen lock, the vault can't be opened again.",
+  "vaultSetUp": "Set up the vault",
+  "vaultNeedsScreenLock": "Set a screen lock on your phone first. The vault opens with it.",
+  "vaultKeyLost": "The vault's key is gone because the phone's screen lock was removed, so its photos can't be opened.",
+  "vaultFailed": "That didn't work. Try again.",
+  "vaultAll": "All",
+  "vaultFavourites": "Favourites",
+  "vaultAlbums": "Albums",
+  "vaultTrash": "Trash",
+  "vaultEmpty": "Nothing here yet. Photos and videos you take in Private mode, and ones you import, show up here.",
+  "vaultTrashEmpty": "The trash is empty",
+  "vaultTrashNote": "Items in the trash are deleted for good after 30 days.",
+  "vaultImport": "Import from gallery",
+  "vaultImported": "Added {count}. The originals are still in your gallery: delete them there if you want them gone.",
+  "@vaultImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultPrivateMode": "Private mode for new photos",
+  "vaultPrivateModeOn": "New photos and videos go here",
+  "vaultPrivateModeOff": "New photos and videos go to the gallery",
+  "vaultFavourite": "Favourite",
+  "vaultAddToAlbum": "Add to album",
+  "vaultNewAlbum": "New album",
+  "vaultAlbumName": "Album name",
+  "vaultCreate": "Create",
+  "vaultCancel": "Cancel",
+  "vaultDelete": "Delete",
+  "vaultSaveToGallery": "Save to gallery",
+  "vaultSaved": "Saved {count} to the gallery, without location, date or phone details",
+  "@vaultSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultShare": "Share without details",
+  "vaultMoveToTrash": "Move to trash",
+  "vaultRestore": "Restore",
+  "vaultDeleteForever": "Delete for good",
+  "vaultDeleteForeverConfirm": "Delete {count, plural, =1{this item} other{{count} items}} for good? This can't be undone.",
+  "@vaultDeleteForeverConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultSelected": "{count} selected",
+  "@vaultSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultRemoveFromAlbum": "Remove from album",
+  "vaultDeleteAlbum": "Delete album",
+  "vaultAlbumCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@vaultAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultNoAlbums": "No albums yet",
+  "vaultPlay": "Play",
+  "scanHistoryTitle": "Scan history",
+  "scanHistoryKeep": "Keep scan history",
+  "scanHistoryKeepHint": "Codes you scan are kept here, in the Private vault, where only you can open them.",
+  "scanHistoryEmpty": "No scans kept yet.",
+  "scanHistoryDelete": "Delete",
+  "scanHistoryClear": "Clear all",
+  "scanHistoryClearTitle": "Clear scan history?",
+  "scanHistoryClearMessage": "{count, plural, =1{1 scan will be deleted.} other{{count} scans will be deleted.}}",
+  "scanHistoryCopied": "Copied",
+  "@scanHistoryClearMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeScanDocument": "Scan a document",
+  "homeScanDocumentSubtitle": "Straight, clean pages as a PDF, with the text read on your phone",
+  "homeProCamera": "Pro camera",
+  "homeProCameraSubtitle": "ISO, shutter speed, focus and white balance by hand, and RAW photos",
+  "vaultCopyText": "Copy text",
+  "vaultEdit": "Edit a copy",
+  "vaultNoText": "No text found in this photo",
+  "vaultTextTitle": "Text",
+  "vaultCopy": "Copy",
+  "vaultBackup": "Encrypted backup",
+  "backupTitle": "Encrypted backup",
+  "backupIntro": "Each photo is encrypted on this phone with its own key before it goes to your Zero Trust account. The server can't see it. Restore it on a new phone with your account.",
+  "backupSignIn": "Sign in to your Zero Trust account on the home screen to back up the vault.",
+  "backupOn": "Back up the vault",
+  "backupCount": "{done} of {total} backed up",
+  "@backupCount": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "backupEverything": "Everything in the vault",
+  "backupAlbums": "Only these albums",
+  "backupVideos": "Videos too",
+  "backupVideosSubtitle": "Each up to 20 MB. Longer videos stay on this phone only.",
+  "backupNow": "Back up now",
+  "backupRestore": "Restore to this phone",
+  "backupRestoreSubtitle": "Brings back photos from your account that aren't on this phone",
+  "backupDone": "{count} backed up",
+  "@backupDone": {"placeholders": {"count": {"type": "int"}}},
+  "backupRestored": "{count} restored",
+  "@backupRestored": {"placeholders": {"count": {"type": "int"}}},
+  "backupTooLarge": "{count} too large, kept on this phone only",
+  "@backupTooLarge": {"placeholders": {"count": {"type": "int"}}},
+  "backupFailed": "{count} didn't go through. They'll be tried again next time.",
+  "@backupFailed": {"placeholders": {"count": {"type": "int"}}},
+  "backupFull": "Your account's storage is full. The rest will wait.",
+  "backupProgress": "{done} of {total}",
+  "@backupProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}}
+}

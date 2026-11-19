@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A page with a scan frame, for the "Scan a document" launcher shortcut -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#FFECEFF1" android:pathData="M24,0a24,24 0 1,0 0.01,0z" />
+    <path android:fillColor="#FF37474F"
+        android:pathData="M17,13h10l5,5v17h-15zM27,13v5h5M20,23h9v1.6h-9zM20,27h9v1.6h-9zM20,31h6v1.6h-6z" />
+    <path android:fillColor="#FF0288D1"
+        android:pathData="M11,11h5v2h-3v3h-2zM32,11h5v5h-2v-3h-3zM11,32h2v3h3v2h-5zM35,32h2v5h-5v-2h3z" />
+</vector>

@@ -1,0 +1,190 @@
+{
+  "@@locale": "he",
+  "homeTitle": "ZT Camera",
+  "homeTagline": "תמונות וסרטונים נשמרים בלי מיקום, תאריך או פרטי הטלפון.",
+  "backToCamera": "חזרה למצלמה",
+  "accountSignIn": "כניסה או יצירת חשבון",
+  "accountOptional": "לא חובה: המצלמה והכספת הפרטית עובדות בלי חשבון. חשבון יידרש לגיבוי מוצפן, שיגיע בגרסה מאוחרת יותר.",
+  "accountManage": "סיסמה, אבטחה ויציאה מהחשבון",
+  "privacySection": "מה נשמר בתמונות",
+  "privacyLocation": "מיקום",
+  "privacyLocationNever": "לא נשמר אף פעם. לאפליקציה אין הרשאת מיקום.",
+  "privacyDateTime": "תאריך ושעה",
+  "privacyModel": "היצרן והדגם של הטלפון",
+  "privacyOffByDefault": "לא נשמר, אלא אם מפעילים זאת בהגדרות המצלמה",
+  "privacyOtherApps": "תמונות שמצולמות עבור אפליקציות אחרות",
+  "privacyOtherAppsNever": "תמיד נשמרות בלי שום פרט נוסף",
+  "cameraScreensLicence": "מסכי המצלמה התחילו מ-GrapheneOS Camera (רישיון MIT). ZT Camera לא נוצרה על ידי GrapheneOS ואינה מאושרת על ידה.",
+  "homeVault": "כספת פרטית",
+  "homeVaultSubtitle": "תמונות וסרטונים מוצפנים, רק באפליקציה הזו",
+  "vaultTitle": "כספת פרטית",
+  "vaultLocked": "הכספת נעולה",
+  "vaultLockedBody": "התמונות והסרטונים כאן מוצפנים. פותחים אותם בטביעת אצבע, בפנים או בנעילת המסך.",
+  "vaultUnlock": "פתיחה",
+  "vaultLock": "נעילה",
+  "vaultSetUpTitle": "שמירת תמונות בכספת פרטית",
+  "vaultSetUpBody": "תמונות וסרטונים חדשים מוצפנים בטלפון ונפתחים רק כאן, אחרי טביעת אצבע, פנים או נעילת מסך. הגלריה ואפליקציות אחרות לא רואות אותם. לא צריך חשבון.\n\nאם תסירו את נעילת המסך של הטלפון, לא ניתן יהיה לפתוח את הכספת שוב.",
+  "vaultSetUp": "הגדרת הכספת",
+  "vaultNeedsScreenLock": "קודם צריך להגדיר נעילת מסך בטלפון. הכספת נפתחת איתה.",
+  "vaultKeyLost": "המפתח של הכספת נמחק כי נעילת המסך של הטלפון הוסרה, ולכן אי אפשר לפתוח את התמונות שבה.",
+  "vaultFailed": "זה לא הצליח. נסו שוב.",
+  "vaultAll": "הכול",
+  "vaultFavourites": "מועדפים",
+  "vaultAlbums": "אלבומים",
+  "vaultTrash": "אשפה",
+  "vaultEmpty": "עדיין אין כאן כלום. תמונות וסרטונים שצולמו במצב פרטי, ומה שייובא, יופיעו כאן.",
+  "vaultTrashEmpty": "האשפה ריקה",
+  "vaultTrashNote": "פריטים באשפה נמחקים לתמיד אחרי 30 יום.",
+  "vaultImport": "ייבוא מהגלריה",
+  "vaultImported": "נוספו {count}. המקור עדיין בגלריה: אפשר למחוק אותו שם.",
+  "@vaultImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultPrivateMode": "מצב פרטי לתמונות חדשות",
+  "vaultPrivateModeOn": "תמונות וסרטונים חדשים נשמרים כאן",
+  "vaultPrivateModeOff": "תמונות וסרטונים חדשים נשמרים בגלריה",
+  "vaultFavourite": "מועדף",
+  "vaultAddToAlbum": "הוספה לאלבום",
+  "vaultNewAlbum": "אלבום חדש",
+  "vaultAlbumName": "שם האלבום",
+  "vaultCreate": "יצירה",
+  "vaultCancel": "ביטול",
+  "vaultDelete": "מחיקה",
+  "vaultSaveToGallery": "שמירה בגלריה",
+  "vaultSaved": "נשמרו {count} בגלריה, בלי מיקום, תאריך או פרטי טלפון",
+  "@vaultSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultShare": "שיתוף בלי פרטים",
+  "vaultMoveToTrash": "העברה לאשפה",
+  "vaultRestore": "שחזור",
+  "vaultDeleteForever": "מחיקה לתמיד",
+  "vaultDeleteForeverConfirm": "למחוק {count, plural, =1{את הפריט הזה} other{{count} פריטים}} לתמיד? אי אפשר לבטל.",
+  "@vaultDeleteForeverConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultSelected": "{count} נבחרו",
+  "@vaultSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultRemoveFromAlbum": "הסרה מהאלבום",
+  "vaultDeleteAlbum": "מחיקת האלבום",
+  "vaultAlbumCount": "{count, plural, =1{פריט אחד} other{{count} פריטים}}",
+  "@vaultAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultNoAlbums": "עדיין אין אלבומים",
+  "vaultPlay": "הפעלה",
+  "scanHistoryTitle": "היסטוריית סריקות",
+  "scanHistoryKeep": "שמירת היסטוריית סריקות",
+  "scanHistoryKeepHint": "קודים שסורקים נשמרים כאן, בכספת הפרטית, שרק לך יש גישה אליה.",
+  "scanHistoryEmpty": "עדיין אין סריקות שמורות.",
+  "scanHistoryDelete": "מחיקה",
+  "scanHistoryClear": "מחיקת הכול",
+  "scanHistoryClearTitle": "למחוק את היסטוריית הסריקות?",
+  "scanHistoryClearMessage": "{count, plural, =1{סריקה אחת תימחק.} other{{count} סריקות יימחקו.}}",
+  "scanHistoryCopied": "הועתק",
+  "@scanHistoryClearMessage": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "homeScanDocument": "סריקת מסמך",
+  "homeScanDocumentSubtitle": "דפים ישרים ונקיים כ-PDF, והטקסט נקרא בטלפון עצמו",
+  "homeProCamera": "מצלמה מקצועית",
+  "homeProCameraSubtitle": "ISO, מהירות תריס, מיקוד ואיזון לבן ידניים, וצילומי RAW",
+  "vaultCopyText": "העתקת טקסט",
+  "vaultEdit": "עריכת עותק",
+  "vaultNoText": "לא נמצא טקסט בתמונה",
+  "vaultTextTitle": "טקסט",
+  "vaultCopy": "העתקה",
+  "vaultBackup": "גיבוי מוצפן",
+  "backupTitle": "גיבוי מוצפן",
+  "backupIntro": "כל תמונה מוצפנת בטלפון הזה במפתח משלה לפני שהיא עוברת לחשבון Zero Trust שלך. השרת לא יכול לראות אותה. אפשר לשחזר אותה בטלפון חדש עם החשבון.",
+  "backupSignIn": "כדי לגבות את הכספת, צריך להתחבר לחשבון Zero Trust במסך הבית.",
+  "backupOn": "גיבוי הכספת",
+  "backupCount": "{done} מתוך {total} גובו",
+  "@backupCount": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "backupEverything": "כל מה שבכספת",
+  "backupAlbums": "רק האלבומים האלה",
+  "backupVideos": "גם סרטונים",
+  "backupVideosSubtitle": "עד 20MB לכל סרטון. סרטונים ארוכים יותר נשארים רק בטלפון הזה.",
+  "backupNow": "גיבוי עכשיו",
+  "backupRestore": "שחזור לטלפון הזה",
+  "backupRestoreSubtitle": "מחזיר תמונות מהחשבון שלא נמצאות בטלפון הזה",
+  "backupDone": "{count} גובו",
+  "@backupDone": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupRestored": "{count} שוחזרו",
+  "@backupRestored": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupTooLarge": "{count} גדולים מדי, נשמרים רק בטלפון הזה",
+  "@backupTooLarge": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupFailed": "{count} לא עברו. ננסה שוב בפעם הבאה.",
+  "@backupFailed": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "backupFull": "האחסון בחשבון מלא. השאר יחכה.",
+  "backupProgress": "{done} מתוך {total}",
+  "@backupProgress": {
+    "placeholders": {
+      "done": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  }
+}

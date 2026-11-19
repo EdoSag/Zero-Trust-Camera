@@ -1,0 +1,952 @@
+import 'dart:async';
+import 'dart:math';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../app/camera_bridge.dart';
+import '../l10n/l10n.dart';
+import 'backup_page.dart';
+import 'scan_history_page.dart';
+import 'vault_backend.dart';
+import 'vault_backup.dart';
+import 'vault_library.dart';
+import 'vault_viewer.dart';
+
+enum VaultFilter { all, favourites, albums, trash }
+
+/// The Private vault: photos and videos sealed on this phone, opened only
+/// here after the fingerprint, face or screen lock. Locks itself as soon as
+/// the app is left.
+class PrivateVaultPage extends ConsumerStatefulWidget {
+  const PrivateVaultPage({super.key, this.fromCamera = false, this.now});
+
+  static const routeName = 'vault';
+
+  static Route<void> route({bool fromCamera = false}) =>
+      MaterialPageRoute<void>(
+        settings: const RouteSettings(name: routeName),
+        builder: (_) => PrivateVaultPage(fromCamera: fromCamera),
+      );
+
+  /// Opened straight from the camera: back returns to the viewfinder.
+  final bool fromCamera;
+
+  /// The clock, for tests.
+  final DateTime Function()? now;
+
+  @override
+  ConsumerState<PrivateVaultPage> createState() => _PrivateVaultPageState();
+}
+
+class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
+    with WidgetsBindingObserver {
+  VaultStatus? _status;
+
+  /// Goes up every time the vault is shown locked, so a slow answer that started before can
+  /// tell it is stale.
+  int _lockCount = 0;
+  List<VaultItem> _items = const [];
+  VaultLibrary _library = VaultLibrary();
+  VaultFilter _filter = VaultFilter.all;
+  String? _album;
+  final Set<String> _selected = {};
+  final Map<String, Future<Uint8List?>> _thumbs = {};
+  bool _busy = false;
+  bool _askedOnce = false;
+  String? _message;
+
+  // Kept, not read each time: dispose() still needs it.
+  late final VaultBackend _vault = ref.read(vaultBackendProvider);
+  DateTime _now() => (widget.now ?? DateTime.now)();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    unawaited(_vault.setSecure(true));
+    unawaited(_refresh(autoUnlock: true));
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    unawaited(_vault.setSecure(false));
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // The native side locks the vault when the app is left; show it locked.
+    if (state == AppLifecycleState.resumed) unawaited(_refresh());
+  }
+
+  Future<void> _refresh({bool autoUnlock = false}) async {
+    final status = await _vault.status();
+    if (!mounted) return;
+    setState(() => _status = status);
+    if (!status.unlocked) {
+      _clear();
+      if (autoUnlock && status.setUp && !_askedOnce) {
+        _askedOnce = true;
+        await _unlock();
+      }
+      return;
+    }
+    await _load();
+  }
+
+  void _clear() {
+    // A photo open on top must not stay on screen once the vault is locked.
+    final me = ModalRoute.of(context);
+    if (me != null && !me.isCurrent) {
+      Navigator.of(context).popUntil((r) => r == me);
+    }
+    _lockCount++;
+    setState(() {
+      _items = const [];
+      _library = VaultLibrary();
+      _thumbs.clear();
+      _selected.clear();
+    });
+  }
+
+  Future<void> _load() async {
+    try {
+      final items = await _vault.list();
+      final library = VaultLibrary.fromJson(await _vault.readState());
+      library.keepOnly({for (final i in items) i.id});
+      // Time in the trash is up: deleted for good.
+      final expired = library.expired(_now());
+      var shown = items;
+      if (expired.isNotEmpty) {
+        await _vault.delete(expired);
+        library.forget(expired);
+        await _vault.writeState(library.toJson());
+        shown = [
+          for (final i in items)
+            if (!expired.contains(i.id)) i,
+        ];
+      }
+      if (!mounted) return;
+      setState(() {
+        _items = shown;
+        _library = library;
+      });
+      unawaited(_autoBackup());
+    } on VaultLockedException {
+      await _refresh();
+    }
+  }
+
+  /// With backup on and the account ready, new items go up quietly each time
+  /// the vault opens (and copies of items deleted for good are deleted).
+  Future<void> _autoBackup() async {
+    // Only for the account backup was turned on for: after a switch of
+    // accounts nothing goes up until it is turned on again.
+    final account = ref.read(backupAccountProvider);
+    if (account == null || !_library.backupFor(account)) return;
+    final library = _library;
+    final items = _items;
+    try {
+      final engine = VaultBackup(
+        vault: _vault,
+        store: ref.read(backupStoreProvider),
+        account: account,
+      );
+      final r = await VaultBackup.exclusive(() async {
+        final r = await engine.backUp(library, items);
+        // Saved even with nothing new: copies deleted from the account
+        // leave the queue.
+        if (identical(library, _library)) {
+          await _vault.writeState(library.toJson());
+        }
+        return r;
+      });
+      if (r != null && r.full) _say((l) => l.backupFull);
+    } on Object {
+      // Offline or locked: the next opening tries again.
+    }
+  }
+
+  Future<void> _openBackup() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            VaultBackupPage(library: _library, items: _items, save: _save),
+      ),
+    );
+    // A restore adds items the list here doesn't have yet.
+    if (mounted) await _refresh();
+  }
+
+  Future<void> _save() async {
+    try {
+      await _vault.writeState(_library.toJson());
+    } on Object {
+      _say((l) => l.vaultFailed);
+    }
+  }
+
+  void _say(String Function(AppL10n l) text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(text(context.l10n))));
+  }
+
+  String? _authMessage(VaultAuth r) {
+    final l = context.l10n;
+    return switch (r) {
+      VaultAuth.ok || VaultAuth.cancelled => null,
+      VaultAuth.noScreenLock => l.vaultNeedsScreenLock,
+      VaultAuth.keyLost => l.vaultKeyLost,
+      VaultAuth.failed => l.vaultFailed,
+    };
+  }
+
+  Future<void> _unlock() async {
+    final r = await _vault.unlock();
+    if (!mounted) return;
+    setState(() => _message = _authMessage(r));
+    if (r == VaultAuth.ok) await _refresh();
+  }
+
+  Future<void> _setUp() async {
+    final r = await _vault.setUp();
+    if (!mounted) return;
+    setState(() => _message = _authMessage(r));
+    if (r == VaultAuth.ok) await _refresh();
+  }
+
+  Future<void> _lock() async {
+    await _vault.lock();
+    await _refresh();
+  }
+
+  Future<void> _import() async {
+    setState(() => _busy = true);
+    try {
+      final n = await _vault.importMedia();
+      if (n > 0) _say((l) => l.vaultImported(n));
+      // The vault locked while the photo picker was open: ask to open it again.
+      if (!(await _vault.status()).unlocked) {
+        await _unlock();
+      } else {
+        await _load();
+      }
+    } on Object {
+      _say((l) => l.vaultFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _setPrivateMode(bool on) async {
+    await _vault.setPrivateMode(on);
+    await _refresh();
+  }
+
+  // ---- what is shown ---------------------------------------------------
+
+  List<VaultItem> get _visible {
+    return switch (_filter) {
+      VaultFilter.all => [
+        for (final i in _items)
+          if (!_library.isTrashed(i.id)) i,
+      ],
+      VaultFilter.favourites => [
+        for (final i in _items)
+          if (!_library.isTrashed(i.id) && _library.favourites.contains(i.id))
+            i,
+      ],
+      VaultFilter.albums =>
+        _album == null
+            ? const []
+            : [
+                for (final i in _items)
+                  if (!_library.isTrashed(i.id) &&
+                      (_library.albums[_album]?.items.contains(i.id) ?? false))
+                    i,
+              ],
+      VaultFilter.trash => [
+        for (final i in _items)
+          if (_library.isTrashed(i.id)) i,
+      ],
+    };
+  }
+
+  Future<Uint8List?> _thumb(String id) =>
+      _thumbs.putIfAbsent(id, () => _vault.thumb(id).catchError((_) => null));
+
+  // ---- actions on items ------------------------------------------------
+
+  Future<void> _favourite(List<String> ids) async {
+    setState(() => _library.toggleFavourite(ids));
+    await _save();
+  }
+
+  Future<void> _trash(List<String> ids) async {
+    setState(() {
+      _library.trash(ids, _now());
+      _selected.clear();
+    });
+    await _save();
+  }
+
+  Future<void> _restore(List<String> ids) async {
+    setState(() {
+      _library.restore(ids);
+      _selected.clear();
+    });
+    await _save();
+  }
+
+  Future<void> _deleteForever(List<String> ids) async {
+    final l = context.l10n;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        content: Text(l.vaultDeleteForeverConfirm(ids.length)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: Text(l.vaultCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: Text(l.vaultDelete),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await _vault.delete(ids);
+    setState(() {
+      _library.forget(ids);
+      _items = [
+        for (final i in _items)
+          if (!ids.contains(i.id)) i,
+      ];
+      _selected.clear();
+    });
+    await _save();
+    // Their backed-up copies go too (queued by forget).
+    unawaited(_autoBackup());
+  }
+
+  Future<void> _saveToGallery(List<String> ids) async {
+    setState(() => _busy = true);
+    try {
+      final n = await _vault.saveToGallery(ids);
+      _say((l) => l.vaultSaved(n));
+    } on Object {
+      _say((l) => l.vaultFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _share(List<String> ids) async {
+    setState(() => _busy = true);
+    try {
+      await _vault.share(ids);
+    } on Object {
+      _say((l) => l.vaultFailed);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  /// Opens the photo editor. The edited copy shows up in the vault when this page comes back.
+  Future<void> _edit(String id) async {
+    try {
+      await _vault.editPhoto(id);
+    } on Object {
+      _say((l) => l.vaultFailed);
+    }
+  }
+
+  /// Reads the text in a photo (on the phone) and shows it to copy.
+  Future<void> _readText(String id) async {
+    setState(() => _busy = true);
+    final locks = _lockCount;
+    String? text;
+    try {
+      text = await _vault.readText(id);
+      // Reading can take a while. If the vault locked meanwhile (the app was left), the text
+      // must not show up over the locked vault.
+      if (locks != _lockCount || !(await _vault.status()).unlocked) return;
+    } on Object {
+      _say((l) => l.vaultFailed);
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    final l = context.l10n;
+    if (text == null || text.trim().isEmpty) {
+      _say((l) => l.vaultNoText);
+      return;
+    }
+    final found = text;
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l.vaultTextTitle),
+        content: SingleChildScrollView(child: SelectableText(found)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(),
+            child: Text(MaterialLocalizations.of(c).closeButtonLabel),
+          ),
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: found));
+              Navigator.of(c).pop();
+              _say((l) => l.scanHistoryCopied);
+            },
+            child: Text(l.vaultCopy),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addToAlbum(List<String> ids) async {
+    final l = context.l10n;
+    final albumId = await showModalBottomSheet<String>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: Text(l.vaultNewAlbum),
+              onTap: () => Navigator.pop(c, ''),
+            ),
+            for (final a in _library.albums.values)
+              ListTile(
+                leading: const Icon(Icons.photo_album_outlined),
+                title: Text(a.name),
+                onTap: () => Navigator.pop(c, a.id),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (albumId == null || !mounted) return;
+    var target = albumId;
+    if (target.isEmpty) {
+      final name = await _askAlbumName();
+      if (name == null) return;
+      target = _newId();
+      _library.addAlbum(name, target);
+    }
+    setState(() {
+      _library.addToAlbum(target, ids);
+      _selected.clear();
+    });
+    await _save();
+  }
+
+  Future<String?> _askAlbumName() async {
+    final l = context.l10n;
+    final controller = TextEditingController();
+    final name = await showDialog<String>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l.vaultNewAlbum),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: InputDecoration(labelText: l.vaultAlbumName),
+          onSubmitted: (v) => Navigator.pop(c, v),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c),
+            child: Text(l.vaultCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(c, controller.text),
+            child: Text(l.vaultCreate),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    final trimmed = name?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
+  }
+
+  String _newId() {
+    final r = Random.secure();
+    return List.generate(16, (_) => r.nextInt(16).toRadixString(16)).join();
+  }
+
+  Future<void> _open(VaultItem item) async {
+    final list = _visible;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => VaultViewer(
+          items: list,
+          initial: list.indexOf(item),
+          library: _library,
+          inTrash: _filter == VaultFilter.trash,
+          thumb: _thumb,
+          onFavourite: (id) => _favourite([id]),
+          onTrash: (id) => _trash([id]),
+          onRestore: (id) => _restore([id]),
+          onDeleteForever: (id) => _deleteForever([id]),
+          onSave: (id) => _saveToGallery([id]),
+          onShare: (id) => _share([id]),
+          onReadText: _readText,
+          onEdit: _edit,
+        ),
+      ),
+    );
+    if (mounted) setState(() {});
+  }
+
+  // ---- screens -----------------------------------------------------------
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final status = _status;
+    final unlocked = status?.unlocked == true;
+    final selecting = _selected.isNotEmpty;
+
+    return PopScope(
+      canPop: !selecting,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && selecting) setState(_selected.clear);
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          leading: selecting
+              ? IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => setState(_selected.clear),
+                )
+              : IconButton(
+                  icon: const BackButtonIcon(),
+                  tooltip: widget.fromCamera ? l.backToCamera : null,
+                  onPressed: () => widget.fromCamera
+                      ? ref.read(cameraBridgeProvider).close()
+                      : Navigator.of(context).maybePop(),
+                ),
+          title: Text(
+            selecting ? l.vaultSelected(_selected.length) : l.vaultTitle,
+          ),
+          actions: [
+            if (unlocked && selecting) ..._selectionActions(l),
+            if (unlocked && !selecting) ...[
+              IconButton(
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                tooltip: l.vaultImport,
+                onPressed: _busy ? null : _import,
+              ),
+              IconButton(
+                icon: const Icon(Icons.qr_code_2),
+                tooltip: l.scanHistoryTitle,
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const ScanHistoryPage(),
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.cloud_outlined),
+                tooltip: l.vaultBackup,
+                onPressed: _openBackup,
+              ),
+              IconButton(
+                icon: const Icon(Icons.lock_outline),
+                tooltip: l.vaultLock,
+                onPressed: _lock,
+              ),
+            ],
+          ],
+          bottom: _busy
+              ? const PreferredSize(
+                  preferredSize: Size.fromHeight(4),
+                  child: LinearProgressIndicator(),
+                )
+              : null,
+        ),
+        body: status == null
+            ? const Center(child: CircularProgressIndicator())
+            : !status.setUp
+            ? _setUpView(l, status)
+            : !unlocked
+            ? _lockedView(l)
+            : _unlockedView(l, status),
+      ),
+    );
+  }
+
+  List<Widget> _selectionActions(AppL10n l) {
+    final ids = _selected.toList();
+    if (_filter == VaultFilter.trash) {
+      return [
+        IconButton(
+          icon: const Icon(Icons.restore),
+          tooltip: l.vaultRestore,
+          onPressed: () => _restore(ids),
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_forever_outlined),
+          tooltip: l.vaultDeleteForever,
+          onPressed: () => _deleteForever(ids),
+        ),
+      ];
+    }
+    return [
+      IconButton(
+        icon: const Icon(Icons.star_outline),
+        tooltip: l.vaultFavourite,
+        onPressed: () => _favourite(ids),
+      ),
+      IconButton(
+        icon: const Icon(Icons.share_outlined),
+        tooltip: l.vaultShare,
+        onPressed: () => _share(ids),
+      ),
+      IconButton(
+        icon: const Icon(Icons.delete_outline),
+        tooltip: l.vaultMoveToTrash,
+        onPressed: () => _trash(ids),
+      ),
+      PopupMenuButton<int>(
+        onSelected: (v) => switch (v) {
+          0 => _addToAlbum(ids),
+          1 => _saveToGallery(ids),
+          _ => _removeFromAlbum(ids),
+        },
+        itemBuilder: (_) => [
+          PopupMenuItem(value: 0, child: Text(l.vaultAddToAlbum)),
+          PopupMenuItem(value: 1, child: Text(l.vaultSaveToGallery)),
+          if (_filter == VaultFilter.albums && _album != null)
+            PopupMenuItem(value: 2, child: Text(l.vaultRemoveFromAlbum)),
+        ],
+      ),
+    ];
+  }
+
+  Future<void> _removeFromAlbum(List<String> ids) async {
+    final album = _album;
+    if (album == null) return;
+    setState(() {
+      _library.removeFromAlbum(album, ids);
+      _selected.clear();
+    });
+    await _save();
+  }
+
+  Widget _centered(List<Widget> children) => Center(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.all(24),
+      child: Column(mainAxisSize: MainAxisSize.min, children: children),
+    ),
+  );
+
+  Widget _setUpView(AppL10n l, VaultStatus status) {
+    final theme = Theme.of(context);
+    return _centered([
+      Icon(
+        Icons.enhanced_encryption_outlined,
+        size: 64,
+        color: theme.colorScheme.primary,
+      ),
+      const SizedBox(height: 16),
+      Text(
+        l.vaultSetUpTitle,
+        style: theme.textTheme.titleLarge,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 12),
+      Text(l.vaultSetUpBody, textAlign: TextAlign.center),
+      const SizedBox(height: 24),
+      if (!status.screenLock)
+        Text(
+          l.vaultNeedsScreenLock,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: theme.colorScheme.error),
+        )
+      else
+        FilledButton.icon(
+          icon: const Icon(Icons.lock_outline),
+          label: Text(l.vaultSetUp),
+          onPressed: _setUp,
+        ),
+      if (_message != null) ...[
+        const SizedBox(height: 16),
+        Text(
+          _message!,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: theme.colorScheme.error),
+        ),
+      ],
+    ]);
+  }
+
+  Widget _lockedView(AppL10n l) {
+    final theme = Theme.of(context);
+    return _centered([
+      Icon(Icons.lock_outline, size: 64, color: theme.colorScheme.primary),
+      const SizedBox(height: 16),
+      Text(
+        l.vaultLocked,
+        style: theme.textTheme.titleLarge,
+        textAlign: TextAlign.center,
+      ),
+      const SizedBox(height: 12),
+      Text(l.vaultLockedBody, textAlign: TextAlign.center),
+      const SizedBox(height: 24),
+      FilledButton.icon(
+        icon: const Icon(Icons.fingerprint),
+        label: Text(l.vaultUnlock),
+        onPressed: _unlock,
+      ),
+      if (_message != null) ...[
+        const SizedBox(height: 16),
+        Text(
+          _message!,
+          textAlign: TextAlign.center,
+          style: TextStyle(color: theme.colorScheme.error),
+        ),
+      ],
+    ]);
+  }
+
+  Widget _unlockedView(AppL10n l, VaultStatus status) {
+    final visible = _visible;
+    final showAlbumList = _filter == VaultFilter.albums && _album == null;
+    return Column(
+      children: [
+        SwitchListTile(
+          secondary: const Icon(Icons.enhanced_encryption_outlined),
+          title: Text(l.vaultPrivateMode),
+          subtitle: Text(
+            status.privateMode ? l.vaultPrivateModeOn : l.vaultPrivateModeOff,
+          ),
+          value: status.privateMode,
+          onChanged: _setPrivateMode,
+        ),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Row(
+            children: [
+              for (final f in VaultFilter.values)
+                Padding(
+                  padding: const EdgeInsetsDirectional.only(end: 8),
+                  child: ChoiceChip(
+                    label: Text(switch (f) {
+                      VaultFilter.all => l.vaultAll,
+                      VaultFilter.favourites => l.vaultFavourites,
+                      VaultFilter.albums => l.vaultAlbums,
+                      VaultFilter.trash => l.vaultTrash,
+                    }),
+                    selected: _filter == f,
+                    onSelected: (_) => setState(() {
+                      _filter = f;
+                      _album = null;
+                      _selected.clear();
+                    }),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        if (_filter == VaultFilter.trash)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              l.vaultTrashNote,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        if (_filter == VaultFilter.albums && _album != null)
+          ListTile(
+            leading: IconButton(
+              icon: const BackButtonIcon(),
+              onPressed: () => setState(() {
+                _album = null;
+                _selected.clear();
+              }),
+            ),
+            title: Text(_library.albums[_album]?.name ?? ''),
+            trailing: IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: l.vaultDeleteAlbum,
+              onPressed: () async {
+                final id = _album!;
+                setState(() {
+                  _library.deleteAlbum(id);
+                  _album = null;
+                });
+                await _save();
+              },
+            ),
+          ),
+        Expanded(
+          child: showAlbumList
+              ? _albumList(l)
+              : visible.isEmpty
+              ? _centered([
+                  Text(
+                    _filter == VaultFilter.trash
+                        ? l.vaultTrashEmpty
+                        : l.vaultEmpty,
+                    textAlign: TextAlign.center,
+                  ),
+                ])
+              : RefreshIndicator(onRefresh: _load, child: _grid(visible)),
+        ),
+      ],
+    );
+  }
+
+  Widget _albumList(AppL10n l) {
+    final albums = _library.albums.values.toList();
+    return ListView(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.add),
+          title: Text(l.vaultNewAlbum),
+          onTap: () async {
+            final name = await _askAlbumName();
+            if (name == null) return;
+            setState(() => _library.addAlbum(name, _newId()));
+            await _save();
+          },
+        ),
+        if (albums.isEmpty)
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(l.vaultNoAlbums, textAlign: TextAlign.center),
+          ),
+        for (final a in albums)
+          ListTile(
+            leading: const Icon(Icons.photo_album_outlined),
+            title: Text(a.name),
+            subtitle: Text(
+              l.vaultAlbumCount(
+                a.items.where((id) => !_library.isTrashed(id)).length,
+              ),
+            ),
+            onTap: () => setState(() => _album = a.id),
+          ),
+      ],
+    );
+  }
+
+  Widget _grid(List<VaultItem> items) {
+    return GridView.builder(
+      padding: const EdgeInsets.all(2),
+      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 128,
+        mainAxisSpacing: 2,
+        crossAxisSpacing: 2,
+      ),
+      itemCount: items.length,
+      itemBuilder: (context, i) {
+        final item = items[i];
+        final selected = _selected.contains(item.id);
+        return GestureDetector(
+          key: ValueKey(item.id),
+          onTap: () => _selected.isNotEmpty
+              ? setState(
+                  () => selected
+                      ? _selected.remove(item.id)
+                      : _selected.add(item.id),
+                )
+              : _open(item),
+          onLongPress: () => setState(() => _selected.add(item.id)),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              VaultThumb(future: _thumb(item.id)),
+              if (item.isVideo)
+                PositionedDirectional(
+                  bottom: 4,
+                  end: 4,
+                  child: _VideoBadge(duration: item.duration),
+                ),
+              if (_library.favourites.contains(item.id))
+                const PositionedDirectional(
+                  top: 4,
+                  start: 4,
+                  child: Icon(Icons.star, size: 18, color: Colors.white),
+                ),
+              if (selected)
+                Container(
+                  color: Colors.black38,
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.check_circle, color: Colors.white),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// A sealed thumbnail, opened on demand.
+class VaultThumb extends StatelessWidget {
+  const VaultThumb({super.key, required this.future, this.fit = BoxFit.cover});
+
+  final Future<Uint8List?> future;
+  final BoxFit fit;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = Theme.of(context).colorScheme.surfaceContainerHighest;
+    return FutureBuilder<Uint8List?>(
+      future: future,
+      builder: (context, snap) {
+        final bytes = snap.data;
+        if (bytes == null) return ColoredBox(color: color);
+        return Image.memory(bytes, fit: fit, gaplessPlayback: true);
+      },
+    );
+  }
+}
+
+class _VideoBadge extends StatelessWidget {
+  const _VideoBadge({this.duration});
+
+  final Duration? duration;
+
+  @override
+  Widget build(BuildContext context) {
+    final d = duration;
+    final text = d == null
+        ? ''
+        : '${d.inMinutes}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: Colors.black54,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.play_arrow, size: 14, color: Colors.white),
+          if (text.isNotEmpty)
+            Text(
+              text,
+              style: const TextStyle(color: Colors.white, fontSize: 11),
+            ),
+        ],
+      ),
+    );
+  }
+}
