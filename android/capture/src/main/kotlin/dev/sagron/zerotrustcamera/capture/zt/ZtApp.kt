@@ -10,8 +10,14 @@ import android.content.Intent
  */
 object ZtApp {
     private const val ACTIVITY = "dev.sagron.zerotrustcamera.ZtAppActivity"
+    const val EXTRA_SCREEN = "zt_screen"
 
     fun open(from: Activity) {
         from.startActivity(Intent().setClassName(from.packageName, ACTIVITY))
+    }
+
+    /** The Private vault (it asks for the fingerprint, face or screen lock first). */
+    fun openVault(from: Activity) {
+        from.startActivity(Intent().setClassName(from.packageName, ACTIVITY).putExtra(EXTRA_SCREEN, "vault"))
     }
 }

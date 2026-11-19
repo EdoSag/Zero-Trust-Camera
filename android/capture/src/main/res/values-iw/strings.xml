@@ -194,4 +194,19 @@
     <string name="keep_camera_model_title">שמירת דגם הטלפון</string>
     <string name="keep_camera_model_subtitle">היצרן והדגם של הטלפון נשמרים בתוך התמונות</string>
     <string name="audio_cannot_be_enabled_while_recording">אי אפשר להפעיל קול באמצע הקלטה שהתחילה בלי קול</string>
+    <!-- ZT Camera: כספת פרטית -->
+    <string name="private_vault_title">כספת פרטית</string>
+    <string name="private_vault_subtitle">תמונות וסרטונים חדשים נשמרים מוצפנים, רק בתוך האפליקציה</string>
+    <string name="vault_choose_title">לאן לשמור את התמונות?</string>
+    <string name="vault_choose_message">גלריה: התמונות והסרטונים נשמרים בגלריה של הטלפון, כרגיל.\n\nכספת פרטית: הם מוצפנים בטלפון ונפתחים רק ב-ZT Camera, אחרי טביעת אצבע, פנים או נעילת מסך. הגלריה ואפליקציות אחרות לא רואות אותם.\n\nאם תסירו את נעילת המסך של הטלפון, לא ניתן יהיה לפתוח את הכספת שוב. אפשר לשנות את זה אחר כך בהגדרות נוספות.</string>
+    <string name="vault_choose_gallery">גלריה</string>
+    <string name="vault_choose_private">כספת פרטית</string>
+    <string name="vault_setup_prompt_title">הגדרת הכספת הפרטית</string>
+    <string name="vault_unlock_prompt_title">פתיחת הכספת הפרטית</string>
+    <string name="vault_prompt_subtitle">אישור שזה אתם</string>
+    <string name="vault_needs_screen_lock">קודם צריך להגדיר נעילת מסך בטלפון. הכספת הפרטית נפתחת איתה.</string>
+    <string name="vault_setup_failed">לא ניתן היה להגדיר את הכספת הפרטית. התמונות ממשיכות להישמר בגלריה.</string>
+    <string name="vault_mode_on">תמונות וסרטונים חדשים נשמרים בכספת הפרטית</string>
+    <string name="vault_unlock_phone_first">צריך לבטל את נעילת הטלפון כדי לראות את הכספת הפרטית</string>
+    <string name="vault_video_failed">אי אפשר להפעיל את הסרטון הזה</string>
 </resources>

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_camera/app/auth_providers.dart';
@@ -24,7 +25,12 @@ late FakeBridge bridge;
 
 /// [home] inside the app's real theme and languages, with no account
 /// (or [user]) and nothing native behind it.
-Widget app(Widget home, {Locale locale = ZtLanguages.english, User? user}) {
+Widget app(
+  Widget home, {
+  Locale locale = ZtLanguages.english,
+  User? user,
+  List<Override> overrides = const [],
+}) {
   bridge = FakeBridge();
   return ProviderScope(
     overrides: [
@@ -32,6 +38,7 @@ Widget app(Widget home, {Locale locale = ZtLanguages.english, User? user}) {
       ztPreferencesStoreProvider.overrideWithValue(InMemoryPreferencesStore()),
       cameraBridgeProvider.overrideWithValue(bridge),
       currentUserProvider.overrideWithValue(user),
+      ...overrides,
     ],
     child: Consumer(
       builder: (context, ref, _) => MaterialApp(

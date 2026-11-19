@@ -4,7 +4,7 @@
   "homeTagline": "תמונות וסרטונים נשמרים בלי מיקום, תאריך או פרטי הטלפון.",
   "backToCamera": "חזרה למצלמה",
   "accountSignIn": "כניסה או יצירת חשבון",
-  "accountOptional": "לא חובה: המצלמה עובדת גם בלי חשבון. חשבון יידרש לכספת הפרטית ולגיבוי המוצפן, שיגיעו בגרסה מאוחרת יותר.",
+  "accountOptional": "לא חובה: המצלמה והכספת הפרטית עובדות בלי חשבון. חשבון יידרש לגיבוי מוצפן, שיגיע בגרסה מאוחרת יותר.",
   "accountManage": "סיסמה, אבטחה ויציאה מהחשבון",
   "privacySection": "מה נשמר בתמונות",
   "privacyLocation": "מיקום",
@@ -14,5 +14,85 @@
   "privacyOffByDefault": "לא נשמר, אלא אם מפעילים זאת בהגדרות המצלמה",
   "privacyOtherApps": "תמונות שמצולמות עבור אפליקציות אחרות",
   "privacyOtherAppsNever": "תמיד נשמרות בלי שום פרט נוסף",
-  "cameraScreensLicence": "מסכי המצלמה התחילו מ-GrapheneOS Camera (רישיון MIT). ZT Camera לא נוצרה על ידי GrapheneOS ואינה מאושרת על ידה."
+  "cameraScreensLicence": "מסכי המצלמה התחילו מ-GrapheneOS Camera (רישיון MIT). ZT Camera לא נוצרה על ידי GrapheneOS ואינה מאושרת על ידה.",
+  "homeVault": "כספת פרטית",
+  "homeVaultSubtitle": "תמונות וסרטונים מוצפנים, רק באפליקציה הזו",
+  "vaultTitle": "כספת פרטית",
+  "vaultLocked": "הכספת נעולה",
+  "vaultLockedBody": "התמונות והסרטונים כאן מוצפנים. פותחים אותם בטביעת אצבע, בפנים או בנעילת המסך.",
+  "vaultUnlock": "פתיחה",
+  "vaultLock": "נעילה",
+  "vaultSetUpTitle": "שמירת תמונות בכספת פרטית",
+  "vaultSetUpBody": "תמונות וסרטונים חדשים מוצפנים בטלפון ונפתחים רק כאן, אחרי טביעת אצבע, פנים או נעילת מסך. הגלריה ואפליקציות אחרות לא רואות אותם. לא צריך חשבון.\n\nאם תסירו את נעילת המסך של הטלפון, לא ניתן יהיה לפתוח את הכספת שוב.",
+  "vaultSetUp": "הגדרת הכספת",
+  "vaultNeedsScreenLock": "קודם צריך להגדיר נעילת מסך בטלפון. הכספת נפתחת איתה.",
+  "vaultKeyLost": "המפתח של הכספת נמחק כי נעילת המסך של הטלפון הוסרה, ולכן אי אפשר לפתוח את התמונות שבה.",
+  "vaultFailed": "זה לא הצליח. נסו שוב.",
+  "vaultAll": "הכול",
+  "vaultFavourites": "מועדפים",
+  "vaultAlbums": "אלבומים",
+  "vaultTrash": "אשפה",
+  "vaultEmpty": "עדיין אין כאן כלום. תמונות וסרטונים שצולמו במצב פרטי, ומה שייובא, יופיעו כאן.",
+  "vaultTrashEmpty": "האשפה ריקה",
+  "vaultTrashNote": "פריטים באשפה נמחקים לתמיד אחרי 30 יום.",
+  "vaultImport": "ייבוא מהגלריה",
+  "vaultImported": "נוספו {count}. המקור עדיין בגלריה: אפשר למחוק אותו שם.",
+  "@vaultImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultPrivateMode": "מצב פרטי לתמונות חדשות",
+  "vaultPrivateModeOn": "תמונות וסרטונים חדשים נשמרים כאן",
+  "vaultPrivateModeOff": "תמונות וסרטונים חדשים נשמרים בגלריה",
+  "vaultFavourite": "מועדף",
+  "vaultAddToAlbum": "הוספה לאלבום",
+  "vaultNewAlbum": "אלבום חדש",
+  "vaultAlbumName": "שם האלבום",
+  "vaultCreate": "יצירה",
+  "vaultCancel": "ביטול",
+  "vaultDelete": "מחיקה",
+  "vaultSaveToGallery": "שמירה בגלריה",
+  "vaultSaved": "נשמרו {count} בגלריה, בלי מיקום, תאריך או פרטי טלפון",
+  "@vaultSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultShare": "שיתוף בלי פרטים",
+  "vaultMoveToTrash": "העברה לאשפה",
+  "vaultRestore": "שחזור",
+  "vaultDeleteForever": "מחיקה לתמיד",
+  "vaultDeleteForeverConfirm": "למחוק {count, plural, =1{את הפריט הזה} other{{count} פריטים}} לתמיד? אי אפשר לבטל.",
+  "@vaultDeleteForeverConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultSelected": "{count} נבחרו",
+  "@vaultSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultRemoveFromAlbum": "הסרה מהאלבום",
+  "vaultDeleteAlbum": "מחיקת האלבום",
+  "vaultAlbumCount": "{count, plural, =1{פריט אחד} other{{count} פריטים}}",
+  "@vaultAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultNoAlbums": "עדיין אין אלבומים",
+  "vaultPlay": "הפעלה"
 }

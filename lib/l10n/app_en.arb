@@ -4,7 +4,7 @@
   "homeTagline": "Photos and videos are saved without location, date or phone details.",
   "backToCamera": "Back to camera",
   "accountSignIn": "Sign in or create an account",
-  "accountOptional": "Optional: the camera works without one. An account will be needed for the private vault and encrypted backup, which come in a later version.",
+  "accountOptional": "Optional: the camera and the Private vault work without one. An account will be needed for encrypted backup, which comes in a later version.",
   "accountManage": "Password, security and sign out",
   "privacySection": "What your photos keep",
   "privacyLocation": "Location",
@@ -14,5 +14,85 @@
   "privacyOffByDefault": "Not saved, unless you turn it on in the camera's settings",
   "privacyOtherApps": "Photos taken for other apps",
   "privacyOtherAppsNever": "Always saved with nothing extra",
-  "cameraScreensLicence": "The camera screens started from GrapheneOS Camera (MIT licence). ZT Camera is not made or endorsed by GrapheneOS."
+  "cameraScreensLicence": "The camera screens started from GrapheneOS Camera (MIT licence). ZT Camera is not made or endorsed by GrapheneOS.",
+  "homeVault": "Private vault",
+  "homeVaultSubtitle": "Encrypted photos and videos, only in this app",
+  "vaultTitle": "Private vault",
+  "vaultLocked": "The vault is locked",
+  "vaultLockedBody": "Photos and videos here are encrypted. Open them with your fingerprint, face or screen lock.",
+  "vaultUnlock": "Unlock",
+  "vaultLock": "Lock",
+  "vaultSetUpTitle": "Keep photos in a Private vault",
+  "vaultSetUpBody": "New photos and videos are encrypted on this phone and open only here, after your fingerprint, face or screen lock. The gallery and other apps never see them. No account is needed.\n\nIf you remove your phone's screen lock, the vault can't be opened again.",
+  "vaultSetUp": "Set up the vault",
+  "vaultNeedsScreenLock": "Set a screen lock on your phone first. The vault opens with it.",
+  "vaultKeyLost": "The vault's key is gone because the phone's screen lock was removed, so its photos can't be opened.",
+  "vaultFailed": "That didn't work. Try again.",
+  "vaultAll": "All",
+  "vaultFavourites": "Favourites",
+  "vaultAlbums": "Albums",
+  "vaultTrash": "Trash",
+  "vaultEmpty": "Nothing here yet. Photos and videos you take in Private mode, and ones you import, show up here.",
+  "vaultTrashEmpty": "The trash is empty",
+  "vaultTrashNote": "Items in the trash are deleted for good after 30 days.",
+  "vaultImport": "Import from gallery",
+  "vaultImported": "Added {count}. The originals are still in your gallery: delete them there if you want them gone.",
+  "@vaultImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultPrivateMode": "Private mode for new photos",
+  "vaultPrivateModeOn": "New photos and videos go here",
+  "vaultPrivateModeOff": "New photos and videos go to the gallery",
+  "vaultFavourite": "Favourite",
+  "vaultAddToAlbum": "Add to album",
+  "vaultNewAlbum": "New album",
+  "vaultAlbumName": "Album name",
+  "vaultCreate": "Create",
+  "vaultCancel": "Cancel",
+  "vaultDelete": "Delete",
+  "vaultSaveToGallery": "Save to gallery",
+  "vaultSaved": "Saved {count} to the gallery, without location, date or phone details",
+  "@vaultSaved": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultShare": "Share without details",
+  "vaultMoveToTrash": "Move to trash",
+  "vaultRestore": "Restore",
+  "vaultDeleteForever": "Delete for good",
+  "vaultDeleteForeverConfirm": "Delete {count, plural, =1{this item} other{{count} items}} for good? This can't be undone.",
+  "@vaultDeleteForeverConfirm": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultSelected": "{count} selected",
+  "@vaultSelected": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultRemoveFromAlbum": "Remove from album",
+  "vaultDeleteAlbum": "Delete album",
+  "vaultAlbumCount": "{count, plural, =1{1 item} other{{count} items}}",
+  "@vaultAlbumCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "vaultNoAlbums": "No albums yet",
+  "vaultPlay": "Play"
 }

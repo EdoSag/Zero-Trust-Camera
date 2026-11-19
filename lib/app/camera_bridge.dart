@@ -22,6 +22,18 @@ class CameraBridge {
     }
   }
 
+  /// The screen the camera asked these screens to show ("vault"), once:
+  /// null after it has been read, or when the camera asked for none.
+  Future<String?> takeScreen() async {
+    try {
+      return await _channel.invokeMethod<String>('takeScreen');
+    } on PlatformException {
+      return null;
+    } on MissingPluginException {
+      return null;
+    }
+  }
+
   /// Closes these screens, back to the viewfinder.
   Future<void> close() async {
     try {

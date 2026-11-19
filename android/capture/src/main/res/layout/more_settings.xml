@@ -508,6 +508,63 @@
                     android:textSize="14sp"
                     tools:ignore="RtlSymmetry" />
 
+                <!-- ZT Camera: new photos and videos go into the encrypted Private vault. -->
+                <LinearLayout
+                    android:id="@+id/private_vault_setting"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?android:attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:orientation="horizontal"
+                    android:paddingTop="8dp"
+                    android:paddingHorizontal="16dp"
+                    android:paddingBottom="10dp">
+
+                    <ImageView
+                        android:layout_width="48dp"
+                        android:layout_height="48dp"
+                        android:importantForAccessibility="no"
+                        android:paddingStart="4dp"
+                        android:paddingEnd="8dp"
+                        android:src="@drawable/info_adaptable" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginHorizontal="4dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:paddingBottom="2dp"
+                            android:text="@string/private_vault_title"
+                            android:textColor="?android:textColorPrimary"
+                            android:textSize="16sp" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingStart="10dp"
+                            android:text="@string/private_vault_subtitle"
+                            android:textSize="14sp"
+                            tools:ignore="RtlSymmetry" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.materialswitch.MaterialSwitch
+                        android:id="@+id/private_vault_toggle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end|center_vertical"
+                        android:layout_marginEnd="0dp"
+                        android:contentDescription="@string/private_vault_title" />
+
+                </LinearLayout>
+
                 <LinearLayout
                     android:id="@+id/keep_date_time_setting"
                     android:layout_width="match_parent"

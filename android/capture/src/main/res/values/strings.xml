@@ -246,4 +246,19 @@
     <string name="keep_camera_model_title">Keep phone model</string>
     <string name="keep_camera_model_subtitle">Save the phone\'s make and model inside photos</string>
     <string name="audio_cannot_be_enabled_while_recording">Audio can\'t be turned on during a recording that started without it</string>
+    <!-- ZT Camera: Private vault -->
+    <string name="private_vault_title">Private vault</string>
+    <string name="private_vault_subtitle">Save new photos and videos encrypted, only inside this app</string>
+    <string name="vault_choose_title">Where should photos go?</string>
+    <string name="vault_choose_message">Gallery: photos and videos go to your phone\'s gallery, as usual.\n\nPrivate vault: they are encrypted on this phone and open only in ZT Camera, after your fingerprint, face or screen lock. The gallery and other apps never see them.\n\nIf you remove your phone\'s screen lock, the vault can\'t be opened again. You can change this later in More settings.</string>
+    <string name="vault_choose_gallery">Gallery</string>
+    <string name="vault_choose_private">Private vault</string>
+    <string name="vault_setup_prompt_title">Set up the Private vault</string>
+    <string name="vault_unlock_prompt_title">Open the Private vault</string>
+    <string name="vault_prompt_subtitle">Confirm it\'s you</string>
+    <string name="vault_needs_screen_lock">Set a screen lock on your phone first. The Private vault opens with it.</string>
+    <string name="vault_setup_failed">The Private vault couldn\'t be set up. Photos keep going to the gallery.</string>
+    <string name="vault_mode_on">New photos and videos go to the Private vault</string>
+    <string name="vault_unlock_phone_first">Unlock your phone to see the Private vault</string>
+    <string name="vault_video_failed">This video can\'t be played</string>
 </resources>

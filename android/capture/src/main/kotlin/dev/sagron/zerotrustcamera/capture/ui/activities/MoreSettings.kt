@@ -23,6 +23,8 @@ import dev.sagron.zerotrustcamera.capture.CamConfig
 import dev.sagron.zerotrustcamera.capture.CapturedItems
 import dev.sagron.zerotrustcamera.capture.NumInputFilter
 import dev.sagron.zerotrustcamera.capture.R
+import dev.sagron.zerotrustcamera.capture.zt.PrivateVaultSetup
+import dev.sagron.zerotrustcamera.capture.zt.VaultKeys
 import dev.sagron.zerotrustcamera.capture.zt.ZtApp
 import dev.sagron.zerotrustcamera.capture.databinding.MoreSettingsBinding
 import dev.sagron.zerotrustcamera.capture.util.storageLocationToUiString
@@ -178,6 +180,25 @@ open class MoreSettings : ZtBaseActivity(), TextView.OnEditorActionListener {
                     camConfig.keepDateTime = toggle.isChecked
                 } else {
                     camConfig.keepCameraModel = toggle.isChecked
+                }
+            }
+        }
+
+        // ZT Camera: Private mode. Turning it on sets the vault up (one confirmation with the
+        // fingerprint, face or screen lock). Not offered from the lock screen or for another app.
+        val vaultRow = binding.privateVaultSetting
+        val vaultToggle = binding.privateVaultToggle
+        if (this is MoreSettingsSecure || camConfig.isInCaptureMode) {
+            vaultRow.visibility = View.GONE
+        } else {
+            vaultToggle.isChecked = camConfig.privateVault && VaultKeys.isSetUp(this)
+            vaultRow.setOnClickListener { vaultToggle.performClick() }
+            vaultToggle.setOnClickListener {
+                if (vaultToggle.isChecked) {
+                    vaultToggle.isChecked = false
+                    PrivateVaultSetup.turnOn(this, camConfig) { on -> vaultToggle.isChecked = on }
+                } else {
+                    camConfig.privateVault = false
                 }
             }
         }

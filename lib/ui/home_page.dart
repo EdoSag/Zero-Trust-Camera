@@ -8,6 +8,7 @@ import '../app/auth_providers.dart';
 import '../app/camera_bridge.dart';
 import '../app/camera_config.dart';
 import '../l10n/l10n.dart';
+import '../private_vault/vault_page.dart';
 
 /// Opened from the camera's settings: the optional Zero-Trust account, what
 /// photos keep, language, appearance and about. Needs no account.
@@ -80,6 +81,14 @@ class HomePage extends ConsumerWidget {
               trailing: const Icon(Icons.chevron_right),
               onTap: () => _openAccount(context),
             ),
+
+          ListTile(
+            leading: const Icon(Icons.enhanced_encryption_outlined),
+            title: Text(l.homeVault),
+            subtitle: Text(l.homeVaultSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(PrivateVaultPage.route()),
+          ),
 
           _Header(l.privacySection),
           ListTile(
