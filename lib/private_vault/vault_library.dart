@@ -169,6 +169,24 @@ class VaultLibrary {
     backup.albums.remove(albumId);
   }
 
+  /// Whether backup is on for [account] (the signed-in user's id). On for
+  /// another account counts as off: nothing may go to an account the owner
+  /// didn't pick.
+  bool backupFor(String? account) =>
+      backup.on && account != null && backup.account == account;
+
+  /// Points the backup at [account]. Coming from another account (or from
+  /// none), backup is off until turned on again, and what this phone knew
+  /// about the other account's copies is dropped: they stay there, untouched.
+  void useBackupAccount(String account) {
+    if (backup.account == account) return;
+    backup
+      ..on = false
+      ..account = account;
+    backedUp.clear();
+    backupDeletes.clear();
+  }
+
   /// Ids of the albums [id] is in.
   List<String> albumsOf(String id) => [
     for (final a in albums.values)
@@ -176,13 +194,15 @@ class VaultLibrary {
   ];
 }
 
-/// The vault backup's settings. Off until turned on.
+/// The vault backup's settings. Off until turned on, and on only for the
+/// account it was turned on for.
 class BackupSettings {
   BackupSettings({
     this.on = false,
     this.everything = true,
     Set<String>? albums,
     this.videos = false,
+    this.account,
   }) : albums = albums ?? {};
 
   factory BackupSettings.fromJson(Object? j) {
@@ -195,10 +215,15 @@ class BackupSettings {
           if (a is String) a,
       },
       videos: j['videos'] == true,
+      account: j['account'] as String?,
     );
   }
 
   bool on;
+
+  /// The account (user id) the backup was turned on for. Backup never runs
+  /// for any other account.
+  String? account;
 
   /// Everything, or only the [albums] picked.
   bool everything;
@@ -212,6 +237,7 @@ class BackupSettings {
     'everything': everything,
     'albums': albums.toList(),
     'videos': videos,
+    'account': account,
   };
 }
 
