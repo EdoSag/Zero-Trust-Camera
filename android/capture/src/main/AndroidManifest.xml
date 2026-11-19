@@ -210,6 +210,7 @@
             android:name=".zt.CleanShareActivity"
             android:label="@string/clean_share_label"
             android:theme="@style/Theme.CleanShare"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|uiMode|density"
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:exported="true">
@@ -227,6 +228,7 @@
             android:name=".zt.ScanImageActivity"
             android:label="@string/scan_image_label"
             android:theme="@style/Theme.CleanShare"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize|uiMode|density"
             android:excludeFromRecents="true"
             android:taskAffinity=""
             android:exported="true">

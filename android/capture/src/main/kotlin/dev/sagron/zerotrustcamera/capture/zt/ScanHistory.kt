@@ -18,6 +18,9 @@ object ScanHistory {
 
     fun save(ctx: Context, text: String) {
         if (!isOn(ctx)) return
+        // A two-factor secret is never kept, not even in the vault: it isn't shown on the scan
+        // screen either, and the history page would show and copy it.
+        if (ScanContent.parse(text).kind == ScanContent.Kind.OTP) return
         val now = System.currentTimeMillis()
         // The same code held in view is read again and again: keep it once.
         if (text == last && now - lastAt < 60_000) return

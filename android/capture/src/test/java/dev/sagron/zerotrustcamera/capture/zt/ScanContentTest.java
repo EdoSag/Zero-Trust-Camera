@@ -165,6 +165,25 @@ public class ScanContentTest {
     }
 
     @Test
+    public void backslashesAreReadAsTheBrowserReadsThem() {
+        ScanContent c = ScanContent.parse("https://evil.example\\foo.google.com/path");
+        assertEquals("evil.example", c.get("host"));
+        assertEquals("evil.example", c.get("domain"));
+        ScanContent tabbed = ScanContent.parse("https://evil.exa\tmple@bank.co.il");
+        assertEquals("bank.co.il", tabbed.get("host"));
+        assertTrue(tabbed.warnings.contains(Warning.USER_INFO));
+    }
+
+    @Test
+    public void eventZonesAreKept() {
+        ScanContent c = ScanContent.parse("BEGIN:VEVENT\nSUMMARY:Call\nDTSTART;TZID=America/New_York:20261119T180000\n"
+            + "DTEND;TZID=\"America/New_York\":20261119T190000\nEND:VEVENT");
+        // 18:00 in New York (UTC-5 in November) is 23:00 UTC.
+        assertEquals("1795129200000", c.get("startMs"));
+        assertEquals("1795132800000", c.get("endMs"));
+    }
+
+    @Test
     public void plainText() {
         assertEquals(Kind.TEXT, ScanContent.parse("Hello world").kind);
         assertEquals(Kind.TEXT, ScanContent.parse("4006381333931").kind);
