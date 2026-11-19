@@ -65,7 +65,6 @@ class ProCameraActivity : ZtBaseActivity() {
     private enum class Dial { ISO, SHUTTER, FOCUS, WB }
 
     private val main = Handler(Looper.getMainLooper())
-    private lateinit var io: ExecutorService
     private lateinit var preview: PreviewView
     private lateinit var readout: TextView
     private lateinit var dials: LinearLayout
@@ -107,7 +106,9 @@ class ProCameraActivity : ZtBaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        io = Executors.newSingleThreadExecutor()
+        // A RAW shot cut short by the app being killed leaves temp files; they are wiped here.
+        val ctx = applicationContext
+        saver.execute { VaultStore.cleanUp(ctx) }
         buildUi()
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             bind()
@@ -119,7 +120,8 @@ class ProCameraActivity : ZtBaseActivity() {
     override fun onDestroy() {
         super.onDestroy()
         provider?.unbindAll()
-        io.shutdown()
+        // [saver] is not shut down: a shot still being saved must finish and wipe its temp files
+        // even after this screen is closed.
     }
 
     // ---- layout ----------------------------------------------------------------------------------
@@ -442,7 +444,7 @@ class ProCameraActivity : ZtBaseActivity() {
     }
 
     private fun takeJpeg(capture: ImageCapture) {
-        capture.takePicture(io, object : ImageCapture.OnImageCapturedCallback() {
+        capture.takePicture(saver, object : ImageCapture.OnImageCapturedCallback() {
             override fun onCaptureSuccess(image: ImageProxy) {
                 val jpeg = try {
                     cleanJpeg(image)
@@ -471,7 +473,7 @@ class ProCameraActivity : ZtBaseActivity() {
         capture.takePicture(
             ImageCapture.OutputFileOptions.Builder(dng).build(),
             ImageCapture.OutputFileOptions.Builder(jpg).build(),
-            io,
+            saver,
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
                     val n = calls.incrementAndGet()
@@ -532,7 +534,7 @@ class ProCameraActivity : ZtBaseActivity() {
         out.toByteArray()
     }
 
-    /** Runs on [io]: into the vault in Private mode, otherwise the gallery. */
+    /** Runs on [saver]: into the vault in Private mode, otherwise the gallery. */
     private fun keep(jpeg: ByteArray, dng: File?) {
         val ctx = applicationContext
         val now = System.currentTimeMillis()
@@ -582,6 +584,13 @@ class ProCameraActivity : ZtBaseActivity() {
         private const val WRAP = ViewGroup.LayoutParams.WRAP_CONTENT
         private const val JPEG_QUALITY = 95
         private const val MIN_FRAME_NS = 33_333_333L
+
+        /**
+         * Takes the capture callbacks and does the saving. It belongs to the app, not the screen,
+         * so a shot still being written when the screen closes is still sealed (or copied) and
+         * its plain temp files wiped.
+         */
+        private val saver: ExecutorService = Executors.newSingleThreadExecutor()
         private val WB_MODES = intArrayOf(
             CaptureRequest.CONTROL_AWB_MODE_AUTO,
             CaptureRequest.CONTROL_AWB_MODE_DAYLIGHT,
