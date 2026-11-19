@@ -2027,6 +2027,9 @@ open class MainActivity : ZtBaseActivity(),
             updateLastFrame()
             videoCapturer.stopRecording()
         }
+        // ZT Camera: a Private vault capture's thumbnail lives only until the camera is left, so
+        // nobody can come back to it without opening the vault.
+        if (showsVaultThumbnail) showThumbnail(null, null)
         super.onStop()
     }
 
@@ -2035,9 +2038,13 @@ open class MainActivity : ZtBaseActivity(),
     // The capture that the thumbnail shows
     private var thumbnailItem: CapturedItem? = null
 
+    // True while the thumbnail shows a capture sealed into the vault (it has no gallery item).
+    private var showsVaultThumbnail = false
+
     fun showThumbnail(item: CapturedItem?, bitmap: Bitmap?) {
         imagePreview.setImageBitmap(bitmap)
         thumbnailItem = if (bitmap != null) item else null
+        showsVaultThumbnail = bitmap != null && item == null
     }
 
     private var savePlaceAsked = false
