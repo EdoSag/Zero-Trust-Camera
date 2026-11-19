@@ -203,6 +203,19 @@ open class MoreSettings : ZtBaseActivity(), TextView.OnEditorActionListener {
             }
         }
 
+        // ZT Camera (beta): hold a Private mode video in memory while it records. Needs
+        // Android 11; shown next to the vault switch, and off unless turned on here.
+        val memoryRow = binding.recordInMemorySetting
+        val memoryToggle = binding.recordInMemoryToggle
+        if (this is MoreSettingsSecure || camConfig.isInCaptureMode ||
+            android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.R) {
+            memoryRow.visibility = View.GONE
+        } else {
+            memoryToggle.isChecked = camConfig.recordInMemory
+            memoryRow.setOnClickListener { memoryToggle.performClick() }
+            memoryToggle.setOnClickListener { camConfig.recordInMemory = memoryToggle.isChecked }
+        }
+
         // ZT Camera: Ultra HDR photos and 60 fps video, shown only where this camera can
         val extraSwitches = listOf(
             Triple(binding.ultraHdrSetting, binding.ultraHdrToggle, camConfig.supportsUltraHdr()),

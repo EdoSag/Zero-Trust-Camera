@@ -8,6 +8,7 @@ import android.Manifest
 import android.animation.ValueAnimator
 import android.content.ContentResolver
 import android.content.ContentValues
+import android.app.ActivityManager
 import android.content.Context
 import android.content.pm.PackageManager.PERMISSION_GRANTED
 import android.graphics.Bitmap
@@ -18,6 +19,7 @@ import android.graphics.drawable.StateListDrawable
 import android.location.Location
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
@@ -118,6 +120,9 @@ class VideoCapturer(private val mActivity: MainActivity) {
         // to vaultKey and wiped as soon as it stops. It never reaches the gallery.
         val vaultTemp: File? = null,
         val vaultKey: ByteArray? = null,
+        // ZT Camera, "Record in memory": the recording is held in memory, never in a file.
+        // This descriptor keeps it alive until it is sealed; vaultTemp is then its /proc path.
+        val memory: ParcelFileDescriptor? = null,
     ) {
         var isFinalized = false
 
@@ -125,6 +130,42 @@ class VideoCapturer(private val mActivity: MainActivity) {
         var nextStorageCheckBytes = 0L
 
         var isCheckingStorage = false
+    }
+
+    // ZT Camera, "Record in memory" (beta): the recording goes into memory the system gives the
+    // app (memfd), which behaves like a file but is never written to storage. Null where that
+    // isn't possible (Android 10, or the system says no); the usual wiped temp file is used then.
+    private fun createMemoryRecording(vaultKey: ByteArray): RecordingContext? {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) return null
+        var keep: ParcelFileDescriptor? = null
+        var out: ParcelFileDescriptor? = null
+        try {
+            val fd = Os.memfd_create("zt-recording", 0)
+            try {
+                keep = ParcelFileDescriptor.dup(fd)
+                out = ParcelFileDescriptor.dup(fd)
+            } finally {
+                Os.close(fd)
+            }
+            val path = File("/proc/self/fd/" + keep!!.fd)
+            // Sealing reads it back through this path: make sure that works before recording.
+            FileInputStream(path).close()
+            return RecordingContext(Uri.fromFile(path), out!!, shouldAddToGallery = false,
+                isPendingMediaStoreUri = false, vaultTemp = path, vaultKey = vaultKey, memory = keep)
+        } catch (e: Exception) {
+            Log.w("VideoCapturer", "no in-memory recording", e)
+            try { keep?.close() } catch (ignored: Exception) {}
+            try { out?.close() } catch (ignored: Exception) {}
+            return null
+        }
+    }
+
+    // The most an in-memory recording may grow to: an eighth of the phone's memory, between
+    // 128 MB and 768 MB. The recording stops by itself there and is saved.
+    private fun memoryLimitBytes(): Long {
+        val info = ActivityManager.MemoryInfo()
+        (mActivity.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager).getMemoryInfo(info)
+        return (info.totalMem / 8).coerceIn(128L * 1024 * 1024, 768L * 1024 * 1024)
     }
 
     // Runs on outputExecutor: each step is a call into another process, MediaProvider or the app
@@ -136,6 +177,9 @@ class VideoCapturer(private val mActivity: MainActivity) {
         vaultKey: ByteArray?,
     ): RecordingContext? {
         if (vaultKey != null && foreignUri == null) {
+            if (camConfig.recordInMemory) {
+                createMemoryRecording(vaultKey)?.let { return it }
+            }
             val temp = VaultStore.newTempFile(mActivity, videoFileFormat)
             val pfd = ParcelFileDescriptor.open(temp,
                 ParcelFileDescriptor.MODE_READ_WRITE or ParcelFileDescriptor.MODE_CREATE or
@@ -192,9 +236,12 @@ class VideoCapturer(private val mActivity: MainActivity) {
                 mActivity.showMessage(R.string.location_unavailable)
             }
         }
-        val outputOptions = FileDescriptorOutputOptions.Builder(recordingCtx.fileDescriptor)
-            .setLocation(location)
-            .build()
+        val builder = FileDescriptorOutputOptions.Builder(recordingCtx.fileDescriptor)
+        builder.setLocation(location)
+        if (recordingCtx.memory != null) {
+            builder.setFileSizeLimit(memoryLimitBytes())
+        }
+        val outputOptions = builder.build()
         return recorder.prepareRecording(mActivity, outputOptions)
     }
 
@@ -374,6 +421,10 @@ class VideoCapturer(private val mActivity: MainActivity) {
         if (recordingCtx.isCheckingStorage || recordedBytes < recordingCtx.nextStorageCheckBytes) {
             return
         }
+        // Held in memory: its size limit is set up front, and storage isn't used.
+        if (recordingCtx.memory != null) {
+            return
+        }
         recordingCtx.isCheckingStorage = true
 
         // Off the main thread: MediaProvider answers for the storage behind its descriptors
@@ -431,6 +482,7 @@ class VideoCapturer(private val mActivity: MainActivity) {
             val vaultTemp = recordingCtx.vaultTemp
             if (vaultTemp != null) {
                 val sealed = VaultStore.saveVideo(mActivity, recordingCtx.vaultKey!!, vaultTemp, startedAt)
+                releaseMemory(recordingCtx)
                 handler.post {
                     if (sealed == null) {
                         mActivity.showMessage(R.string.unable_to_save_video)
@@ -709,9 +761,19 @@ class VideoCapturer(private val mActivity: MainActivity) {
         }
     }
 
+    // Gives an in-memory recording back to the system. Nothing of it is left anywhere.
+    private fun releaseMemory(recordingCtx: RecordingContext) {
+        try {
+            recordingCtx.memory?.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
     private fun discardUnusedOutput(recordingCtx: RecordingContext) {
         recordingCtx.vaultTemp?.let {
-            VaultStore.wipe(it)
+            // Memory is simply given back; a file is overwritten first.
+            if (recordingCtx.memory != null) releaseMemory(recordingCtx) else VaultStore.wipe(it)
             return
         }
 
