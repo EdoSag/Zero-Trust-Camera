@@ -255,4 +255,23 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get scanHistoryCopied => 'הועתק';
+
+  @override
+  String get homeScanDocument => 'סריקת מסמך';
+
+  @override
+  String get homeScanDocumentSubtitle =>
+      'דפים ישרים ונקיים כ-PDF, והטקסט נקרא בטלפון עצמו';
+
+  @override
+  String get vaultCopyText => 'העתקת טקסט';
+
+  @override
+  String get vaultNoText => 'לא נמצא טקסט בתמונה';
+
+  @override
+  String get vaultTextTitle => 'טקסט';
+
+  @override
+  String get vaultCopy => 'העתקה';
 }

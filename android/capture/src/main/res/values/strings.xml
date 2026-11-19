@@ -334,4 +334,46 @@
     <string name="scan_field_subject">Subject</string>
     <string name="scan_image_label">Scan code</string>
     <string name="scan_image_none">No code found in this picture</string>
+
+    <!-- ZT Camera: document scanner (zt/DocScanActivity.kt) -->
+    <string name="doc_shortcut">Scan a document</string>
+    <string name="doc_hint_find">Point at a page</string>
+    <string name="doc_hint_hold">Hold still…</string>
+    <string name="doc_hint_corners">Drag the corners to the edges of the page</string>
+    <string name="doc_auto">Auto</string>
+    <string name="doc_take">Take</string>
+    <string name="doc_retake">Retake</string>
+    <string name="doc_next">Next</string>
+    <string name="doc_adjust">Corners</string>
+    <string name="doc_rotate">Rotate</string>
+    <string name="doc_add_page">Add page</string>
+    <string name="doc_done">Done</string>
+    <string name="doc_filter_original">Original</string>
+    <string name="doc_filter_enhanced">Enhanced</string>
+    <string name="doc_filter_gray">Grayscale</string>
+    <string name="doc_filter_bw">Black and white</string>
+    <string name="doc_save_pdf">Save PDF</string>
+    <string name="doc_save_vault">Save to Private vault</string>
+    <string name="doc_share_pdf">Share PDF</string>
+    <string name="doc_send_notes">Send to ZT Notes</string>
+    <string name="doc_copy_text">Copy text</string>
+    <string name="doc_scan_more">Scan more</string>
+    <string name="doc_reading">Reading the text…</string>
+    <string name="doc_no_text">No text found</string>
+    <string name="doc_text_title">Text</string>
+    <string name="doc_copy">Copy</string>
+    <string name="doc_text_copied">Text copied</string>
+    <string name="doc_saved_pdf">Saved to Documents/ZT Camera</string>
+    <string name="doc_saved_vault">Saved to the Private vault</string>
+    <string name="doc_failed">Something went wrong. Try again.</string>
+    <string name="doc_camera_needed">Scanning needs the camera permission</string>
+    <string name="doc_delete_page">Remove this page?</string>
+    <string name="doc_delete">Remove</string>
+    <string name="doc_discard_title">Discard the scanned pages?</string>
+    <string name="doc_discard">Discard</string>
+    <string name="doc_page_number">Page %1$d</string>
+    <plurals name="doc_pages">
+        <item quantity="one">%1$d page</item>
+        <item quantity="other">%1$d pages</item>
+    </plurals>
 </resources>

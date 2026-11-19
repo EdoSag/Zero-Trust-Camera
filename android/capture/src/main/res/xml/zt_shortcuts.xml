@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ZT Camera: long-press the launcher icon for the document scanner -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="scan_document"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_document"
+        android:shortcutShortLabel="@string/doc_shortcut"
+        android:shortcutLongLabel="@string/doc_shortcut">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="dev.sagron.zerotrustcamera"
+            android:targetClass="dev.sagron.zerotrustcamera.capture.zt.DocScanActivity" />
+    </shortcut>
+</shortcuts>

@@ -510,6 +510,42 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Copied'**
   String get scanHistoryCopied;
+
+  /// No description provided for @homeScanDocument.
+  ///
+  /// In en, this message translates to:
+  /// **'Scan a document'**
+  String get homeScanDocument;
+
+  /// No description provided for @homeScanDocumentSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Straight, clean pages as a PDF, with the text read on your phone'**
+  String get homeScanDocumentSubtitle;
+
+  /// No description provided for @vaultCopyText.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy text'**
+  String get vaultCopyText;
+
+  /// No description provided for @vaultNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'No text found in this photo'**
+  String get vaultNoText;
+
+  /// No description provided for @vaultTextTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Text'**
+  String get vaultTextTitle;
+
+  /// No description provided for @vaultCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy'**
+  String get vaultCopy;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

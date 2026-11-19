@@ -110,5 +110,11 @@
         "type": "int"
       }
     }
-  }
+  },
+  "homeScanDocument": "סריקת מסמך",
+  "homeScanDocumentSubtitle": "דפים ישרים ונקיים כ-PDF, והטקסט נקרא בטלפון עצמו",
+  "vaultCopyText": "העתקת טקסט",
+  "vaultNoText": "לא נמצא טקסט בתמונה",
+  "vaultTextTitle": "טקסט",
+  "vaultCopy": "העתקה"
 }

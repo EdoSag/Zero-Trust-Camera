@@ -116,6 +116,9 @@ abstract class VaultBackend {
   Future<void> setScanHistory(bool on);
   Future<List<ScanRecord>> scans();
   Future<void> deleteScans(List<String> ids);
+
+  /// The text in a photo, read on the phone; null when there is none.
+  Future<String?> readText(String id);
 }
 
 class ChannelVaultBackend implements VaultBackend {
@@ -238,6 +241,9 @@ class ChannelVaultBackend implements VaultBackend {
   @override
   Future<void> deleteScans(List<String> ids) =>
       _call<void>('deleteScans', {'ids': ids});
+
+  @override
+  Future<String?> readText(String id) => _call<String>('readText', {'id': id});
 }
 
 final vaultBackendProvider = Provider<VaultBackend>(

@@ -139,6 +139,14 @@ class FakeVault implements VaultBackend {
   @override
   Future<void> deleteScans(List<String> ids) async =>
       scanRecords.removeWhere((s) => ids.contains(s.id));
+
+  String? textInPhoto;
+
+  @override
+  Future<String?> readText(String id) async {
+    _check();
+    return textInPhoto;
+  }
 }
 
 VaultItem _item(String id, DateTime at, {bool video = false}) =>

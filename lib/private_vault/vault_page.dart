@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../app/camera_bridge.dart';
@@ -308,6 +308,48 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     }
   }
 
+  /// Reads the text in a photo (on the phone) and shows it to copy.
+  Future<void> _readText(String id) async {
+    setState(() => _busy = true);
+    String? text;
+    try {
+      text = await _vault.readText(id);
+    } on Object {
+      _say((l) => l.vaultFailed);
+      return;
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+    if (!mounted) return;
+    final l = context.l10n;
+    if (text == null || text.trim().isEmpty) {
+      _say((l) => l.vaultNoText);
+      return;
+    }
+    final found = text;
+    await showDialog<void>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: Text(l.vaultTextTitle),
+        content: SingleChildScrollView(child: SelectableText(found)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(c).pop(),
+            child: Text(MaterialLocalizations.of(c).closeButtonLabel),
+          ),
+          TextButton(
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: found));
+              Navigator.of(c).pop();
+              _say((l) => l.scanHistoryCopied);
+            },
+            child: Text(l.vaultCopy),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _addToAlbum(List<String> ids) async {
     final l = context.l10n;
     final albumId = await showModalBottomSheet<String>(
@@ -397,6 +439,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
           onDeleteForever: (id) => _deleteForever([id]),
           onSave: (id) => _saveToGallery([id]),
           onShare: (id) => _share([id]),
+          onReadText: _readText,
         ),
       ),
     );

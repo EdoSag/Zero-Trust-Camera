@@ -257,4 +257,23 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get scanHistoryCopied => 'Copied';
+
+  @override
+  String get homeScanDocument => 'Scan a document';
+
+  @override
+  String get homeScanDocumentSubtitle =>
+      'Straight, clean pages as a PDF, with the text read on your phone';
+
+  @override
+  String get vaultCopyText => 'Copy text';
+
+  @override
+  String get vaultNoText => 'No text found in this photo';
+
+  @override
+  String get vaultTextTitle => 'Text';
+
+  @override
+  String get vaultCopy => 'Copy';
 }

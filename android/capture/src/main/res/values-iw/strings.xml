@@ -282,4 +282,48 @@
     <string name="scan_field_subject">נושא</string>
     <string name="scan_image_label">סריקת קוד</string>
     <string name="scan_image_none">לא נמצא קוד בתמונה</string>
+
+    <!-- ZT Camera: document scanner (zt/DocScanActivity.kt) -->
+    <string name="doc_shortcut">סריקת מסמך</string>
+    <string name="doc_hint_find">יש לכוון אל דף</string>
+    <string name="doc_hint_hold">לא לזוז…</string>
+    <string name="doc_hint_corners">יש לגרור את הפינות לקצוות הדף</string>
+    <string name="doc_auto">אוטומטי</string>
+    <string name="doc_take">צילום</string>
+    <string name="doc_retake">צילום מחדש</string>
+    <string name="doc_next">הבא</string>
+    <string name="doc_adjust">פינות</string>
+    <string name="doc_rotate">סיבוב</string>
+    <string name="doc_add_page">הוספת דף</string>
+    <string name="doc_done">סיום</string>
+    <string name="doc_filter_original">מקורי</string>
+    <string name="doc_filter_enhanced">משופר</string>
+    <string name="doc_filter_gray">גווני אפור</string>
+    <string name="doc_filter_bw">שחור-לבן</string>
+    <string name="doc_save_pdf">שמירת PDF</string>
+    <string name="doc_save_vault">שמירה בכספת הפרטית</string>
+    <string name="doc_share_pdf">שיתוף PDF</string>
+    <string name="doc_send_notes">שליחה ל-ZT Notes</string>
+    <string name="doc_copy_text">העתקת טקסט</string>
+    <string name="doc_scan_more">סריקת דפים נוספים</string>
+    <string name="doc_reading">קורא את הטקסט…</string>
+    <string name="doc_no_text">לא נמצא טקסט</string>
+    <string name="doc_text_title">טקסט</string>
+    <string name="doc_copy">העתקה</string>
+    <string name="doc_text_copied">הטקסט הועתק</string>
+    <string name="doc_saved_pdf">נשמר בתיקייה Documents/ZT Camera</string>
+    <string name="doc_saved_vault">נשמר בכספת הפרטית</string>
+    <string name="doc_failed">משהו השתבש. אפשר לנסות שוב.</string>
+    <string name="doc_camera_needed">לסריקה צריך הרשאת מצלמה</string>
+    <string name="doc_delete_page">להסיר את הדף הזה?</string>
+    <string name="doc_delete">הסרה</string>
+    <string name="doc_discard_title">לבטל את הדפים שנסרקו?</string>
+    <string name="doc_discard">ביטול הדפים</string>
+    <string name="doc_page_number">דף %1$d</string>
+    <plurals name="doc_pages">
+        <item quantity="one">דף אחד</item>
+        <item quantity="two">%1$d דפים</item>
+        <item quantity="many">%1$d דפים</item>
+        <item quantity="other">%1$d דפים</item>
+    </plurals>
 </resources>
