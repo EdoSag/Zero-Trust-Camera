@@ -103,6 +103,25 @@ object VaultTransfer {
         }
     }
 
+    /** Copies a RAW photo (DNG) into the phone's gallery next to its JPEG. */
+    fun saveDngToGallery(ctx: Context, dng: File) {
+        val cv = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME, "ZT_" + randomName() + ".dng")
+            put(MediaStore.MediaColumns.MIME_TYPE, VaultStore.MIME_DNG)
+            put(MediaStore.MediaColumns.RELATIVE_PATH, DEFAULT_MEDIA_STORE_CAPTURE_PATH)
+            put(MediaStore.MediaColumns.IS_PENDING, 1)
+        }
+        val resolver = ctx.contentResolver
+        val uri = resolver.insert(CamConfig.imageCollectionUri, cv) ?: throw java.io.IOException("no gallery row")
+        try {
+            resolver.openOutputStream(uri, "w")!!.use { out -> dng.inputStream().use { it.copyTo(out) } }
+            resolver.update(uri, ContentValues().apply { put(MediaStore.MediaColumns.IS_PENDING, 0) }, null, null)
+        } catch (e: Exception) {
+            resolver.delete(uri, null, null)
+            throw e
+        }
+    }
+
     /** Seals a photo or video picked from the gallery into the vault. True if it was added. */
     fun import(ctx: Context, pub: ByteArray, uri: Uri): Boolean {
         val resolver = ctx.contentResolver

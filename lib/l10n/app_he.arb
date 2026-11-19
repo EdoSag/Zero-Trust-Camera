@@ -113,6 +113,8 @@
   },
   "homeScanDocument": "סריקת מסמך",
   "homeScanDocumentSubtitle": "דפים ישרים ונקיים כ-PDF, והטקסט נקרא בטלפון עצמו",
+  "homeProCamera": "מצלמה מקצועית",
+  "homeProCameraSubtitle": "ISO, מהירות תריס, מיקוד ואיזון לבן ידניים, וצילומי RAW",
   "vaultCopyText": "העתקת טקסט",
   "vaultEdit": "עריכת עותק",
   "vaultNoText": "לא נמצא טקסט בתמונה",

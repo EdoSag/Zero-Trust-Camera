@@ -254,6 +254,14 @@
         </activity>
 
         <activity
+            android:name=".zt.ProCameraActivity"
+            android:theme="@style/Theme.App"
+            android:screenOrientation="portrait"
+            android:configChanges="orientation|keyboardHidden|screenSize|screenLayout|smallestScreenSize"
+            android:exported="false"
+            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+
+        <activity
             android:name=".zt.DocScanActivity"
             android:theme="@style/Theme.App"
             android:screenOrientation="portrait"

@@ -12,6 +12,8 @@ import 'package:zerotrust_camera/l10n/l10n.dart';
 class FakeBridge extends CameraBridge {
   final List<String?> languages = [];
   int closed = 0;
+  int docScanner = 0;
+  int proCamera = 0;
 
   @override
   Future<void> setLanguage(String? languageCode) async =>
@@ -19,6 +21,12 @@ class FakeBridge extends CameraBridge {
 
   @override
   Future<void> close() async => closed++;
+
+  @override
+  Future<void> openDocScanner() async => docScanner++;
+
+  @override
+  Future<void> openProCamera() async => proCamera++;
 }
 
 late FakeBridge bridge;

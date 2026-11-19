@@ -523,6 +523,18 @@ abstract class AppL10n {
   /// **'Straight, clean pages as a PDF, with the text read on your phone'**
   String get homeScanDocumentSubtitle;
 
+  /// No description provided for @homeProCamera.
+  ///
+  /// In en, this message translates to:
+  /// **'Pro camera'**
+  String get homeProCamera;
+
+  /// No description provided for @homeProCameraSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'ISO, shutter speed, focus and white balance by hand, and RAW photos'**
+  String get homeProCameraSubtitle;
+
   /// No description provided for @vaultCopyText.
   ///
   /// In en, this message translates to:

@@ -113,6 +113,8 @@
   },
   "homeScanDocument": "Scan a document",
   "homeScanDocumentSubtitle": "Straight, clean pages as a PDF, with the text read on your phone",
+  "homeProCamera": "Pro camera",
+  "homeProCameraSubtitle": "ISO, shutter speed, focus and white balance by hand, and RAW photos",
   "vaultCopyText": "Copy text",
   "vaultEdit": "Edit a copy",
   "vaultNoText": "No text found in this photo",

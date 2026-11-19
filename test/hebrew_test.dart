@@ -20,6 +20,12 @@ void main() {
       TextDirection.rtl,
     );
     expect(find.text('כניסה או יצירת חשבון'), findsOneWidget);
+    // The privacy section sits below the tools; bring it into view.
+    await tester.scrollUntilVisible(
+      find.text('מיקום'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('מיקום'), findsOneWidget);
     // Right to left: the icon sits to the right of its text.
     final icon = tester.getCenter(find.byIcon(Icons.location_off_outlined)).dx;

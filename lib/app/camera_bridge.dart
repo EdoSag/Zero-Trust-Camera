@@ -34,6 +34,17 @@ class CameraBridge {
     }
   }
 
+  /// Opens the pro camera: ISO, shutter, focus, white balance and RAW (native).
+  Future<void> openProCamera() async {
+    try {
+      await _channel.invokeMethod<void>('openProCamera');
+    } on PlatformException {
+      // Nothing opens; the home screen stays.
+    } on MissingPluginException {
+      // Not on Android.
+    }
+  }
+
   /// Opens the document scanner (native, in the capture module).
   Future<void> openDocScanner() async {
     try {
