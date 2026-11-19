@@ -83,6 +83,11 @@ VaultItem _photo(String id, {int size = 3}) =>
 VaultItem _video(String id, {int size = 3}) =>
     VaultItem(id: id, isVideo: true, takenAt: _t, size: size);
 
+/// A library with backup turned on for the account "u1".
+VaultLibrary _on() => VaultLibrary()
+  ..useBackupAccount('u1')
+  ..backup.on = true;
+
 void main() {
   late _Vault vault;
   late _Account account;
@@ -91,7 +96,12 @@ void main() {
   setUp(() {
     vault = _Vault();
     account = _Account();
-    backup = VaultBackup(vault: vault, store: account, maxBytes: 10);
+    backup = VaultBackup(
+      vault: vault,
+      store: account,
+      account: 'u1',
+      maxBytes: 10,
+    );
   });
 
   test('off by default: nothing leaves the phone', () async {
@@ -103,8 +113,53 @@ void main() {
     expect(lib.backup.on, isFalse);
   });
 
+  test('on for one account never uploads to another', () async {
+    final lib = _on();
+    vault.files['a'] = VaultOriginal(Uint8List(3), 'image/jpeg');
+    await backup.backUp(lib, [_photo('a')]);
+    expect(account.uploads, 1);
+
+    // Signed in to someone else's account: nothing goes there.
+    final other = _Account();
+    final theirs = VaultBackup(vault: vault, store: other, account: 'u2');
+    expect(lib.backupFor('u2'), isFalse);
+    final r = await theirs.backUp(lib, [_photo('a')]);
+    expect(r.done, 0);
+    expect(other.uploads, 0);
+
+    // Turning it on there starts clean: the first account's copies are
+    // neither reused nor queued for deletion.
+    lib
+      ..useBackupAccount('u2')
+      ..backup.on = true;
+    expect(lib.backedUp, isEmpty);
+    expect(lib.backupDeletes, isEmpty);
+    await theirs.backUp(lib, [_photo('a')]);
+    expect(other.uploads, 1);
+    expect(account.media_, hasLength(1));
+  });
+
+  test('backup that was on with no account recorded is off', () async {
+    final lib = VaultLibrary.fromJson('{"backup":{"on":true}}');
+    expect(lib.backupFor('u1'), isFalse);
+    vault.files['a'] = VaultOriginal(Uint8List(3), 'image/jpeg');
+    await backup.backUp(lib, [_photo('a')]);
+    expect(account.uploads, 0);
+  });
+
+  test('one backup at a time', () async {
+    final first = VaultBackup.exclusive(() async {
+      expect(VaultBackup.running.value, isTrue);
+      expect(await VaultBackup.exclusive(() async => 2), isNull);
+      return 1;
+    });
+    expect(await first, 1);
+    expect(VaultBackup.running.value, isFalse);
+    expect(await VaultBackup.exclusive(() async => 3), 3);
+  });
+
   test('backs up photos once, with favourites and albums', () async {
-    final lib = VaultLibrary()..backup.on = true;
+    final lib = _on();
     lib.addAlbum('Trip', 'al1');
     lib.addToAlbum('al1', ['a']);
     lib.favourites.add('b');
@@ -147,16 +202,14 @@ void main() {
   });
 
   test('files over the limit stay on the phone and are counted', () async {
-    final lib = VaultLibrary()
-      ..backup.on = true
-      ..backup.videos = true;
+    final lib = _on()..backup.videos = true;
     final r = await backup.backUp(lib, [_video('big', size: 11)]);
     expect(r.tooLarge, 1);
     expect(account.uploads, 0);
   });
 
   test('a full account stops the run and says so', () async {
-    final lib = VaultLibrary()..backup.on = true;
+    final lib = _on();
     vault.files['a'] = VaultOriginal(Uint8List(2), 'image/jpeg');
     account.full = true;
     final r = await backup.backUp(lib, [_photo('a')]);
@@ -167,7 +220,7 @@ void main() {
   test(
     'restore on a new phone brings back files, favourites and albums',
     () async {
-      final first = VaultLibrary()..backup.on = true;
+      final first = _on();
       first.addAlbum('Trip', 'al1');
       first.addToAlbum('al1', ['a']);
       first.favourites.add('a');
@@ -196,7 +249,7 @@ void main() {
   );
 
   test('deleting for good deletes the backed-up copy too', () async {
-    final lib = VaultLibrary()..backup.on = true;
+    final lib = _on();
     vault.files['a'] = VaultOriginal(Uint8List(2), 'image/jpeg');
     await backup.backUp(lib, [_photo('a')]);
     expect(account.media_, hasLength(1));
