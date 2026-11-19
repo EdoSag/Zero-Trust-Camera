@@ -103,6 +103,13 @@ class HomePage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => ref.read(cameraBridgeProvider).openProCamera(),
           ),
+          ListTile(
+            leading: const Icon(Icons.panorama_horizontal_outlined),
+            title: Text(l.homePanorama),
+            subtitle: Text(l.homePanoramaSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => ref.read(cameraBridgeProvider).openPanorama(),
+          ),
 
           _Header(l.privacySection),
           ListTile(

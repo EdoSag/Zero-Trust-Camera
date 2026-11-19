@@ -113,6 +113,8 @@
   },
   "homeScanDocument": "Scan a document",
   "homeScanDocumentSubtitle": "Straight, clean pages as a PDF, with the text read on your phone",
+  "homePanorama": "Panorama (beta)",
+  "homePanoramaSubtitle": "Turn slowly and the phone joins the view into one wide photo",
   "homeProCamera": "Pro camera",
   "homeProCameraSubtitle": "ISO, shutter speed, focus and white balance by hand, and RAW photos",
   "vaultCopyText": "Copy text",

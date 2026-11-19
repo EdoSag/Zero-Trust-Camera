@@ -264,6 +264,13 @@ class AppL10nHe extends AppL10n {
       'דפים ישרים ונקיים כ-PDF, והטקסט נקרא בטלפון עצמו';
 
   @override
+  String get homePanorama => 'פנורמה (בטא)';
+
+  @override
+  String get homePanoramaSubtitle =>
+      'מסתובבים לאט והטלפון מחבר את הנוף לתמונה רחבה אחת';
+
+  @override
   String get homeProCamera => 'מצלמה מקצועית';
 
   @override

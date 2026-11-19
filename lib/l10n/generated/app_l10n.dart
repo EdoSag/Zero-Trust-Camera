@@ -523,6 +523,18 @@ abstract class AppL10n {
   /// **'Straight, clean pages as a PDF, with the text read on your phone'**
   String get homeScanDocumentSubtitle;
 
+  /// No description provided for @homePanorama.
+  ///
+  /// In en, this message translates to:
+  /// **'Panorama (beta)'**
+  String get homePanorama;
+
+  /// No description provided for @homePanoramaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn slowly and the phone joins the view into one wide photo'**
+  String get homePanoramaSubtitle;
+
   /// No description provided for @homeProCamera.
   ///
   /// In en, this message translates to:
