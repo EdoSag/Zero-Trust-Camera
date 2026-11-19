@@ -77,8 +77,9 @@ class ZtAppActivity : FlutterFragmentActivity() {
 
     override fun onStop() {
         super.onStop()
-        // The vault locks as soon as these screens are left, unless they opened
-        // the photo picker, the share sheet or the video player themselves.
+        // The vault locks as soon as these screens are left, for the photo picker
+        // and the share sheet too. Only the vault's own video player keeps it
+        // open, and it locks the vault itself when it is left.
         if (vault?.keepOpenUntilResume != true && !isChangingConfigurations) {
             VaultSession.lock()
         }

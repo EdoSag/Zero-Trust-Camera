@@ -180,7 +180,12 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     try {
       final n = await _vault.importMedia();
       if (n > 0) _say((l) => l.vaultImported(n));
-      await _load();
+      // The vault locked while the photo picker was open: ask to open it again.
+      if (!(await _vault.status()).unlocked) {
+        await _unlock();
+      } else {
+        await _load();
+      }
     } on Object {
       _say((l) => l.vaultFailed);
     } finally {

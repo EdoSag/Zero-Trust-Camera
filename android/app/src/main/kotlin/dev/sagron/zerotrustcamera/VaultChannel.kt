@@ -33,7 +33,12 @@ class VaultChannel(
     private val main = Handler(Looper.getMainLooper())
     private var pendingImport: MethodChannel.Result? = null
 
-    /** True while this app opened something on top on purpose (picker, share sheet, player). */
+    /**
+     * True while the vault's own video player is on top: it locks the vault itself when it is
+     * left. The photo picker and the share sheet get no such pass, since the vault would then
+     * stay open if the phone were locked from them; neither needs it open (import needs only the
+     * public key, and shared copies are made before the share sheet opens).
+     */
     var keepOpenUntilResume = false
 
     init {
@@ -123,7 +128,6 @@ class VaultChannel(
                     return
                 }
                 pendingImport = result
-                keepOpenUntilResume = true
                 pickMedia()
             }
             "playVideo" -> {
@@ -169,7 +173,6 @@ class VaultChannel(
         send.type = type
         send.clipData = ClipData.newRawUri(null, uris[0]).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
         send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        keepOpenUntilResume = true
         activity.startActivity(Intent.createChooser(send, null))
     }
 

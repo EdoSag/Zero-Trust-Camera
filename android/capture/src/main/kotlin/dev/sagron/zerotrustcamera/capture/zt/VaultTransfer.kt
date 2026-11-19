@@ -15,9 +15,7 @@ import dev.sagron.zerotrustcamera.capture.capturer.DEFAULT_MEDIA_STORE_CAPTURE_P
 import java.io.File
 import java.io.FileOutputStream
 import java.io.RandomAccessFile
-import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 /**
  * Moving things in and out of the Private vault: import from the gallery, save to the gallery and
@@ -40,9 +38,9 @@ object VaultTransfer {
         val meta = VaultStore.meta(ctx, id, priv)
         val mime = meta.optString("mime", "image/jpeg")
         val isVideo = meta.optString("type") == VaultStore.TYPE_VIDEO
-        val stamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date(meta.optLong("takenAt")))
+        // The name says nothing about when it was taken: a random one, not the capture time.
         val ext = if (isVideo) "mp4" else "jpg"
-        val name = (if (isVideo) "VID_" else "IMG_") + stamp + "_" + id.take(6) + "." + ext
+        val name = (if (isVideo) "VID_" else "IMG_") + randomName() + "." + ext
         val out = File(into, name)
         if (isVideo) {
             VaultStore.openTo(ctx, id, priv, out)
@@ -65,6 +63,14 @@ object VaultTransfer {
             bytes.fill(0)
         }
         return out to "image/jpeg"
+    }
+
+    private val random = java.security.SecureRandom()
+
+    private fun randomName(): String {
+        val b = ByteArray(6)
+        random.nextBytes(b)
+        return b.joinToString("") { "%02x".format(it) }
     }
 
     /** Saves a cleaned copy into the phone's gallery (DCIM/Camera). */

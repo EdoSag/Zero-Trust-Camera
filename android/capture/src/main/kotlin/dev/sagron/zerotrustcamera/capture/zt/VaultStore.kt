@@ -132,10 +132,13 @@ object VaultStore {
 
     private fun writeSealed(target: File, pub: ByteArray, input: InputStream) {
         val part = File(target.path + ".part")
-        FileOutputStream(part).use { out ->
-            MediaVault.seal(input, out.buffered(1 shl 16), pub)
+        FileOutputStream(part).use { file ->
+            // The buffer is flushed (not only the file under it) before the sync and rename,
+            // or the end of the sealed file would be lost.
+            val out = file.buffered(1 shl 16)
+            MediaVault.seal(input, out, pub)
             out.flush()
-            out.fd.sync()
+            file.fd.sync()
         }
         if (!part.renameTo(target)) {
             part.delete()
@@ -220,8 +223,8 @@ object VaultStore {
     /** Opens an item into a plain file (for saving or sharing). */
     fun openTo(ctx: Context, id: String, priv: ByteArray, target: File) {
         FileInputStream(file(ctx, id, "media")).use { input ->
-            FileOutputStream(target).use { out ->
-                MediaVault.open(input.buffered(1 shl 16), out.buffered(1 shl 16), priv)
+            FileOutputStream(target).buffered(1 shl 16).use { out ->
+                MediaVault.open(input.buffered(1 shl 16), out, priv)
             }
         }
     }
