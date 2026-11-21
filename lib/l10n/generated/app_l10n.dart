@@ -912,6 +912,24 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Not now'**
   String get defaultCameraNotNow;
+
+  /// No description provided for @vaultMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get vaultMore;
+
+  /// No description provided for @vaultQuickHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock when face down'**
+  String get vaultQuickHide;
+
+  /// No description provided for @vaultQuickHideOn.
+  ///
+  /// In en, this message translates to:
+  /// **'The vault now locks when you put the phone face down'**
+  String get vaultQuickHideOn;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

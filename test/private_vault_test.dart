@@ -207,6 +207,24 @@ class FakeVault implements VaultBackend {
     edited.add(id);
   }
 
+  bool quickHideOn = false;
+  void Function()? lockedListener;
+
+  @override
+  Future<bool> quickHide() async => quickHideOn;
+
+  @override
+  Future<void> setQuickHide(bool on) async => quickHideOn = on;
+
+  @override
+  void onLocked(void Function()? listener) => lockedListener = listener;
+
+  /// The native side locking the vault by itself (the phone put face down).
+  void faceDown() {
+    unlocked = false;
+    lockedListener?.call();
+  }
+
   BackupConditions conditions = const BackupConditions(
     unmetered: true,
     charging: true,
@@ -727,6 +745,40 @@ void main() {
       expect(find.byKey(const ValueKey('b')), findsOneWidget);
     });
 
+    testWidgets('quick hide: turned on from More, face down locks', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // The title still fits beside the buttons.
+      final title = tester.getRect(find.text('Private vault'));
+      expect(
+        title.right,
+        lessThanOrEqualTo(
+          tester.getRect(find.byTooltip('Import from gallery')).left,
+        ),
+      );
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      expect(find.text('Lock when face down'), findsOneWidget);
+      await tester.tap(find.byType(CheckedPopupMenuItem<int>));
+      await tester.pumpAndSettle();
+      expect(vault.quickHideOn, isTrue);
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+
+      vault.faceDown();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsNothing);
+      expect(find.text('The vault is locked'), findsOneWidget);
+    });
+
     testWidgets('locking from the app bar hides everything', (tester) async {
       _phone(tester);
       final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
@@ -778,7 +830,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Scan history'));
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Scan history'));
       await tester.pumpAndSettle();
       final toggle = find.byKey(const Key('scan-history-switch'));
       expect(toggle, findsOneWidget);

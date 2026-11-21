@@ -183,5 +183,8 @@
   "defaultCameraCardTitle": "Make ZT Camera your camera?",
   "defaultCameraCardBody": "Open it from the power button and the lock screen instead of the phone's own camera.",
   "defaultCameraShowMe": "Show me how",
-  "defaultCameraNotNow": "Not now"
+  "defaultCameraNotNow": "Not now",
+  "vaultMore": "More",
+  "vaultQuickHide": "Lock when face down",
+  "vaultQuickHideOn": "The vault now locks when you put the phone face down"
 }

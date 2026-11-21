@@ -149,6 +149,15 @@ abstract class VaultBackend {
     required DateTime takenAt,
   });
 
+  /// Quick hide: whether the open vault locks when the phone is put face
+  /// down.
+  Future<bool> quickHide();
+  Future<void> setQuickHide(bool on);
+
+  /// Calls [listener] when the native side locked the vault by itself
+  /// (quick hide). Null stops it.
+  void onLocked(void Function()? listener);
+
   /// Whether the phone is on an unmetered network and charging.
   Future<BackupConditions> backupConditions();
 
@@ -350,6 +359,29 @@ class ChannelVaultBackend implements VaultBackend {
     'video': isVideo,
     'takenAt': takenAt.millisecondsSinceEpoch,
   }))!;
+
+  @override
+  Future<bool> quickHide() async {
+    try {
+      return await _channel.invokeMethod<bool>('quickHide') ?? false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> setQuickHide(bool on) => _call<void>('setQuickHide', {'on': on});
+
+  @override
+  void onLocked(void Function()? listener) {
+    _channel.setMethodCallHandler(
+      listener == null
+          ? null
+          : (call) async {
+              if (call.method == 'locked') listener();
+            },
+    );
+  }
 
   @override
   Future<BackupConditions> backupConditions() async {

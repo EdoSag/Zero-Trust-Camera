@@ -494,4 +494,14 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get defaultCameraNotNow => 'Not now';
+
+  @override
+  String get vaultMore => 'More';
+
+  @override
+  String get vaultQuickHide => 'Lock when face down';
+
+  @override
+  String get vaultQuickHideOn =>
+      'The vault now locks when you put the phone face down';
 }

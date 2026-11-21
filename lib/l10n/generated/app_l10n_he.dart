@@ -491,4 +491,14 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get defaultCameraNotNow => 'לא עכשיו';
+
+  @override
+  String get vaultMore => 'עוד';
+
+  @override
+  String get vaultQuickHide => 'נעילה כשהטלפון הפוך';
+
+  @override
+  String get vaultQuickHideOn =>
+      'הכספת תינעל מעכשיו כשמניחים את הטלפון עם המסך כלפי מטה';
 }

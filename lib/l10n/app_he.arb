@@ -225,5 +225,8 @@
   "defaultCameraCardTitle": "להפוך את ZT Camera למצלמה שלך?",
   "defaultCameraCardBody": "פתיחה מכפתור ההפעלה וממסך הנעילה במקום המצלמה של הטלפון.",
   "defaultCameraShowMe": "איך עושים את זה",
-  "defaultCameraNotNow": "לא עכשיו"
+  "defaultCameraNotNow": "לא עכשיו",
+  "vaultMore": "עוד",
+  "vaultQuickHide": "נעילה כשהטלפון הפוך",
+  "vaultQuickHideOn": "הכספת תינעל מעכשיו כשמניחים את הטלפון עם המסך כלפי מטה"
 }

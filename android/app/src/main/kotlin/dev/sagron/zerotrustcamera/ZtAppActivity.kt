@@ -103,6 +103,12 @@ class ZtAppActivity : FlutterFragmentActivity() {
     override fun onResume() {
         super.onResume()
         vault?.keepOpenUntilResume = false
+        vault?.watchFaceDown()
+    }
+
+    override fun onPause() {
+        vault?.stopFaceDown()
+        super.onPause()
     }
 
     override fun onStop() {
