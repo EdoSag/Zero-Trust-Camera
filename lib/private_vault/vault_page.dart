@@ -231,19 +231,43 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       final somethingNew = engine
           .eligible(library, items)
           .any((i) => !library.backedUp.containsKey(i.id));
+      final locks = _lockCount;
+      Future<bool> allowed() async {
+        final c = await _vault.backupConditions();
+        return library.backup.allows(
+          unmetered: c.unmetered,
+          charging: c.charging,
+        );
+      }
+
       final r = await VaultBackup.exclusive(() async {
         final r = somethingNew
             ? await withBackupNotice(
                 _vault,
                 l,
-                (p) => engine.backUp(library, items, progress: p),
+                (p) => engine.backUp(
+                  library,
+                  items,
+                  progress: p,
+                  allowed: allowed,
+                ),
               )
-            : await engine.backUp(library, items);
+            : await engine.backUp(library, items, allowed: allowed);
         // Saved even with nothing new: copies deleted from the account
         // leave the queue.
-        if (identical(library, _library)) {
-          await _vault.writeState(library.toJson());
+        if (locks != _lockCount) return r;
+        if (!identical(library, _library)) {
+          // The list was read again meanwhile (the app came back to the
+          // front): what went up is noted on the one in use now, or it
+          // would go up a second time.
+          final ids = {for (final i in _items) i.id};
+          for (final e in library.backedUp.entries) {
+            if (ids.contains(e.key)) {
+              _library.backedUp.putIfAbsent(e.key, () => e.value);
+            }
+          }
         }
+        await _vault.writeState(_library.toJson());
         return r;
       });
       if (r != null && r.full) _say((l) => l.backupFull);
@@ -253,10 +277,18 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   }
 
   Future<void> _openBackup() async {
+    final library = _library;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            VaultBackupPage(library: _library, items: _items, save: _save),
+        // Saves the library the page works on: this page may read its own
+        // again while a backup or restore runs (the notification question
+        // brings the app back to the front), and saving that one instead
+        // would lose what the job noted.
+        builder: (_) => VaultBackupPage(
+          library: library,
+          items: _items,
+          save: () => _save(library),
+        ),
       ),
     );
     // A restore adds items the list here doesn't have yet.
@@ -265,18 +297,21 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
 
   /// What is in the account but not on this phone (from another phone).
   Future<void> _openAccountMedia() async {
+    // As on the backup screen: the page saves the library it works on.
+    final library = _library;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) => AccountMediaPage(library: _library, save: _save),
+        builder: (_) =>
+            AccountMediaPage(library: library, save: () => _save(library)),
       ),
     );
     // Items kept from the account are new here.
     if (mounted) await _refresh();
   }
 
-  Future<void> _save() async {
+  Future<void> _save([VaultLibrary? library]) async {
     try {
-      await _vault.writeState(_library.toJson());
+      await _vault.writeState((library ?? _library).toJson());
     } on Object {
       _say((l) => l.vaultFailed);
     }

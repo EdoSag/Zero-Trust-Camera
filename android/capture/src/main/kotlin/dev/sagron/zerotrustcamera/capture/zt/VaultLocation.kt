@@ -32,6 +32,11 @@ object VaultLocation {
         }
     }
 
+    /** For the other viewfinders (Pro, Panorama): follows the place only while they save to the vault. */
+    fun startForViewfinder(ctx: Context) {
+        if (CamConfig.isPrivateVaultOn(ctx) && VaultKeys.isSetUp(ctx)) start(ctx)
+    }
+
     fun stop(ctx: Context) {
         (ctx.applicationContext as? App)?.dropLocationUpdates()
     }

@@ -356,6 +356,25 @@ void main() {
     expect(account.media_[off.backedUp['a']]!.mime, 'image/jpeg');
   });
 
+  test('stops when the rules stop holding, and carries on next time', () async {
+    final lib = VaultLibrary()..useBackupAccount('u1');
+    lib.backup.on = true;
+    for (final id in ['a', 'b', 'c']) {
+      vault.files[id] = VaultOriginal(Uint8List.fromList([1]), 'image/jpeg');
+    }
+    final items = [_photo('a'), _photo('b'), _photo('c')];
+    // Wi-Fi goes away after the first file.
+    final r = await backup.backUp(lib, items, allowed: () async => false);
+    expect(r.paused, isTrue);
+    expect(r.done, 1);
+    expect(account.uploads, 1);
+
+    final again = await backup.backUp(lib, items, allowed: () async => true);
+    expect(again.paused, isFalse);
+    expect(again.done, 2);
+    expect(account.uploads, 3);
+  });
+
   test('only the albums picked, videos only when asked, trash never', () async {
     final lib = VaultLibrary()
       ..backup.on = true
