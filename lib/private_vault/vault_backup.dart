@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 
 import '../app/auth_providers.dart';
+import '../app/camera_config.dart';
 import '../l10n/l10n.dart';
 import 'vault_backend.dart';
 import 'vault_library.dart';
@@ -619,7 +620,9 @@ Future<T> withBackupNotice<T>(
 /// The id of the account backup can use right now, or null: signed in, and
 /// its own vault (the account key) unlocked.
 final backupAccountProvider = Provider<String?>(
-  (ref) => ref.watch(vaultControllerProvider) is VaultUnlocked
+  (ref) =>
+      !ref.watch(offlineBuildProvider) &&
+          ref.watch(vaultControllerProvider) is VaultUnlocked
       ? ref.watch(currentUserProvider)?.id
       : null,
 );

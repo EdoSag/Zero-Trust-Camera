@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../app/camera_config.dart';
 import '../l10n/l10n.dart';
 
 /// How photos and videos are protected, in plain words, including what the
 /// app can't protect.
-class DataProtectionPage extends StatelessWidget {
+class DataProtectionPage extends ConsumerWidget {
   const DataProtectionPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = context.l10n;
+    final offline = ref.watch(offlineBuildProvider);
     final theme = Theme.of(context);
     final sections = [
       (Icons.photo_outlined, l.protectGalleryTitle, l.protectGalleryBody),
@@ -20,7 +24,11 @@ class DataProtectionPage extends StatelessWidget {
       ),
       (Icons.videocam_outlined, l.protectVideoTitle, l.protectVideoBody),
       (Icons.cloud_outlined, l.protectBackupTitle, l.protectBackupBody),
-      (Icons.wifi_off_outlined, l.protectNetworkTitle, l.protectNetworkBody),
+      (
+        Icons.wifi_off_outlined,
+        l.protectNetworkTitle,
+        offline ? l.protectNetworkOffline : l.protectNetworkBody,
+      ),
       (
         Icons.admin_panel_settings_outlined,
         l.protectPermissionsTitle,

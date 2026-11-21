@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
+import 'package:zerotrust_camera/app/camera_config.dart';
 import 'package:zerotrust_camera/ui/home_page.dart';
 
 import 'support/app.dart';
@@ -171,5 +174,51 @@ void main() {
     expect(limits, greaterThan(vault));
     expect(find.textContaining("Android's storage encryption"), findsOneWidget);
     expect(find.textContaining('No location'), findsWidgets);
+  });
+
+  testWidgets('the Offline build has no account row and says why', (
+    tester,
+  ) async {
+    _phone(tester);
+    await tester.pumpWidget(
+      app(
+        const HomePage(),
+        overrides: [offlineBuildProvider.overrideWithValue(true)],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Sign in or create an account'), findsNothing);
+    final title = find.text('Offline build');
+    expect(title, findsOneWidget);
+    expect(find.textContaining('no internet permission'), findsOneWidget);
+    // Where the account row was: above the vault row.
+    expect(
+      tester.getTopLeft(title).dy,
+      lessThan(tester.getTopLeft(find.text('Private vault')).dy),
+    );
+    await tester.tap(find.text('How your photos are protected'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('This is the Offline build'), findsOneWidget);
+  });
+
+  test('the Offline build takes the network permissions out', () {
+    final overlay = File(
+      'android/app/src/offline/AndroidManifest.xml',
+    ).readAsStringSync();
+    for (final permission in ['INTERNET', 'ACCESS_NETWORK_STATE']) {
+      expect(
+        overlay,
+        contains(
+          '<uses-permission android:name="android.permission.$permission" '
+          'tools:node="remove"/>',
+        ),
+      );
+    }
+    final gradle = File('android/app/build.gradle.kts').readAsStringSync();
+    expect(gradle, contains('src/offline/AndroidManifest.xml'));
+    // CI builds it and fails if a network permission is still there.
+    final ci = File('.github/workflows/android-apk.yml').readAsStringSync();
+    expect(ci, contains('zt.offline=true --dart-define=ZT_OFFLINE=true'));
+    expect(ci, contains('dump permissions'));
   });
 }

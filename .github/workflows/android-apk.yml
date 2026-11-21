@@ -183,6 +183,31 @@ jobs:
           cp build/app/outputs/bundle/release/app-release.aab "$AAB"
           echo "AAB=$AAB" >> "$GITHUB_ENV"
 
+      - name: Build the Offline APK
+        # The same app without the internet permission (no account, no
+        # backup). Built last, so the files above are the full build's. The
+        # check fails the run if a network permission slipped back in.
+        run: |
+          set -e
+          flutter build apk --release --build-number="$BUILD" \
+            --android-project-arg zt.offline=true --dart-define=ZT_OFFLINE=true
+          OFFLINE_APK="$APP_SLUG-$VERSION-build$BUILD-offline.apk"
+          cp build/app/outputs/flutter-apk/app-release.apk "$OFFLINE_APK"
+          AAPT2=$(ls "$ANDROID_HOME"/build-tools/*/aapt2 | sort -V | tail -1)
+          PERMISSIONS=$("$AAPT2" dump permissions "$OFFLINE_APK")
+          echo "$PERMISSIONS"
+          if echo "$PERMISSIONS" | grep -E "android.permission.(INTERNET|ACCESS_NETWORK_STATE)'"; then
+            echo "::error::The Offline APK asks for a network permission."
+            exit 1
+          fi
+          echo "OFFLINE_APK=$OFFLINE_APK" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.OFFLINE_APK }}
+          path: ${{ env.OFFLINE_APK }}
+          retention-days: 14
+
       - uses: actions/upload-artifact@v4
         if: env.AAB != ''
         with:
@@ -203,12 +228,14 @@ jobs:
         run: |
           TAG="v$VERSION-build$BUILD"
           SUBJECT=$(git log -1 --pretty=%s)
-          gh release create "$TAG" "$APK" ${AAB:+"$AAB"} \
+          gh release create "$TAG" "$APK" "$OFFLINE_APK" ${AAB:+"$AAB"} \
             --target "$GITHUB_SHA" \
             --title "$APP_TITLE $VERSION (build $BUILD)" \
             --notes "Latest change: $SUBJECT
 
           Download **$APK** below and open it on your phone to install or update. Android may ask you to allow installs from this source the first time.
+
+          **$OFFLINE_APK** is the same app with no internet permission: no account and no backup, everything stays on the phone. Install one or the other.
 
           The .aab file is for uploading to the Google Play Console; phones install the .apk." \
             --latest

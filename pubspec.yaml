@@ -1,7 +1,7 @@
 name: zerotrust_camera
 description: "Zero-Trust Camera: photos and videos saved without location, date or phone details."
 publish_to: none
-version: 0.18.0+20
+version: 0.19.0+21
 
 environment:
   sdk: ^3.9.0

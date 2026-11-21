@@ -1008,6 +1008,24 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Keep this RAW photo on this phone to open it.'**
   String get accountMediaRawNote;
+
+  /// No description provided for @offlineBuildTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline build'**
+  String get offlineBuildTitle;
+
+  /// No description provided for @offlineBuildBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This build has no internet permission, so there is no account and no backup. Everything stays on this phone.'**
+  String get offlineBuildBody;
+
+  /// No description provided for @protectNetworkOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the Offline build: the app has no internet permission at all. Nothing can leave the phone through it.'**
+  String get protectNetworkOffline;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

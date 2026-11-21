@@ -547,4 +547,15 @@ class AppL10nHe extends AppL10n {
   @override
   String get accountMediaRawNote =>
       'כדי לפתוח את תמונת ה-RAW יש לשמור אותה בטלפון הזה.';
+
+  @override
+  String get offlineBuildTitle => 'גרסה לא מקוונת';
+
+  @override
+  String get offlineBuildBody =>
+      'לגרסה הזו אין הרשאת אינטרנט, ולכן אין חשבון ואין גיבוי. הכול נשאר בטלפון הזה.';
+
+  @override
+  String get protectNetworkOffline =>
+      'זו הגרסה הלא מקוונת: לאפליקציה אין הרשאת אינטרנט כלל. שום דבר לא יכול לצאת מהטלפון דרכה.';
 }

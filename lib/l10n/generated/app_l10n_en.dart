@@ -551,4 +551,15 @@ class AppL10nEn extends AppL10n {
   @override
   String get accountMediaRawNote =>
       'Keep this RAW photo on this phone to open it.';
+
+  @override
+  String get offlineBuildTitle => 'Offline build';
+
+  @override
+  String get offlineBuildBody =>
+      'This build has no internet permission, so there is no account and no backup. Everything stays on this phone.';
+
+  @override
+  String get protectNetworkOffline =>
+      'This is the Offline build: the app has no internet permission at all. Nothing can leave the phone through it.';
 }

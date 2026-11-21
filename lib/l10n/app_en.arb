@@ -199,5 +199,8 @@
   "accountMediaKept": "Saved to the vault on this phone",
   "accountMediaBusy": "A backup or restore is running. Try again when it ends.",
   "accountMediaVideoNote": "Keep this video on this phone to play it.",
-  "accountMediaRawNote": "Keep this RAW photo on this phone to open it."
+  "accountMediaRawNote": "Keep this RAW photo on this phone to open it.",
+  "offlineBuildTitle": "Offline build",
+  "offlineBuildBody": "This build has no internet permission, so there is no account and no backup. Everything stays on this phone.",
+  "protectNetworkOffline": "This is the Offline build: the app has no internet permission at all. Nothing can leave the phone through it."
 }

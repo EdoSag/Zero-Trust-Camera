@@ -32,6 +32,7 @@ class HomePage extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final themeMode = ref.watch(themeModeProvider);
     final language = ref.watch(ztLanguageProvider);
+    final offline = ref.watch(offlineBuildProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -70,7 +71,13 @@ class HomePage extends ConsumerWidget {
           const DefaultCameraCard(),
 
           _Header(zt.account),
-          if (user == null)
+          if (offline)
+            ListTile(
+              leading: const Icon(Icons.wifi_off_outlined),
+              title: Text(l.offlineBuildTitle),
+              subtitle: Text(l.offlineBuildBody),
+            )
+          else if (user == null)
             ListTile(
               leading: const Icon(Icons.account_circle_outlined),
               title: Text(l.accountSignIn),
