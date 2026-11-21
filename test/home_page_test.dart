@@ -9,7 +9,7 @@ import 'support/app.dart';
 /// A phone as wide as a small one and tall enough to lay the whole page
 /// out, so every row can be checked and tapped.
 void _phone(WidgetTester tester) {
-  tester.view.physicalSize = const Size(360 * 3, 2400 * 3);
+  tester.view.physicalSize = const Size(360 * 3, 3000 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
 }
@@ -119,5 +119,57 @@ void main() {
     await tester.tap(find.text('Scan a document'));
     await tester.pumpAndSettle();
     expect(bridge.docScanner, 1);
+  });
+
+  testWidgets('offers to become the camera once, then only from its row', (
+    tester,
+  ) async {
+    _phone(tester);
+    await tester.pumpWidget(app(const HomePage()));
+    await tester.pumpAndSettle();
+    // The card sits above the account section, both buttons on screen.
+    final card = find.text('Make ZT Camera your camera?');
+    expect(card, findsOneWidget);
+    expect(
+      tester.getTopLeft(card).dy,
+      lessThan(tester.getTopLeft(find.text('Sign in or create an account')).dy),
+    );
+    final notNow = tester.getRect(find.text('Not now'));
+    final showMe = tester.getRect(find.text('Show me how'));
+    expect(notNow.right, lessThanOrEqualTo(showMe.left));
+    expect(showMe.right, lessThanOrEqualTo(360));
+
+    await tester.tap(find.text('Show me how'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Double-press the power button'),
+      findsOneWidget,
+    );
+    final open = find.text('Open default apps');
+    expect(tester.getRect(open).right, lessThanOrEqualTo(360));
+    await tester.tap(open);
+    await tester.pump();
+    expect(bridge.defaultApps, 1);
+    Navigator.of(tester.element(open)).pop();
+    await tester.pumpAndSettle();
+
+    // Asked once: the card is gone, the row stays.
+    expect(card, findsNothing);
+    expect(find.text('Use as your camera'), findsOneWidget);
+  });
+
+  testWidgets('the data protection page says what is and is not protected', (
+    tester,
+  ) async {
+    _phone(tester);
+    await tester.pumpWidget(app(const HomePage()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('How your photos are protected'));
+    await tester.pumpAndSettle();
+    final vault = tester.getTopLeft(find.text('The Private vault')).dy;
+    final limits = tester.getTopLeft(find.text("What it can't protect")).dy;
+    expect(limits, greaterThan(vault));
+    expect(find.textContaining("Android's storage encryption"), findsOneWidget);
+    expect(find.textContaining('No location'), findsWidgets);
   });
 }

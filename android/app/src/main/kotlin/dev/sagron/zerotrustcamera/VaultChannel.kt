@@ -8,6 +8,10 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.Uri
@@ -284,6 +288,12 @@ class VaultChannel(
                     .putExtra(VaultVideoActivity.EXTRA_ID, call.argument<String>("id")))
                 result.success(null)
             }
+            "quickHide" -> result.success(CamConfig.isQuickHideOn(ctx))
+            "setQuickHide" -> {
+                CamConfig.setQuickHideOn(ctx, call.argument<Boolean>("on") == true)
+                watchFaceDown()
+                result.success(null)
+            }
             "backupConditions" -> result.success(mapOf(
                 "unmetered" to isUnmetered(ctx),
                 "charging" to (ctx.getSystemService(BatteryManager::class.java)?.isCharging == true),
@@ -304,6 +314,52 @@ class VaultChannel(
             }
             else -> result.notImplemented()
         }
+    }
+
+    // ---- quick hide ---------------------------------------------------------
+
+    private var faceDownSamples = 0
+    private var watchingFaceDown = false
+    private val faceDown = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            // Lying screen-down, gravity pulls along -z. Two readings in a row, so a swing of
+            // the hand doesn't count.
+            faceDownSamples = if (event.values[2] < FACE_DOWN_Z) faceDownSamples + 1 else 0
+            if (faceDownSamples >= 2 && VaultSession.isUnlocked) {
+                faceDownSamples = 0
+                VaultSession.lock()
+                // The Flutter screens show the vault locked.
+                channel.invokeMethod("locked", null)
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
+    /**
+     * Starts or stops watching for the phone being put face down, to match the setting. Called
+     * when these screens come to the front and when the setting changes.
+     */
+    fun watchFaceDown() {
+        val ctx = activity.applicationContext
+        val sensors = ctx.getSystemService(SensorManager::class.java) ?: return
+        val want = CamConfig.isQuickHideOn(ctx)
+        if (want == watchingFaceDown) return
+        if (want) {
+            val accelerometer = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
+            faceDownSamples = 0
+            sensors.registerListener(faceDown, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        } else {
+            sensors.unregisterListener(faceDown)
+        }
+        watchingFaceDown = want
+    }
+
+    /** Stops watching (these screens left the front; the vault locks then anyway). */
+    fun stopFaceDown() {
+        if (!watchingFaceDown) return
+        activity.applicationContext.getSystemService(SensorManager::class.java)?.unregisterListener(faceDown)
+        watchingFaceDown = false
     }
 
     /** On Wi-Fi or another network with internet that isn't metered. Unknown counts as metered. */
@@ -414,6 +470,7 @@ class VaultChannel(
     companion object {
         const val CHANNEL = "dev.sagron.zerotrustcamera/vault"
         private const val TAG = "VaultChannel"
+        private const val FACE_DOWN_Z = -8.5f
         private const val BACKUP_CHANNEL = "vault_backup"
         private const val BACKUP_NOTICE = 4101
         private const val REQUEST_NOTIFY = 4102

@@ -23,7 +23,7 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get accountOptional =>
-      'לא חובה: המצלמה והכספת הפרטית עובדות בלי חשבון. חשבון יידרש לגיבוי מוצפן, שיגיע בגרסה מאוחרת יותר.';
+      'לא חובה: המצלמה והכספת הפרטית עובדות בלי חשבון. חשבון נדרש רק לגיבוי המוצפן של הכספת.';
 
   @override
   String get accountManage => 'סיסמה, אבטחה ויציאה מהחשבון';
@@ -396,4 +396,109 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get vaultSearchEmpty => 'אין בכספת פריטים תואמים';
+
+  @override
+  String get protectTitle => 'איך התמונות שלך מוגנות';
+
+  @override
+  String get protectSubtitle =>
+      'מה מוצפן, מה יוצא מהטלפון, ועל מה האפליקציה לא יכולה להגן';
+
+  @override
+  String get protectGalleryTitle => 'תמונות בגלריה';
+
+  @override
+  String get protectGalleryBody =>
+      'נשמרות רק עם מה שתמונה צריכה: גודל, סיבוב וצבע. בלי מיקום, תאריך, דגם הטלפון או תמונה ממוזערת נסתרת, אלא אם הפעלת תאריך או דגם בהגדרות המצלמה. אלה קבצים רגילים: כל אפליקציה שקיבלה גישה לתמונות יכולה לפתוח אותם.';
+
+  @override
+  String get protectVaultTitle => 'הכספת הפרטית';
+
+  @override
+  String get protectVaultBody =>
+      'כל תמונה מוצפנת בזיכרון, עם מפתח משלה, לפני שהיא מגיעה לאחסון. המפתח הזה נעול למפתח הכספת של הטלפון, שנפתח רק אחרי טביעת אצבע, זיהוי פנים או נעילת המסך. ממסך הנעילה המצלמה יכולה להוסיף לכספת אבל לא לפתוח אותה.';
+
+  @override
+  String get protectVideoTitle => 'סרטונים פרטיים';
+
+  @override
+  String get protectVideoBody =>
+      'סרטון מוקלט לקובץ שרק האפליקציה הזו יכולה לגשת אליו, מוצפן כשעוצרים, ואז הקובץ נדרס ונמחק. עד העצירה הוא מוגן על ידי הצפנת האחסון של אנדרואיד, לא על ידי הכספת. \"הקלטת סרטונים פרטיים בזיכרון\" בהגדרות המצלמה משאירה את ההקלטה מחוץ לאחסון; אורך הסרטון מוגבל אז לפי זיכרון הטלפון.';
+
+  @override
+  String get protectBackupTitle => 'גיבוי מוצפן';
+
+  @override
+  String get protectBackupBody =>
+      'כבוי עד שמפעילים אותו. כל קובץ מוצפן בטלפון הזה עם מפתח משלו לפני שהוא נשלח לחשבון Zero Trust שלך. השרת רואה גדלים וזמנים, לעולם לא תמונות או שמות אלבומים. מי שיכול להיכנס לחשבון שלך ולפתוח אותו יכול לשחזר אותן, לכן יש לשמור היטב על הסיסמה.';
+
+  @override
+  String get protectNetworkTitle => 'רשת';
+
+  @override
+  String get protectNetworkBody =>
+      'במסכי המצלמה אין קוד רשת. האפליקציה מתחברת לאינטרנט רק עבור החשבון והגיבוי, ורק אם משתמשים בהם.';
+
+  @override
+  String get protectPermissionsTitle => 'הרשאות';
+
+  @override
+  String get protectPermissionsBody =>
+      'מצלמה. מיקרופון, לווידאו בלבד. התראות, להתקדמות הגיבוי ולשגיאות שמירה. מצב הרשת, כדי להבדיל בין Wi-Fi לנתונים סלולריים עבור הגיבוי. בלי מיקום ובלי גישה לקבצים שלך.';
+
+  @override
+  String get protectLimitsTitle => 'על מה היא לא יכולה להגן';
+
+  @override
+  String get protectLimitsBody =>
+      'טלפון פתוח כשהכספת פתוחה. תמונות ששומרים או משתפים מחוץ לכספת: הן יוצאות כקבצים רגילים, בלי מיקום, תאריך או פרטי הטלפון. טלפון שמישהו אחר מכיר את נעילת המסך שלו.';
+
+  @override
+  String get defaultCameraTitle => 'שימוש כמצלמה שלך';
+
+  @override
+  String get defaultCameraSubtitle =>
+      'פתיחת ZT Camera מכפתור ההפעלה וממסך הנעילה';
+
+  @override
+  String get defaultCameraIntro =>
+      'באנדרואיד אין מתג אחד למצלמת ברירת המחדל, ולכן נדרשים שני שלבים.';
+
+  @override
+  String get defaultCameraStep1 =>
+      'לוחצים פעמיים על כפתור ההפעלה, או פותחים את המצלמה ממסך הנעילה. אם אנדרואיד שואל באיזו מצלמה להשתמש, בוחרים ZT Camera ומקישים על תמיד.';
+
+  @override
+  String get defaultCameraStep2 =>
+      'אם מצלמה אחרת נפתחת בלי לשאול, פותחים את פרטי האפליקציה של אותה מצלמה, מקישים על פתיחה כברירת מחדל, מנקים את ברירות המחדל שלה, וחוזרים לשלב 1.';
+
+  @override
+  String get defaultCameraOpenSettings => 'פתיחת אפליקציות ברירת מחדל';
+
+  @override
+  String get defaultCameraOtherApps =>
+      'בתוך אפליקציות אחרות, למשל כפתור המצלמה באפליקציית צ\'אט, אנדרואיד 11 ומעלה משתמש תמיד במצלמה שהגיעה עם הטלפון. אף אפליקציה לא יכולה לשנות זאת.';
+
+  @override
+  String get defaultCameraCardTitle => 'להפוך את ZT Camera למצלמה שלך?';
+
+  @override
+  String get defaultCameraCardBody =>
+      'פתיחה מכפתור ההפעלה וממסך הנעילה במקום המצלמה של הטלפון.';
+
+  @override
+  String get defaultCameraShowMe => 'איך עושים את זה';
+
+  @override
+  String get defaultCameraNotNow => 'לא עכשיו';
+
+  @override
+  String get vaultMore => 'עוד';
+
+  @override
+  String get vaultQuickHide => 'נעילה כשהטלפון הפוך';
+
+  @override
+  String get vaultQuickHideOn =>
+      'הכספת תינעל מעכשיו כשמניחים את הטלפון עם המסך כלפי מטה';
 }

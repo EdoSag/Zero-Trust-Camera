@@ -58,6 +58,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   bool _searching = false;
   final _searchText = TextEditingController();
   DateTimeRange? _searchRange;
+  bool _quickHide = false;
   final Set<String> _selected = {};
   final Map<String, Future<Uint8List?>> _thumbs = {};
   bool _busy = false;
@@ -73,6 +74,9 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_vault.setSecure(true));
+    // Quick hide locked the vault: show it locked.
+    _vault.onLocked(() => unawaited(_refresh()));
+    unawaited(_readQuickHide());
     unawaited(_refresh(autoUnlock: true));
   }
 
@@ -80,6 +84,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_vault.setSecure(false));
+    _vault.onLocked(null);
     _searchText.dispose();
     super.dispose();
   }
@@ -88,6 +93,26 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The native side locks the vault when the app is left; show it locked.
     if (state == AppLifecycleState.resumed) unawaited(_refresh());
+  }
+
+  Future<void> _readQuickHide() async {
+    try {
+      final on = await _vault.quickHide();
+      if (mounted) setState(() => _quickHide = on);
+    } on Object {
+      // Shown as off.
+    }
+  }
+
+  Future<void> _setQuickHide(bool on) async {
+    setState(() => _quickHide = on);
+    try {
+      await _vault.setQuickHide(on);
+      if (on) _say((l) => l.vaultQuickHideOn);
+    } on Object {
+      if (mounted) setState(() => _quickHide = !on);
+      _say((l) => l.vaultFailed);
+    }
   }
 
   Future<void> _refresh({bool autoUnlock = false}) async {
@@ -662,15 +687,6 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                 onPressed: _busy ? null : _import,
               ),
               IconButton(
-                icon: const Icon(Icons.qr_code_2),
-                tooltip: l.scanHistoryTitle,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ScanHistoryPage(),
-                  ),
-                ),
-              ),
-              IconButton(
                 icon: const Icon(Icons.cloud_outlined),
                 tooltip: l.vaultBackup,
                 onPressed: _openBackup,
@@ -679,6 +695,25 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                 icon: const Icon(Icons.lock_outline),
                 tooltip: l.vaultLock,
                 onPressed: _lock,
+              ),
+              PopupMenuButton<int>(
+                tooltip: l.vaultMore,
+                onSelected: (v) => switch (v) {
+                  0 => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ScanHistoryPage(),
+                    ),
+                  ),
+                  _ => _setQuickHide(!_quickHide),
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 0, child: Text(l.scanHistoryTitle)),
+                  CheckedPopupMenuItem(
+                    value: 1,
+                    checked: _quickHide,
+                    child: Text(l.vaultQuickHide),
+                  ),
+                ],
               ),
             ],
           ],

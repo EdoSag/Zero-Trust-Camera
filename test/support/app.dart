@@ -15,6 +15,7 @@ class FakeBridge extends CameraBridge {
   int docScanner = 0;
   int proCamera = 0;
   int panorama = 0;
+  int defaultApps = 0;
 
   @override
   Future<void> setLanguage(String? languageCode) async =>
@@ -31,6 +32,9 @@ class FakeBridge extends CameraBridge {
 
   @override
   Future<void> openPanorama() async => panorama++;
+
+  @override
+  Future<void> openDefaultApps() async => defaultApps++;
 }
 
 late FakeBridge bridge;

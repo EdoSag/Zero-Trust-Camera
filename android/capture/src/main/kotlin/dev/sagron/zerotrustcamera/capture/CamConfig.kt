@@ -143,6 +143,7 @@ class CamConfig(private val mActivity: MainActivity) {
 
             // ZT Camera: scanned codes kept in the Private vault (off by default)
             const val SCAN_HISTORY = "zt_scan_history"
+            const val QUICK_HIDE = "zt_quick_hide"
 
             const val GYROSCOPE_SUGGESTIONS = "gyroscope_suggestions"
 
@@ -250,6 +251,16 @@ class CamConfig(private val mActivity: MainActivity) {
         fun setScanHistoryOn(ctx: Context, on: Boolean) {
             ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
                 .edit().putBoolean(SettingValues.Key.SCAN_HISTORY, on).apply()
+        }
+
+        /** Quick hide: the open vault locks when the phone is put face down. */
+        fun isQuickHideOn(ctx: Context): Boolean =
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(SettingValues.Key.QUICK_HIDE, false)
+
+        fun setQuickHideOn(ctx: Context, on: Boolean) {
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putBoolean(SettingValues.Key.QUICK_HIDE, on).apply()
         }
 
         val FRONT_CAMERA_SELECTOR = CameraSelector.Builder()
