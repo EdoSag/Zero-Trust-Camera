@@ -151,5 +151,10 @@
   "backupWifiOnlySubtitle": "The automatic backup waits for Wi-Fi and doesn't use mobile data",
   "backupChargingOnly": "Only while charging",
   "backupChargingOnlySubtitle": "The automatic backup waits until the phone is on the charger",
-  "backupNowSubtitle": "Runs right away, on any network"
+  "backupNowSubtitle": "Runs right away, on any network",
+  "vaultSearch": "Search",
+  "vaultSearchClose": "Close search",
+  "vaultSearchHint": "Album, month, year or date",
+  "vaultSearchDates": "Pick dates",
+  "vaultSearchEmpty": "Nothing in the vault matches"
 }

@@ -384,4 +384,19 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get backupNowSubtitle => 'Runs right away, on any network';
+
+  @override
+  String get vaultSearch => 'Search';
+
+  @override
+  String get vaultSearchClose => 'Close search';
+
+  @override
+  String get vaultSearchHint => 'Album, month, year or date';
+
+  @override
+  String get vaultSearchDates => 'Pick dates';
+
+  @override
+  String get vaultSearchEmpty => 'Nothing in the vault matches';
 }

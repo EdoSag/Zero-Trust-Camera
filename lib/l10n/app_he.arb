@@ -193,5 +193,10 @@
   "backupWifiOnlySubtitle": "הגיבוי האוטומטי מחכה ל-Wi-Fi ואינו משתמש בנתונים סלולריים",
   "backupChargingOnly": "רק בזמן טעינה",
   "backupChargingOnlySubtitle": "הגיבוי האוטומטי מחכה עד שהטלפון מחובר למטען",
-  "backupNowSubtitle": "רץ מיד, בכל רשת"
+  "backupNowSubtitle": "רץ מיד, בכל רשת",
+  "vaultSearch": "חיפוש",
+  "vaultSearchClose": "סגירת החיפוש",
+  "vaultSearchHint": "אלבום, חודש, שנה או תאריך",
+  "vaultSearchDates": "בחירת תאריכים",
+  "vaultSearchEmpty": "אין בכספת פריטים תואמים"
 }
