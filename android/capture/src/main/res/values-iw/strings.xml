@@ -386,6 +386,7 @@
     <string name="pano_too_short">צריך להסתובב עוד קצת כדי ליצור פנורמה</string>
     <string name="pano_no_sensor">בטלפון הזה אין חיישן תנועה, ולכן אי אפשר ליצור בו פנורמות</string>
     <!-- ZT Camera: record in memory -->
+    <string name="recorder_check">בדיקת המקליט: %1$s</string>
     <string name="record_in_memory_title">הקלטת וידאו בזיכרון (בטא)</string>
     <string name="record_in_memory_subtitle">במצב פרטי הסרטון נשמר בזיכרון עד שהוא ננעל, כך ששום דבר גלוי לא נכתב לאחסון. ההקלטה נעצרת מעצמה בכמה מאות MB.</string>
 </resources>
