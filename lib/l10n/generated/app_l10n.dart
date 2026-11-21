@@ -720,6 +720,36 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Runs right away, on any network'**
   String get backupNowSubtitle;
+
+  /// No description provided for @vaultSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get vaultSearch;
+
+  /// No description provided for @vaultSearchClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get vaultSearchClose;
+
+  /// No description provided for @vaultSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Album, month, year or date'**
+  String get vaultSearchHint;
+
+  /// No description provided for @vaultSearchDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick dates'**
+  String get vaultSearchDates;
+
+  /// No description provided for @vaultSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the vault matches'**
+  String get vaultSearchEmpty;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

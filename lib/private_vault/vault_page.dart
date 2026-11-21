@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../app/camera_bridge.dart';
 import '../l10n/l10n.dart';
@@ -12,6 +13,7 @@ import 'scan_history_page.dart';
 import 'vault_backend.dart';
 import 'vault_backup.dart';
 import 'vault_library.dart';
+import 'vault_search.dart';
 import 'vault_viewer.dart';
 
 enum VaultFilter { all, favourites, albums, trash }
@@ -51,6 +53,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   VaultLibrary _library = VaultLibrary();
   VaultFilter _filter = VaultFilter.all;
   String? _album;
+
+  /// The search under the filters: open or not, its words and its dates.
+  bool _searching = false;
+  final _searchText = TextEditingController();
+  DateTimeRange? _searchRange;
   final Set<String> _selected = {};
   final Map<String, Future<Uint8List?>> _thumbs = {};
   bool _busy = false;
@@ -73,6 +80,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_vault.setSecure(false));
+    _searchText.dispose();
     super.dispose();
   }
 
@@ -301,7 +309,59 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
 
   // ---- what is shown ---------------------------------------------------
 
+  VaultSearch get _search => _searching
+      ? VaultSearch(text: _searchText.text, range: _searchRange)
+      : const VaultSearch();
+
+  /// Month names to accept in a search: the app's language and English.
+  Map<int, List<String>> _monthNames() {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final names = <int, List<String>>{};
+    for (var m = 1; m <= 12; m++) {
+      final day = DateTime(2024, m);
+      names[m] = {
+        for (final tag in {locale, 'en'})
+          for (final pattern in const ['MMMM', 'LLLL'])
+            _formatMonth(pattern, tag, day),
+      }.whereType<String>().toList();
+    }
+    return names;
+  }
+
+  static String? _formatMonth(String pattern, String locale, DateTime day) {
+    try {
+      return DateFormat(pattern, locale).format(day).toLowerCase();
+    } on Object {
+      // That language's dates aren't loaded.
+      return null;
+    }
+  }
+
   List<VaultItem> get _visible {
+    final search = _search;
+    final list = _filtered;
+    return search.isEmpty
+        ? list
+        : search.apply(list, _library, months: _monthNames());
+  }
+
+  Future<void> _pickSearchDates() async {
+    final now = _now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year, now.month, now.day),
+      initialDateRange: _searchRange,
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _searchRange = picked;
+        _selected.clear();
+      });
+    }
+  }
+
+  List<VaultItem> get _filtered {
     return switch (_filter) {
       VaultFilter.all => [
         for (final i in _items)
@@ -793,6 +853,16 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
+              IconButton(
+                icon: Icon(_searching ? Icons.search_off : Icons.search),
+                tooltip: _searching ? l.vaultSearchClose : l.vaultSearch,
+                onPressed: () => setState(() {
+                  _searching = !_searching;
+                  _searchText.clear();
+                  _searchRange = null;
+                  _selected.clear();
+                }),
+              ),
               for (final f in VaultFilter.values)
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 8),
@@ -814,6 +884,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
             ],
           ),
         ),
+        if (_searching) _searchBar(l),
         if (_filter == VaultFilter.trash)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -851,7 +922,9 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
               : visible.isEmpty
               ? _centered([
                   Text(
-                    _filter == VaultFilter.trash
+                    !_search.isEmpty
+                        ? l.vaultSearchEmpty
+                        : _filter == VaultFilter.trash
                         ? l.vaultTrashEmpty
                         : l.vaultEmpty,
                     textAlign: TextAlign.center,
@@ -863,8 +936,55 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     );
   }
 
+  Widget _searchBar(AppL10n l) {
+    final range = _searchRange;
+    final dates = MaterialLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('vault_search'),
+                  controller: _searchText,
+                  autofocus: true,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: l.vaultSearchHint,
+                    isDense: true,
+                  ),
+                  onChanged: (_) => setState(_selected.clear),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.date_range_outlined),
+                tooltip: l.vaultSearchDates,
+                onPressed: _pickSearchDates,
+              ),
+            ],
+          ),
+          if (range != null)
+            InputChip(
+              label: Text(
+                '${dates.formatShortDate(range.start)} - '
+                '${dates.formatShortDate(range.end)}',
+              ),
+              onDeleted: () => setState(() => _searchRange = null),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _albumList(AppL10n l) {
-    final albums = _library.albums.values.toList();
+    final search = _search;
+    final albums = [
+      for (final a in _library.albums.values)
+        if (search.text.trim().isEmpty || search.matchesAlbum(a.name)) a,
+    ];
     return ListView(
       children: [
         ListTile(
@@ -880,7 +1000,10 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
         if (albums.isEmpty)
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(l.vaultNoAlbums, textAlign: TextAlign.center),
+            child: Text(
+              search.text.trim().isEmpty ? l.vaultNoAlbums : l.vaultSearchEmpty,
+              textAlign: TextAlign.center,
+            ),
           ),
         for (final a in albums)
           ListTile(

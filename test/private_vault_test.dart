@@ -8,6 +8,7 @@ import 'package:zerotrust_camera/private_vault/vault_backend.dart';
 import 'package:zerotrust_camera/private_vault/vault_backup.dart';
 import 'package:zerotrust_camera/private_vault/vault_library.dart';
 import 'package:zerotrust_camera/private_vault/vault_page.dart';
+import 'package:zerotrust_camera/private_vault/vault_search.dart';
 
 import 'support/app.dart';
 
@@ -246,6 +247,11 @@ class _CountingStore implements BackupStore {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+const _months = {
+  3: ['march', 'מרץ'],
+  11: ['november', 'נובמבר'],
+};
+
 VaultItem _item(String id, DateTime at, {bool video = false}) =>
     VaultItem(id: id, isVideo: video, takenAt: at);
 
@@ -302,6 +308,62 @@ void main() {
       expect(lib.favourites, {'a', 'b'});
       lib.toggleFavourite(['a', 'b']);
       expect(lib.favourites, isEmpty);
+    });
+  });
+
+  group('search', () {
+    final a = _item('a', DateTime(2026, 11, 21, 23, 30));
+    final b = _item('b', DateTime(2025, 3, 9));
+    final c = _item('c', DateTime(2026, 11, 2));
+    final lib = VaultLibrary()..addAlbum('Paris Trip', 'p');
+    lib.addToAlbum('p', ['b']);
+    List<String> ids(VaultSearch s) => [
+      for (final i in s.apply([a, b, c], lib, months: _months)) i.id,
+    ];
+
+    test('nothing typed keeps everything', () {
+      expect(const VaultSearch().isEmpty, isTrue);
+      expect(ids(const VaultSearch(text: '  ')), ['a', 'b', 'c']);
+    });
+
+    test('album names, in any case', () {
+      expect(ids(const VaultSearch(text: 'paris')), ['b']);
+      expect(ids(const VaultSearch(text: 'trip PARIS')), ['b']);
+      expect(const VaultSearch(text: 'par').matchesAlbum('Paris Trip'), isTrue);
+      expect(const VaultSearch(text: 'rome').matchesAlbum('Paris'), isFalse);
+    });
+
+    test('years, months, days and whole dates', () {
+      expect(ids(const VaultSearch(text: '2026')), ['a', 'c']);
+      expect(ids(const VaultSearch(text: 'nov')), ['a', 'c']);
+      expect(ids(const VaultSearch(text: 'נובמבר 2026')), ['a', 'c']);
+      expect(ids(const VaultSearch(text: 'november 21')), ['a']);
+      expect(ids(const VaultSearch(text: '21/11/2026')), ['a']);
+      expect(ids(const VaultSearch(text: '2026-11-02')), ['c']);
+      expect(ids(const VaultSearch(text: '3/2025')), ['b']);
+      expect(ids(const VaultSearch(text: 'march 2026')), isEmpty);
+      // Two letters are too few for a month.
+      expect(ids(const VaultSearch(text: 'no')), isEmpty);
+    });
+
+    test('a date range takes its whole last day', () {
+      final r = DateTimeRange(
+        start: DateTime(2026, 11, 2),
+        end: DateTime(2026, 11, 21),
+      );
+      expect(ids(VaultSearch(range: r)), ['a', 'c']);
+      expect(ids(VaultSearch(text: '21', range: r)), ['a']);
+      expect(
+        ids(
+          VaultSearch(
+            range: DateTimeRange(
+              start: DateTime(2026, 11, 3),
+              end: DateTime(2026, 11, 20),
+            ),
+          ),
+        ),
+        isEmpty,
+      );
     });
   });
 
@@ -617,6 +679,52 @@ void main() {
         ),
         greaterThan(0),
       );
+    });
+
+    testWidgets('search finds by album name, month and year', (tester) async {
+      _phone(tester);
+      final lib = VaultLibrary()..addAlbum('Paris trip', 'p');
+      lib.addToAlbum('p', ['a']);
+      final vault = FakeVault(
+        unlocked: true,
+        items: [
+          _item('a', DateTime(2026, 11, 2)),
+          _item('b', DateTime(2025, 3, 9)),
+        ],
+        state: lib.toJson(),
+      );
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('vault_search')), findsNothing);
+      await tester.tap(find.byTooltip('Search'));
+      await tester.pumpAndSettle();
+      final field = find.byKey(const ValueKey('vault_search'));
+      // The field sits under the filters, above the photos.
+      expect(
+        tester.getTopLeft(field).dy,
+        greaterThan(tester.getBottomLeft(find.text('Favourites')).dy),
+      );
+      await tester.enterText(field, 'paris');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byKey(const ValueKey('b')), findsNothing);
+      await tester.enterText(field, 'march 2025');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsNothing);
+      expect(find.byKey(const ValueKey('b')), findsOneWidget);
+      await tester.enterText(field, 'nothing like this');
+      await tester.pumpAndSettle();
+      expect(find.text('Nothing in the vault matches'), findsOneWidget);
+      // Closing the search shows everything again.
+      await tester.tap(find.byTooltip('Close search'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byKey(const ValueKey('b')), findsOneWidget);
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {

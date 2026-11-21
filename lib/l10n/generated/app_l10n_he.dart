@@ -381,4 +381,19 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get backupNowSubtitle => 'רץ מיד, בכל רשת';
+
+  @override
+  String get vaultSearch => 'חיפוש';
+
+  @override
+  String get vaultSearchClose => 'סגירת החיפוש';
+
+  @override
+  String get vaultSearchHint => 'אלבום, חודש, שנה או תאריך';
+
+  @override
+  String get vaultSearchDates => 'בחירת תאריכים';
+
+  @override
+  String get vaultSearchEmpty => 'אין בכספת פריטים תואמים';
 }
