@@ -13,6 +13,8 @@ class VaultItem {
     this.height,
     this.duration,
     this.imported = false,
+    this.lat,
+    this.lon,
   });
 
   factory VaultItem.fromMap(Map<Object?, Object?> m) => VaultItem(
@@ -28,6 +30,8 @@ class VaultItem {
         ? null
         : Duration(milliseconds: (m['durationMs']! as num).toInt()),
     imported: m['imported'] == true,
+    lat: (m['lat'] as num?)?.toDouble(),
+    lon: (m['lon'] as num?)?.toDouble(),
   );
 
   final String id;
@@ -38,6 +42,13 @@ class VaultItem {
   final int? height;
   final Duration? duration;
   final bool imported;
+
+  /// Where it was taken, when "Add location" was on. Kept only in the
+  /// vault's sealed details, never in the picture.
+  final double? lat;
+  final double? lon;
+
+  bool get hasPlace => lat != null && lon != null;
 }
 
 class VaultStatus {
@@ -126,13 +137,87 @@ abstract class VaultBackend {
   /// The item's file exactly as sealed, for the encrypted backup.
   Future<VaultOriginal> original(String id);
 
+  /// A smaller copy of a photo, for the backup's space saver. Null for
+  /// videos and RAW photos, and when a copy wouldn't be smaller.
+  Future<VaultOriginal?> spaceSaver(String id);
+
+  /// [length] bytes of a video's file from [offset], for backing up a video
+  /// too large to hold in memory or send as one file.
+  Future<Uint8List> originalPart(String id, int offset, int length);
+
+  /// Adds the next part of a large video being brought back from the
+  /// backup. [token] names the video until [restoreFinish].
+  Future<void> restorePart(String token, Uint8List bytes);
+
+  /// Seals the video whose parts were given to [restorePart]; returns its
+  /// new id.
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  });
+
+  /// Wipes the parts of a restore that didn't finish.
+  Future<void> restoreCancel(String token);
+
   /// Seals a file brought back from the backup; returns its new id.
   Future<String> restore(
     Uint8List bytes, {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   });
+
+  /// Whether new vault items keep their place, and whether the phone's
+  /// location permission was given.
+  Future<VaultLocationState> vaultLocation();
+
+  /// Turns it on or off. Turning it on asks for the location permission.
+  Future<void> setVaultLocation(bool on);
+
+  /// Quick hide: whether the open vault locks when the phone is put face
+  /// down.
+  Future<bool> quickHide();
+  Future<void> setQuickHide(bool on);
+
+  /// Calls [listener] when the native side locked the vault by itself
+  /// (quick hide). Null stops it.
+  void onLocked(void Function()? listener);
+
+  /// Whether the phone is on an unmetered network and charging.
+  Future<BackupConditions> backupConditions();
+
+  /// Shows (or updates) the backup's progress notification. Asks for the
+  /// notification permission once when [ask] is set; without it nothing shows.
+  Future<void> backupNotice(
+    String title,
+    String text,
+    int done,
+    int total, {
+    bool ask = false,
+  });
+
+  /// Takes the progress notification away.
+  Future<void> backupNoticeEnd();
+}
+
+class VaultLocationState {
+  const VaultLocationState({required this.on, required this.granted});
+
+  final bool on;
+  final bool granted;
+}
+
+/// What the phone is connected to right now, for the backup's rules.
+class BackupConditions {
+  const BackupConditions({required this.unmetered, required this.charging});
+
+  /// On Wi-Fi or another network that isn't metered.
+  final bool unmetered;
+  final bool charging;
 }
 
 class VaultOriginal {
@@ -276,17 +361,146 @@ class ChannelVaultBackend implements VaultBackend {
   }
 
   @override
+  Future<VaultOriginal?> spaceSaver(String id) async {
+    final m = await _call<Map<Object?, Object?>>('spaceSaver', {'id': id});
+    return m == null
+        ? null
+        : VaultOriginal(m['bytes']! as Uint8List, m['mime']! as String);
+  }
+
+  @override
+  Future<Uint8List> originalPart(String id, int offset, int length) async =>
+      (await _call<Uint8List>('originalPart', {
+        'id': id,
+        'offset': offset,
+        'length': length,
+      }))!;
+
+  @override
+  Future<void> restorePart(String token, Uint8List bytes) =>
+      _call<void>('restorePart', {'token': token, 'bytes': bytes});
+
+  @override
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  }) async => (await _call<String>('restoreFinish', {
+    'token': token,
+    'takenAt': takenAt.millisecondsSinceEpoch,
+    'lat': lat,
+    'lon': lon,
+  }))!;
+
+  @override
+  Future<void> restoreCancel(String token) =>
+      _call<void>('restoreCancel', {'token': token});
+
+  @override
   Future<String> restore(
     Uint8List bytes, {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   }) async => (await _call<String>('restore', {
     'bytes': bytes,
     'mime': mime,
     'video': isVideo,
     'takenAt': takenAt.millisecondsSinceEpoch,
+    'lat': lat,
+    'lon': lon,
   }))!;
+
+  @override
+  Future<VaultLocationState> vaultLocation() async {
+    try {
+      final m = await _channel.invokeMapMethod<String, Object?>(
+        'vaultLocation',
+      );
+      return VaultLocationState(
+        on: m?['on'] == true,
+        granted: m?['granted'] == true,
+      );
+    } on MissingPluginException {
+      return const VaultLocationState(on: false, granted: false);
+    }
+  }
+
+  @override
+  Future<void> setVaultLocation(bool on) =>
+      _call<void>('setVaultLocation', {'on': on});
+
+  @override
+  Future<bool> quickHide() async {
+    try {
+      return await _channel.invokeMethod<bool>('quickHide') ?? false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
+
+  @override
+  Future<void> setQuickHide(bool on) => _call<void>('setQuickHide', {'on': on});
+
+  @override
+  void onLocked(void Function()? listener) {
+    _channel.setMethodCallHandler(
+      listener == null
+          ? null
+          : (call) async {
+              if (call.method == 'locked') listener();
+            },
+    );
+  }
+
+  @override
+  Future<BackupConditions> backupConditions() async {
+    try {
+      final m = await _channel.invokeMapMethod<String, Object?>(
+        'backupConditions',
+      );
+      return BackupConditions(
+        unmetered: m?['unmetered'] == true,
+        charging: m?['charging'] == true,
+      );
+    } on Object {
+      // Unknown counts as mobile data and on battery: the backup waits.
+      return const BackupConditions(unmetered: false, charging: false);
+    }
+  }
+
+  @override
+  Future<void> backupNotice(
+    String title,
+    String text,
+    int done,
+    int total, {
+    bool ask = false,
+  }) async {
+    try {
+      await _channel.invokeMethod<void>('backupNotice', {
+        'title': title,
+        'text': text,
+        'done': done,
+        'total': total,
+        'ask': ask,
+      });
+    } on Object {
+      // The backup goes on without its notification.
+    }
+  }
+
+  @override
+  Future<void> backupNoticeEnd() async {
+    try {
+      await _channel.invokeMethod<void>('backupNoticeEnd');
+    } on Object {
+      // Nothing was showing.
+    }
+  }
 }
 
 final vaultBackendProvider = Provider<VaultBackend>(

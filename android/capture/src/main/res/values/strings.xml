@@ -421,4 +421,20 @@
     <string name="pro_saved">Saved to your gallery</string>
     <string name="pro_saved_vault">Saved to the Private vault</string>
     <string name="pro_failed">Couldn\'t take the photo</string>
+    <!-- ZT Camera: Private shot (home screen widget) -->
+    <string name="private_shot_on">Photos go to the Private vault</string>
+    <string name="private_shot_failed">The Private vault couldn\'t be set up, so the camera didn\'t open.</string>
+    <!-- ZT Camera: panorama -->
+    <string name="pano_shortcut">Panorama</string>
+    <string name="pano_hint_start">Hold the phone upright and press Start</string>
+    <string name="pano_hint_sweep">Turn slowly to one side. Keep the phone level.</string>
+    <string name="pano_start">Start</string>
+    <string name="pano_done">Done</string>
+    <string name="pano_failed">The panorama couldn\'t be made</string>
+    <string name="pano_too_short">Turn a little further to make a panorama</string>
+    <string name="pano_no_sensor">This phone has no motion sensor, so it can\'t make panoramas</string>
+    <!-- ZT Camera: record in memory -->
+    <string name="recorder_check">Recorder check: %1$s</string>
+    <string name="record_in_memory_title">Record videos in memory (beta)</string>
+    <string name="record_in_memory_subtitle">In Private mode a video is held in memory until it is sealed, so nothing unsealed is written to storage. Videos stop by themselves at a few hundred MB.</string>
 </resources>

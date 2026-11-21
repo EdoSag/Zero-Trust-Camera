@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home screen widget's words. -->
+<resources>
+    <string name="widget_camera_description">צילום פרטי ישר לכספת המוצפנת, וגם המצלמה, סורק הקודים וסורק המסמכים.</string>
+    <string name="widget_private_shot">צילום פרטי</string>
+    <string name="widget_open_camera">מצלמה</string>
+    <string name="widget_scan_code">סריקת קוד</string>
+    <string name="widget_scan_document">מסמך</string>
+</resources>

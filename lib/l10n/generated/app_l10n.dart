@@ -124,7 +124,7 @@ abstract class AppL10n {
   /// No description provided for @accountOptional.
   ///
   /// In en, this message translates to:
-  /// **'Optional: the camera and the Private vault work without one. An account will be needed for encrypted backup, which comes in a later version.'**
+  /// **'Optional: the camera and the Private vault work without one. An account is needed only for the encrypted backup of the vault.'**
   String get accountOptional;
 
   /// No description provided for @accountManage.
@@ -148,7 +148,7 @@ abstract class AppL10n {
   /// No description provided for @privacyLocationNever.
   ///
   /// In en, this message translates to:
-  /// **'Never saved. The app has no location permission.'**
+  /// **'Never saved in a photo or video. Only inside the Private vault, and only if you turn it on there.'**
   String get privacyLocationNever;
 
   /// No description provided for @privacyDateTime.
@@ -523,6 +523,18 @@ abstract class AppL10n {
   /// **'Straight, clean pages as a PDF, with the text read on your phone'**
   String get homeScanDocumentSubtitle;
 
+  /// No description provided for @homePanorama.
+  ///
+  /// In en, this message translates to:
+  /// **'Panorama (beta)'**
+  String get homePanorama;
+
+  /// No description provided for @homePanoramaSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn slowly and the phone joins the view into one wide photo'**
+  String get homePanoramaSubtitle;
+
   /// No description provided for @homeProCamera.
   ///
   /// In en, this message translates to:
@@ -622,7 +634,7 @@ abstract class AppL10n {
   /// No description provided for @backupVideosSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Each up to 20 MB. Longer videos stay on this phone only.'**
+  /// **'Videos take a lot of storage. Each up to 2 GB; longer ones stay on this phone only.'**
   String get backupVideosSubtitle;
 
   /// No description provided for @backupNow.
@@ -678,6 +690,342 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'{done} of {total}'**
   String backupProgress(int done, int total);
+
+  /// No description provided for @backupWifiOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi only'**
+  String get backupWifiOnly;
+
+  /// No description provided for @backupWifiOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The automatic backup waits for Wi-Fi and doesn\'t use mobile data'**
+  String get backupWifiOnlySubtitle;
+
+  /// No description provided for @backupChargingOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only while charging'**
+  String get backupChargingOnly;
+
+  /// No description provided for @backupChargingOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The automatic backup waits until the phone is on the charger'**
+  String get backupChargingOnlySubtitle;
+
+  /// No description provided for @backupNowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs right away, on any network'**
+  String get backupNowSubtitle;
+
+  /// No description provided for @vaultSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search'**
+  String get vaultSearch;
+
+  /// No description provided for @vaultSearchClose.
+  ///
+  /// In en, this message translates to:
+  /// **'Close search'**
+  String get vaultSearchClose;
+
+  /// No description provided for @vaultSearchHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Album, month, year or date'**
+  String get vaultSearchHint;
+
+  /// No description provided for @vaultSearchDates.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick dates'**
+  String get vaultSearchDates;
+
+  /// No description provided for @vaultSearchEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing in the vault matches'**
+  String get vaultSearchEmpty;
+
+  /// No description provided for @protectTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'How your photos are protected'**
+  String get protectTitle;
+
+  /// No description provided for @protectSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What is encrypted, what leaves the phone, and what the app can\'t protect'**
+  String get protectSubtitle;
+
+  /// No description provided for @protectGalleryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos in the gallery'**
+  String get protectGalleryTitle;
+
+  /// No description provided for @protectGalleryBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved with only what a picture needs: size, rotation and colour. No location, date, phone model or hidden thumbnail, unless you turn date or model on in the camera\'s settings. They are ordinary files: any app you allow to see your photos can open them.'**
+  String get protectGalleryBody;
+
+  /// No description provided for @protectVaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The Private vault'**
+  String get protectVaultTitle;
+
+  /// No description provided for @protectVaultBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone\'s vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can\'t open it. If you turn on location for the vault, the place is kept in the item\'s encrypted details, never in the picture.'**
+  String get protectVaultBody;
+
+  /// No description provided for @protectVideoTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private videos'**
+  String get protectVideoTitle;
+
+  /// No description provided for @protectVideoBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A video is recorded to a file only this app can reach, encrypted when you stop, and the file is then overwritten and deleted. Until you stop it is protected by Android\'s storage encryption, not by the vault. \"Record Private videos in memory\" in the camera\'s settings keeps the recording off storage; clips are then limited by the phone\'s memory.'**
+  String get protectVideoBody;
+
+  /// No description provided for @protectBackupTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encrypted backup'**
+  String get protectBackupTitle;
+
+  /// No description provided for @protectBackupBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Off until you turn it on. Each file is encrypted on this phone with its own key before it goes to your Zero Trust account. The server sees sizes and times, never pictures or album names. Whoever can sign in to your account and unlock it can restore them, so keep its password safe.'**
+  String get protectBackupBody;
+
+  /// No description provided for @protectNetworkTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get protectNetworkTitle;
+
+  /// No description provided for @protectNetworkBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The camera screens have no network code. The app goes online only for your account and the backup, and only if you use them.'**
+  String get protectNetworkBody;
+
+  /// No description provided for @protectPermissionsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Permissions'**
+  String get protectPermissionsTitle;
+
+  /// No description provided for @protectPermissionsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. Location, asked for only if you turn on location for the Private vault. No access to your files.'**
+  String get protectPermissionsBody;
+
+  /// No description provided for @protectLimitsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What it can\'t protect'**
+  String get protectLimitsTitle;
+
+  /// No description provided for @protectLimitsBody.
+  ///
+  /// In en, this message translates to:
+  /// **'A phone that is unlocked with the vault open. Photos you save or share out of the vault: they leave as ordinary files, without location, date or phone details. A phone whose screen lock someone else knows.'**
+  String get protectLimitsBody;
+
+  /// No description provided for @defaultCameraTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use as your camera'**
+  String get defaultCameraTitle;
+
+  /// No description provided for @defaultCameraSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open ZT Camera from the power button and the lock screen'**
+  String get defaultCameraSubtitle;
+
+  /// No description provided for @defaultCameraIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Android has no single switch for the default camera, so it takes two steps.'**
+  String get defaultCameraIntro;
+
+  /// No description provided for @defaultCameraStep1.
+  ///
+  /// In en, this message translates to:
+  /// **'Double-press the power button, or open the camera from the lock screen. If Android asks which camera to use, pick ZT Camera and tap Always.'**
+  String get defaultCameraStep1;
+
+  /// No description provided for @defaultCameraStep2.
+  ///
+  /// In en, this message translates to:
+  /// **'If another camera opens without asking, open that camera\'s App info, tap Open by default, clear its defaults, and try step 1 again.'**
+  String get defaultCameraStep2;
+
+  /// No description provided for @defaultCameraOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open default apps'**
+  String get defaultCameraOpenSettings;
+
+  /// No description provided for @defaultCameraOtherApps.
+  ///
+  /// In en, this message translates to:
+  /// **'Inside other apps, for example a chat app\'s camera button, Android 11 and later always use the camera that came with the phone. No app can change that.'**
+  String get defaultCameraOtherApps;
+
+  /// No description provided for @defaultCameraCardTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Make ZT Camera your camera?'**
+  String get defaultCameraCardTitle;
+
+  /// No description provided for @defaultCameraCardBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Open it from the power button and the lock screen instead of the phone\'s own camera.'**
+  String get defaultCameraCardBody;
+
+  /// No description provided for @defaultCameraShowMe.
+  ///
+  /// In en, this message translates to:
+  /// **'Show me how'**
+  String get defaultCameraShowMe;
+
+  /// No description provided for @defaultCameraNotNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get defaultCameraNotNow;
+
+  /// No description provided for @vaultMore.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get vaultMore;
+
+  /// No description provided for @vaultQuickHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Lock when face down'**
+  String get vaultQuickHide;
+
+  /// No description provided for @vaultQuickHideOn.
+  ///
+  /// In en, this message translates to:
+  /// **'The vault now locks when you put the phone face down'**
+  String get vaultQuickHideOn;
+
+  /// No description provided for @vaultLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add location to vault photos'**
+  String get vaultLocation;
+
+  /// No description provided for @vaultLocationOn.
+  ///
+  /// In en, this message translates to:
+  /// **'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.'**
+  String get vaultLocationOn;
+
+  /// No description provided for @backupSpaceSaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Space saver'**
+  String get backupSpaceSaver;
+
+  /// No description provided for @backupSpaceSaverSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed.'**
+  String get backupSpaceSaverSubtitle;
+
+  /// No description provided for @accountMediaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In your account'**
+  String get accountMediaTitle;
+
+  /// No description provided for @accountMediaIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Backed up from another phone and not on this one. Tap one to open it from your account, or keep it on this phone.'**
+  String get accountMediaIntro;
+
+  /// No description provided for @accountMediaEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in your account is already on this phone.'**
+  String get accountMediaEmpty;
+
+  /// No description provided for @accountMediaFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach your account. Check the connection and try again.'**
+  String get accountMediaFailed;
+
+  /// No description provided for @accountMediaKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep on this phone'**
+  String get accountMediaKeep;
+
+  /// No description provided for @accountMediaKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to the vault on this phone'**
+  String get accountMediaKept;
+
+  /// No description provided for @accountMediaBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'A backup or restore is running. Try again when it ends.'**
+  String get accountMediaBusy;
+
+  /// No description provided for @accountMediaVideoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this video on this phone to play it.'**
+  String get accountMediaVideoNote;
+
+  /// No description provided for @accountMediaRawNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this RAW photo on this phone to open it.'**
+  String get accountMediaRawNote;
+
+  /// No description provided for @offlineBuildTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Offline build'**
+  String get offlineBuildTitle;
+
+  /// No description provided for @offlineBuildBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This build has no internet permission, so there is no account and no backup. Everything stays on this phone.'**
+  String get offlineBuildBody;
+
+  /// No description provided for @protectNetworkOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'This is the Offline build: the app has no internet permission at all. Nothing can leave the phone through it.'**
+  String get protectNetworkOffline;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

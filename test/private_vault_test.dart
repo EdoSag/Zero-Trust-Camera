@@ -3,10 +3,15 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
+import 'package:zerotrust_camera/app/camera_config.dart';
 import 'package:zerotrust_camera/private_vault/vault_backend.dart';
+import 'package:zerotrust_camera/private_vault/vault_backup.dart';
 import 'package:zerotrust_camera/private_vault/vault_library.dart';
 import 'package:zerotrust_camera/private_vault/vault_page.dart';
+import 'package:zerotrust_camera/private_vault/vault_search.dart';
 
 import 'support/app.dart';
 
@@ -171,11 +176,31 @@ class FakeVault implements VaultBackend {
   }
 
   @override
+  Future<Uint8List> originalPart(String id, int offset, int length) async =>
+      Uint8List(length);
+
+  @override
+  Future<void> restorePart(String token, Uint8List bytes) async {}
+
+  @override
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  }) async => 'restored';
+
+  @override
+  Future<void> restoreCancel(String token) async {}
+
+  @override
   Future<String> restore(
     Uint8List bytes, {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   }) async {
     restored.add((bytes, mime, isVideo, takenAt));
     final id = 'restored${restored.length}';
@@ -190,7 +215,112 @@ class FakeVault implements VaultBackend {
     _check();
     edited.add(id);
   }
+
+  VaultLocationState location = const VaultLocationState(
+    on: false,
+    granted: false,
+  );
+
+  @override
+  Future<VaultLocationState> vaultLocation() async => location;
+
+  @override
+  Future<void> setVaultLocation(bool on) async =>
+      location = VaultLocationState(on: on, granted: on);
+
+  @override
+  Future<VaultOriginal?> spaceSaver(String id) async => null;
+
+  bool quickHideOn = false;
+  void Function()? lockedListener;
+
+  @override
+  Future<bool> quickHide() async => quickHideOn;
+
+  @override
+  Future<void> setQuickHide(bool on) async => quickHideOn = on;
+
+  @override
+  void onLocked(void Function()? listener) => lockedListener = listener;
+
+  /// The native side locking the vault by itself (the phone put face down).
+  void faceDown() {
+    unlocked = false;
+    lockedListener?.call();
+  }
+
+  BackupConditions conditions = const BackupConditions(
+    unmetered: true,
+    charging: true,
+  );
+  final List<String> notices = [];
+  int noticesEnded = 0;
+
+  @override
+  Future<BackupConditions> backupConditions() async => conditions;
+
+  @override
+  Future<void> backupNotice(
+    String title,
+    String text,
+    int done,
+    int total, {
+    bool ask = false,
+  }) async => notices.add(text);
+
+  @override
+  Future<void> backupNoticeEnd() async => noticesEnded++;
 }
+
+/// An account holding one photo backed up from another phone.
+class _OtherPhoneStore implements BackupStore {
+  final photo = CameraMedia(
+    id: 'm1',
+    type: 'photo',
+    mime: 'image/png',
+    takenAt: DateTime(2026, 11, 2),
+    size: 70,
+    file: ZtAttachmentRef(id: 'f1', key: Uint8List(32), size: 70),
+  );
+  int downloads = 0;
+
+  @override
+  Future<List<CameraMedia>> media() async => [photo];
+
+  @override
+  Future<List<CameraAlbum>> albums() async => const [];
+
+  @override
+  Future<Uint8List> download(ZtAttachmentRef ref) async {
+    downloads++;
+    return _onePixelPng;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+/// An account that only counts how often the backup looked at it.
+class _CountingStore implements BackupStore {
+  int looks = 0;
+
+  @override
+  Future<List<CameraMedia>> media() async {
+    looks++;
+    return const [];
+  }
+
+  @override
+  Future<List<CameraAlbum>> albums() async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
+}
+
+const _months = {
+  3: ['march', 'מרץ'],
+  11: ['november', 'נובמבר'],
+};
 
 VaultItem _item(String id, DateTime at, {bool video = false}) =>
     VaultItem(id: id, isVideo: video, takenAt: at);
@@ -248,6 +378,62 @@ void main() {
       expect(lib.favourites, {'a', 'b'});
       lib.toggleFavourite(['a', 'b']);
       expect(lib.favourites, isEmpty);
+    });
+  });
+
+  group('search', () {
+    final a = _item('a', DateTime(2026, 11, 21, 23, 30));
+    final b = _item('b', DateTime(2025, 3, 9));
+    final c = _item('c', DateTime(2026, 11, 2));
+    final lib = VaultLibrary()..addAlbum('Paris Trip', 'p');
+    lib.addToAlbum('p', ['b']);
+    List<String> ids(VaultSearch s) => [
+      for (final i in s.apply([a, b, c], lib, months: _months)) i.id,
+    ];
+
+    test('nothing typed keeps everything', () {
+      expect(const VaultSearch().isEmpty, isTrue);
+      expect(ids(const VaultSearch(text: '  ')), ['a', 'b', 'c']);
+    });
+
+    test('album names, in any case', () {
+      expect(ids(const VaultSearch(text: 'paris')), ['b']);
+      expect(ids(const VaultSearch(text: 'trip PARIS')), ['b']);
+      expect(const VaultSearch(text: 'par').matchesAlbum('Paris Trip'), isTrue);
+      expect(const VaultSearch(text: 'rome').matchesAlbum('Paris'), isFalse);
+    });
+
+    test('years, months, days and whole dates', () {
+      expect(ids(const VaultSearch(text: '2026')), ['a', 'c']);
+      expect(ids(const VaultSearch(text: 'nov')), ['a', 'c']);
+      expect(ids(const VaultSearch(text: 'נובמבר 2026')), ['a', 'c']);
+      expect(ids(const VaultSearch(text: 'november 21')), ['a']);
+      expect(ids(const VaultSearch(text: '21/11/2026')), ['a']);
+      expect(ids(const VaultSearch(text: '2026-11-02')), ['c']);
+      expect(ids(const VaultSearch(text: '3/2025')), ['b']);
+      expect(ids(const VaultSearch(text: 'march 2026')), isEmpty);
+      // Two letters are too few for a month.
+      expect(ids(const VaultSearch(text: 'no')), isEmpty);
+    });
+
+    test('a date range takes its whole last day', () {
+      final r = DateTimeRange(
+        start: DateTime(2026, 11, 2),
+        end: DateTime(2026, 11, 21),
+      );
+      expect(ids(VaultSearch(range: r)), ['a', 'c']);
+      expect(ids(VaultSearch(text: '21', range: r)), ['a']);
+      expect(
+        ids(
+          VaultSearch(
+            range: DateTimeRange(
+              start: DateTime(2026, 11, 3),
+              end: DateTime(2026, 11, 20),
+            ),
+          ),
+        ),
+        isEmpty,
+      );
     });
   });
 
@@ -513,6 +699,292 @@ void main() {
       expect(vault.originals, isEmpty);
     });
 
+    testWidgets('the quiet backup waits for Wi-Fi and the charger', (
+      tester,
+    ) async {
+      _phone(tester);
+      final lib = VaultLibrary()
+        ..backup.account = 'u1'
+        ..backup.on = true
+        ..backup.chargingOnly = true;
+      lib.backedUp['a'] = 'm1';
+      Future<int> looksWith(BackupConditions c) async {
+        final vault = FakeVault(
+          unlocked: true,
+          items: [_item('a', now)],
+          state: lib.toJson(),
+        )..conditions = c;
+        final store = _CountingStore();
+        await tester.pumpWidget(
+          app(
+            PrivateVaultPage(key: UniqueKey(), now: () => now),
+            overrides: [
+              vaultBackendProvider.overrideWithValue(vault),
+              backupStoreProvider.overrideWithValue(store),
+              backupAccountProvider.overrideWithValue('u1'),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        // Nothing new to upload: no notification either way.
+        expect(vault.notices, isEmpty);
+        return store.looks;
+      }
+
+      expect(
+        await looksWith(
+          const BackupConditions(unmetered: false, charging: true),
+        ),
+        0,
+      );
+      expect(
+        await looksWith(
+          const BackupConditions(unmetered: true, charging: false),
+        ),
+        0,
+      );
+      expect(
+        await looksWith(
+          const BackupConditions(unmetered: true, charging: true),
+        ),
+        greaterThan(0),
+      );
+    });
+
+    testWidgets('search finds by album name, month and year', (tester) async {
+      _phone(tester);
+      final lib = VaultLibrary()..addAlbum('Paris trip', 'p');
+      lib.addToAlbum('p', ['a']);
+      final vault = FakeVault(
+        unlocked: true,
+        items: [
+          _item('a', DateTime(2026, 11, 2)),
+          _item('b', DateTime(2025, 3, 9)),
+        ],
+        state: lib.toJson(),
+      );
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('vault_search')), findsNothing);
+      await tester.tap(find.byTooltip('Search'));
+      await tester.pumpAndSettle();
+      final field = find.byKey(const ValueKey('vault_search'));
+      // The field sits under the filters, above the photos.
+      expect(
+        tester.getTopLeft(field).dy,
+        greaterThan(tester.getBottomLeft(find.text('Favourites')).dy),
+      );
+      await tester.enterText(field, 'paris');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byKey(const ValueKey('b')), findsNothing);
+      await tester.enterText(field, 'march 2025');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsNothing);
+      expect(find.byKey(const ValueKey('b')), findsOneWidget);
+      await tester.enterText(field, 'nothing like this');
+      await tester.pumpAndSettle();
+      expect(find.text('Nothing in the vault matches'), findsOneWidget);
+      // Closing the search shows everything again.
+      await tester.tap(find.byTooltip('Close search'));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byKey(const ValueKey('b')), findsOneWidget);
+    });
+
+    testWidgets('quick hide: turned on from More, face down locks', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // The title still fits beside the buttons.
+      final title = tester.getRect(find.text('Private vault'));
+      expect(
+        title.right,
+        lessThanOrEqualTo(
+          tester.getRect(find.byTooltip('Import from gallery')).left,
+        ),
+      );
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      expect(find.text('Lock when face down'), findsOneWidget);
+      await tester.tap(find.byType(CheckedPopupMenuItem<int>).first);
+      await tester.pumpAndSettle();
+      expect(vault.quickHideOn, isTrue);
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+
+      vault.faceDown();
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsNothing);
+      expect(find.text('The vault is locked'), findsOneWidget);
+    });
+
+    testWidgets('location: off until turned on in More; shown on the photo', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(
+        unlocked: true,
+        items: [
+          VaultItem(
+            id: 'a',
+            isVideo: false,
+            takenAt: now,
+            lat: 32.0853,
+            lon: 34.7818,
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(vault.location.on, isFalse);
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      expect(find.text('Add location to vault photos'), findsOneWidget);
+      await tester.tap(find.byType(CheckedPopupMenuItem<int>).last);
+      await tester.pumpAndSettle();
+      expect(vault.location.on, isTrue);
+      expect(find.textContaining('inside the vault only'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      final place = find.byKey(const ValueKey('vault_place'));
+      expect(tester.widget<Text>(place).data, '32.08530, 34.78180');
+      expect(tester.getRect(place).right, lessThanOrEqualTo(360));
+    });
+
+    testWidgets('In your account: open a photo from another phone, keep it', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      final store = _OtherPhoneStore();
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [
+            vaultBackendProvider.overrideWithValue(vault),
+            backupStoreProvider.overrideWithValue(store),
+            backupAccountProvider.overrideWithValue('u1'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('In your account'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Backed up from another phone'),
+        findsOneWidget,
+      );
+      // Listing downloads no photo.
+      expect(store.downloads, 0);
+      expect(vault.restored, isEmpty);
+
+      await tester.tap(find.byKey(const ValueKey('account_m1')));
+      await tester.pumpAndSettle();
+      // Opened from the account, in memory: still nothing on this phone.
+      expect(store.downloads, 1);
+      expect(vault.restored, isEmpty);
+      final keep = find.text('Keep on this phone');
+      final button = tester.getRect(
+        find.ancestor(of: keep, matching: find.byType(FilledButton)),
+      );
+      expect(button.left, greaterThanOrEqualTo(0));
+      expect(button.right, lessThanOrEqualTo(360));
+      expect(button.bottom, lessThanOrEqualTo(800));
+
+      await tester.tap(keep);
+      await tester.pumpAndSettle();
+      expect(vault.restored.single.$2, 'image/png');
+      expect(find.byKey(const ValueKey('account_m1')), findsNothing);
+      expect(
+        find.text('Everything in your account is already on this phone.'),
+        findsOneWidget,
+      );
+      // The vault remembers which copy this is, so it won't upload it again.
+      expect(VaultLibrary.fromJson(vault.state).backedUp.values, ['m1']);
+    });
+
+    testWidgets('the Offline build shows no backup and no account list', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [
+            vaultBackendProvider.overrideWithValue(vault),
+            offlineBuildProvider.overrideWithValue(true),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byTooltip('Encrypted backup'), findsNothing);
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      expect(find.text('Scan history'), findsOneWidget);
+      expect(find.text('In your account'), findsNothing);
+    });
+
+    testWidgets(
+      'In your account: an open photo closes when the account locks',
+      (tester) async {
+        _phone(tester);
+        final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+        final account = StateProvider<String?>((ref) => 'u1');
+        late WidgetRef outer;
+        await tester.pumpWidget(
+          app(
+            Consumer(
+              builder: (context, ref, _) {
+                outer = ref;
+                return PrivateVaultPage(now: () => now);
+              },
+            ),
+            overrides: [
+              vaultBackendProvider.overrideWithValue(vault),
+              backupStoreProvider.overrideWithValue(_OtherPhoneStore()),
+              backupAccountProvider.overrideWith((ref) => ref.watch(account)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('More'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('In your account'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('account_m1')));
+        await tester.pumpAndSettle();
+        expect(find.text('Keep on this phone'), findsOneWidget);
+
+        outer.read(account.notifier).state = null;
+        await tester.pumpAndSettle();
+        expect(find.text('Keep on this phone'), findsNothing);
+        expect(find.byKey(const ValueKey('account_m1')), findsNothing);
+      },
+    );
+
     testWidgets('locking from the app bar hides everything', (tester) async {
       _phone(tester);
       final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
@@ -564,7 +1036,9 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      await tester.tap(find.byTooltip('Scan history'));
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Scan history'));
       await tester.pumpAndSettle();
       final toggle = find.byKey(const Key('scan-history-switch'));
       expect(toggle, findsOneWidget);

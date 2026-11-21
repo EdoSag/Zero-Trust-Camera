@@ -4,14 +4,18 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../app/camera_bridge.dart';
+import '../app/camera_config.dart';
 import '../l10n/l10n.dart';
+import 'account_media_page.dart';
 import 'backup_page.dart';
 import 'scan_history_page.dart';
 import 'vault_backend.dart';
 import 'vault_backup.dart';
 import 'vault_library.dart';
+import 'vault_search.dart';
 import 'vault_viewer.dart';
 
 enum VaultFilter { all, favourites, albums, trash }
@@ -51,6 +55,13 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   VaultLibrary _library = VaultLibrary();
   VaultFilter _filter = VaultFilter.all;
   String? _album;
+
+  /// The search under the filters: open or not, its words and its dates.
+  bool _searching = false;
+  final _searchText = TextEditingController();
+  DateTimeRange? _searchRange;
+  bool _quickHide = false;
+  bool _location = false;
   final Set<String> _selected = {};
   final Map<String, Future<Uint8List?>> _thumbs = {};
   bool _busy = false;
@@ -66,6 +77,10 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     unawaited(_vault.setSecure(true));
+    // Quick hide locked the vault: show it locked.
+    _vault.onLocked(() => unawaited(_refresh()));
+    unawaited(_readQuickHide());
+    unawaited(_readLocation());
     unawaited(_refresh(autoUnlock: true));
   }
 
@@ -73,13 +88,60 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_vault.setSecure(false));
+    _vault.onLocked(null);
+    _searchText.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The native side locks the vault when the app is left; show it locked.
-    if (state == AppLifecycleState.resumed) unawaited(_refresh());
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refresh());
+      // The permission prompt may just have been answered.
+      unawaited(_readLocation());
+    }
+  }
+
+  Future<void> _readQuickHide() async {
+    try {
+      final on = await _vault.quickHide();
+      if (mounted) setState(() => _quickHide = on);
+    } on Object {
+      // Shown as off.
+    }
+  }
+
+  Future<void> _readLocation() async {
+    try {
+      final s = await _vault.vaultLocation();
+      // On without the permission adds nothing: shown as off.
+      if (mounted) setState(() => _location = s.on && s.granted);
+    } on Object {
+      // Shown as off.
+    }
+  }
+
+  Future<void> _setLocation(bool on) async {
+    setState(() => _location = on);
+    try {
+      await _vault.setVaultLocation(on);
+      if (on) _say((l) => l.vaultLocationOn);
+    } on Object {
+      if (mounted) setState(() => _location = !on);
+      _say((l) => l.vaultFailed);
+    }
+  }
+
+  Future<void> _setQuickHide(bool on) async {
+    setState(() => _quickHide = on);
+    try {
+      await _vault.setQuickHide(on);
+      if (on) _say((l) => l.vaultQuickHideOn);
+    } on Object {
+      if (mounted) setState(() => _quickHide = !on);
+      _say((l) => l.vaultFailed);
+    }
   }
 
   Future<void> _refresh({bool autoUnlock = false}) async {
@@ -145,23 +207,67 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   Future<void> _autoBackup() async {
     // Only for the account backup was turned on for: after a switch of
     // accounts nothing goes up until it is turned on again.
+    if (ref.read(offlineBuildProvider)) return;
     final account = ref.read(backupAccountProvider);
     if (account == null || !_library.backupFor(account)) return;
     final library = _library;
     final items = _items;
+    final l = context.l10n;
     try {
+      // The rules (Wi-Fi only, only while charging) are for this quiet
+      // backup; "Back up now" on the backup screen always runs.
+      final now = await _vault.backupConditions();
+      if (!library.backup.allows(
+        unmetered: now.unmetered,
+        charging: now.charging,
+      )) {
+        return;
+      }
       final engine = VaultBackup(
         vault: _vault,
         store: ref.read(backupStoreProvider),
         account: account,
       );
+      final somethingNew = engine
+          .eligible(library, items)
+          .any((i) => !library.backedUp.containsKey(i.id));
+      final locks = _lockCount;
+      Future<bool> allowed() async {
+        final c = await _vault.backupConditions();
+        return library.backup.allows(
+          unmetered: c.unmetered,
+          charging: c.charging,
+        );
+      }
+
       final r = await VaultBackup.exclusive(() async {
-        final r = await engine.backUp(library, items);
+        final r = somethingNew
+            ? await withBackupNotice(
+                _vault,
+                l,
+                (p) => engine.backUp(
+                  library,
+                  items,
+                  progress: p,
+                  allowed: allowed,
+                ),
+              )
+            : await engine.backUp(library, items, allowed: allowed);
         // Saved even with nothing new: copies deleted from the account
         // leave the queue.
-        if (identical(library, _library)) {
-          await _vault.writeState(library.toJson());
+        if (locks != _lockCount) return r;
+        if (!identical(library, _library)) {
+          // The list was read again meanwhile (the app came back to the
+          // front): what went up is noted on the one in use now, or it
+          // would go up a second time.
+          final ids = {for (final i in _items) i.id};
+          for (final e in library.backedUp.entries) {
+            if (ids.contains(e.key)) {
+              _library.backedUp.putIfAbsent(e.key, () => e.value);
+            }
+          }
         }
+        await _vault.writeState(_library.toJson());
         return r;
       });
       if (r != null && r.full) _say((l) => l.backupFull);
@@ -171,19 +277,41 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   }
 
   Future<void> _openBackup() async {
+    final library = _library;
     await Navigator.of(context).push(
       MaterialPageRoute<void>(
-        builder: (_) =>
-            VaultBackupPage(library: _library, items: _items, save: _save),
+        // Saves the library the page works on: this page may read its own
+        // again while a backup or restore runs (the notification question
+        // brings the app back to the front), and saving that one instead
+        // would lose what the job noted.
+        builder: (_) => VaultBackupPage(
+          library: library,
+          items: _items,
+          save: () => _save(library),
+        ),
       ),
     );
     // A restore adds items the list here doesn't have yet.
     if (mounted) await _refresh();
   }
 
-  Future<void> _save() async {
+  /// What is in the account but not on this phone (from another phone).
+  Future<void> _openAccountMedia() async {
+    // As on the backup screen: the page saves the library it works on.
+    final library = _library;
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            AccountMediaPage(library: library, save: () => _save(library)),
+      ),
+    );
+    // Items kept from the account are new here.
+    if (mounted) await _refresh();
+  }
+
+  Future<void> _save([VaultLibrary? library]) async {
     try {
-      await _vault.writeState(_library.toJson());
+      await _vault.writeState((library ?? _library).toJson());
     } on Object {
       _say((l) => l.vaultFailed);
     }
@@ -250,7 +378,59 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
 
   // ---- what is shown ---------------------------------------------------
 
+  VaultSearch get _search => _searching
+      ? VaultSearch(text: _searchText.text, range: _searchRange)
+      : const VaultSearch();
+
+  /// Month names to accept in a search: the app's language and English.
+  Map<int, List<String>> _monthNames() {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final names = <int, List<String>>{};
+    for (var m = 1; m <= 12; m++) {
+      final day = DateTime(2024, m);
+      names[m] = {
+        for (final tag in {locale, 'en'})
+          for (final pattern in const ['MMMM', 'LLLL'])
+            _formatMonth(pattern, tag, day),
+      }.whereType<String>().toList();
+    }
+    return names;
+  }
+
+  static String? _formatMonth(String pattern, String locale, DateTime day) {
+    try {
+      return DateFormat(pattern, locale).format(day).toLowerCase();
+    } on Object {
+      // That language's dates aren't loaded.
+      return null;
+    }
+  }
+
   List<VaultItem> get _visible {
+    final search = _search;
+    final list = _filtered;
+    return search.isEmpty
+        ? list
+        : search.apply(list, _library, months: _monthNames());
+  }
+
+  Future<void> _pickSearchDates() async {
+    final now = _now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(now.year, now.month, now.day),
+      initialDateRange: _searchRange,
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _searchRange = picked;
+        _selected.clear();
+      });
+    }
+  }
+
+  List<VaultItem> get _filtered {
     return switch (_filter) {
       VaultFilter.all => [
         for (final i in _items)
@@ -519,6 +699,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     final status = _status;
     final unlocked = status?.unlocked == true;
     final selecting = _selected.isNotEmpty;
+    final offline = ref.watch(offlineBuildProvider);
 
     return PopScope(
       canPop: !selecting,
@@ -550,24 +731,45 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                 tooltip: l.vaultImport,
                 onPressed: _busy ? null : _import,
               ),
-              IconButton(
-                icon: const Icon(Icons.qr_code_2),
-                tooltip: l.scanHistoryTitle,
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const ScanHistoryPage(),
-                  ),
+              // The Offline build has no account to back up to.
+              if (!offline)
+                IconButton(
+                  icon: const Icon(Icons.cloud_outlined),
+                  tooltip: l.vaultBackup,
+                  onPressed: _openBackup,
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.cloud_outlined),
-                tooltip: l.vaultBackup,
-                onPressed: _openBackup,
-              ),
               IconButton(
                 icon: const Icon(Icons.lock_outline),
                 tooltip: l.vaultLock,
                 onPressed: _lock,
+              ),
+              PopupMenuButton<int>(
+                tooltip: l.vaultMore,
+                onSelected: (v) => switch (v) {
+                  0 => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const ScanHistoryPage(),
+                    ),
+                  ),
+                  1 => _setQuickHide(!_quickHide),
+                  2 => _setLocation(!_location),
+                  _ => _openAccountMedia(),
+                },
+                itemBuilder: (_) => [
+                  PopupMenuItem(value: 0, child: Text(l.scanHistoryTitle)),
+                  if (!offline)
+                    PopupMenuItem(value: 3, child: Text(l.accountMediaTitle)),
+                  CheckedPopupMenuItem(
+                    value: 1,
+                    checked: _quickHide,
+                    child: Text(l.vaultQuickHide),
+                  ),
+                  CheckedPopupMenuItem(
+                    value: 2,
+                    checked: _location,
+                    child: Text(l.vaultLocation),
+                  ),
+                ],
               ),
             ],
           ],
@@ -742,6 +944,16 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Row(
             children: [
+              IconButton(
+                icon: Icon(_searching ? Icons.search_off : Icons.search),
+                tooltip: _searching ? l.vaultSearchClose : l.vaultSearch,
+                onPressed: () => setState(() {
+                  _searching = !_searching;
+                  _searchText.clear();
+                  _searchRange = null;
+                  _selected.clear();
+                }),
+              ),
               for (final f in VaultFilter.values)
                 Padding(
                   padding: const EdgeInsetsDirectional.only(end: 8),
@@ -763,6 +975,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
             ],
           ),
         ),
+        if (_searching) _searchBar(l),
         if (_filter == VaultFilter.trash)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
@@ -800,7 +1013,9 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
               : visible.isEmpty
               ? _centered([
                   Text(
-                    _filter == VaultFilter.trash
+                    !_search.isEmpty
+                        ? l.vaultSearchEmpty
+                        : _filter == VaultFilter.trash
                         ? l.vaultTrashEmpty
                         : l.vaultEmpty,
                     textAlign: TextAlign.center,
@@ -812,8 +1027,55 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     );
   }
 
+  Widget _searchBar(AppL10n l) {
+    final range = _searchRange;
+    final dates = MaterialLocalizations.of(context);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 8, 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  key: const ValueKey('vault_search'),
+                  controller: _searchText,
+                  autofocus: true,
+                  textInputAction: TextInputAction.search,
+                  decoration: InputDecoration(
+                    hintText: l.vaultSearchHint,
+                    isDense: true,
+                  ),
+                  onChanged: (_) => setState(_selected.clear),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.date_range_outlined),
+                tooltip: l.vaultSearchDates,
+                onPressed: _pickSearchDates,
+              ),
+            ],
+          ),
+          if (range != null)
+            InputChip(
+              label: Text(
+                '${dates.formatShortDate(range.start)} - '
+                '${dates.formatShortDate(range.end)}',
+              ),
+              onDeleted: () => setState(() => _searchRange = null),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _albumList(AppL10n l) {
-    final albums = _library.albums.values.toList();
+    final search = _search;
+    final albums = [
+      for (final a in _library.albums.values)
+        if (search.text.trim().isEmpty || search.matchesAlbum(a.name)) a,
+    ];
     return ListView(
       children: [
         ListTile(
@@ -829,7 +1091,10 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
         if (albums.isEmpty)
           Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(l.vaultNoAlbums, textAlign: TextAlign.center),
+            child: Text(
+              search.text.trim().isEmpty ? l.vaultNoAlbums : l.vaultSearchEmpty,
+              textAlign: TextAlign.center,
+            ),
           ),
         for (final a in albums)
           ListTile(

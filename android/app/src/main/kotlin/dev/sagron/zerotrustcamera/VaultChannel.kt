@@ -1,8 +1,22 @@
 package dev.sagron.zerotrustcamera
 
+import android.Manifest
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
+import android.os.BatteryManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.WindowManager
@@ -12,6 +26,7 @@ import dev.sagron.zerotrustcamera.capture.CamConfig
 import dev.sagron.zerotrustcamera.capture.zt.Ocr
 import dev.sagron.zerotrustcamera.capture.zt.PhotoEditActivity
 import dev.sagron.zerotrustcamera.capture.zt.VaultKeys
+import dev.sagron.zerotrustcamera.capture.zt.VaultLocation
 import dev.sagron.zerotrustcamera.capture.zt.VaultSession
 import dev.sagron.zerotrustcamera.capture.zt.VaultStore
 import dev.sagron.zerotrustcamera.capture.zt.VaultTransfer
@@ -129,6 +144,82 @@ class VaultChannel(
                     "mime" to VaultStore.meta(ctx, id, priv).optString("mime", "image/jpeg"),
                 )
             }
+            "spaceSaver" -> unlocked(result) { priv ->
+                // A smaller copy of a photo for the backup's space saver: at most SAVER_SIDE on
+                // its long side, as WebP. Null for videos and RAW, and when it wouldn't be smaller.
+                val id = call.argument<String>("id")!!
+                val meta = VaultStore.meta(ctx, id, priv)
+                if (meta.optString("type") == VaultStore.TYPE_VIDEO ||
+                    meta.optString("mime") == VaultStore.MIME_DNG
+                ) {
+                    null
+                } else {
+                    val bytes = VaultStore.media(ctx, id, priv)
+                    try {
+                        val bmp = android.graphics.ImageDecoder.decodeBitmap(
+                            android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+                        ) { d, info, _ ->
+                            d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                            val long = maxOf(info.size.width, info.size.height)
+                            if (long > SAVER_SIDE) {
+                                val f = SAVER_SIDE.toFloat() / long
+                                d.setTargetSize(
+                                    maxOf(1, (info.size.width * f).toInt()),
+                                    maxOf(1, (info.size.height * f).toInt()),
+                                )
+                            }
+                        }
+                        val format = if (Build.VERSION.SDK_INT >= 30) {
+                            android.graphics.Bitmap.CompressFormat.WEBP_LOSSY
+                        } else {
+                            @Suppress("DEPRECATION")
+                            android.graphics.Bitmap.CompressFormat.WEBP
+                        }
+                        val small = java.io.ByteArrayOutputStream().use { out ->
+                            bmp.compress(format, SAVER_QUALITY, out)
+                            bmp.recycle()
+                            out.toByteArray()
+                        }
+                        if (small.size < bytes.size) mapOf("bytes" to small, "mime" to "image/webp") else null
+                    } finally {
+                        bytes.fill(0)
+                    }
+                }
+            }
+            "originalPart" -> unlocked(result) { priv ->
+                // One piece of a large video, for the encrypted backup.
+                VaultStore.mediaPart(
+                    ctx,
+                    call.argument<String>("id")!!,
+                    priv,
+                    call.argument<Number>("offset")!!.toLong(),
+                    call.argument<Number>("length")!!.toInt(),
+                )
+            }
+            "restorePart" -> background(result) {
+                // A large video comes back in pieces, put together in the vault's temp folder
+                // (app-private, wiped once sealed) like a recording.
+                val bytes = call.argument<ByteArray>("bytes")!!
+                try {
+                    java.io.FileOutputStream(
+                        VaultStore.restoreFile(ctx, call.argument<String>("token")!!), true
+                    ).use { it.write(bytes) }
+                } finally {
+                    bytes.fill(0)
+                }
+                null
+            }
+            "restoreFinish" -> background(result) {
+                val pub = VaultKeys.publicKey(ctx) ?: throw IllegalStateException("no vault")
+                val f = VaultStore.restoreFile(ctx, call.argument<String>("token")!!)
+                val takenAt = call.argument<Number>("takenAt")?.toLong() ?: System.currentTimeMillis()
+                VaultStore.saveVideo(ctx, pub, f, takenAt, place = place(call))?.first
+                    ?: throw java.io.IOException("video not sealed")
+            }
+            "restoreCancel" -> background(result) {
+                VaultStore.wipe(VaultStore.restoreFile(ctx, call.argument<String>("token")!!))
+                null
+            }
             "restore" -> background(result) {
                 val pub = VaultKeys.publicKey(ctx) ?: throw IllegalStateException("no vault")
                 val bytes = call.argument<ByteArray>("bytes")!!
@@ -139,7 +230,7 @@ class VaultChannel(
                         call.argument<Boolean>("video") == true -> {
                             val f = VaultStore.newTempFile(ctx, ".mp4")
                             f.writeBytes(bytes)
-                            VaultStore.saveVideo(ctx, pub, f, takenAt)?.first
+                            VaultStore.saveVideo(ctx, pub, f, takenAt, place = place(call))?.first
                                 ?: throw java.io.IOException("video not sealed")
                         }
                         mime == VaultStore.MIME_DNG -> {
@@ -160,9 +251,9 @@ class VaultChannel(
                             }
                             val f = VaultStore.newTempFile(ctx, ".dng")
                             f.writeBytes(bytes)
-                            VaultStore.saveRaw(ctx, pub, f, jpeg, takenAt)
+                            VaultStore.saveRaw(ctx, pub, f, jpeg, takenAt, place(call))
                         }
-                        else -> VaultStore.savePhoto(ctx, pub, bytes, takenAt, mime = mime).first
+                        else -> VaultStore.savePhoto(ctx, pub, bytes, takenAt, mime = mime, place = place(call)).first
                     }
                 } finally {
                     bytes.fill(0)
@@ -240,8 +331,149 @@ class VaultChannel(
                     .putExtra(VaultVideoActivity.EXTRA_ID, call.argument<String>("id")))
                 result.success(null)
             }
+            "vaultLocation" -> result.success(mapOf(
+                "on" to CamConfig.isVaultLocationOn(ctx),
+                "granted" to VaultLocation.granted(ctx),
+            ))
+            "setVaultLocation" -> {
+                val on = call.argument<Boolean>("on") == true
+                CamConfig.setVaultLocationOn(ctx, on)
+                // Asked for only here, when the owner turns it on.
+                if (on && !VaultLocation.granted(ctx)) {
+                    activity.requestPermissions(
+                        arrayOf(
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                        ),
+                        REQUEST_LOCATION,
+                    )
+                }
+                result.success(null)
+            }
+            "quickHide" -> result.success(CamConfig.isQuickHideOn(ctx))
+            "setQuickHide" -> {
+                CamConfig.setQuickHideOn(ctx, call.argument<Boolean>("on") == true)
+                watchFaceDown()
+                result.success(null)
+            }
+            "backupConditions" -> result.success(mapOf(
+                "unmetered" to isUnmetered(ctx),
+                "charging" to (ctx.getSystemService(BatteryManager::class.java)?.isCharging == true),
+            ))
+            "backupNotice" -> {
+                showBackupNotice(
+                    call.argument<String>("title") ?: "",
+                    call.argument<String>("text") ?: "",
+                    call.argument<Number>("done")?.toInt() ?: 0,
+                    call.argument<Number>("total")?.toInt() ?: 0,
+                    call.argument<Boolean>("ask") == true,
+                )
+                result.success(null)
+            }
+            "backupNoticeEnd" -> {
+                cancelBackupNotice()
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
+    }
+
+    // ---- quick hide ---------------------------------------------------------
+
+    private var faceDownSamples = 0
+    private var watchingFaceDown = false
+    private val faceDown = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            // Lying screen-down, gravity pulls along -z. Two readings in a row, so a swing of
+            // the hand doesn't count.
+            faceDownSamples = if (event.values[2] < FACE_DOWN_Z) faceDownSamples + 1 else 0
+            if (faceDownSamples >= 2 && VaultSession.isUnlocked) {
+                faceDownSamples = 0
+                VaultSession.lock()
+                // The Flutter screens show the vault locked.
+                channel.invokeMethod("locked", null)
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
+    /**
+     * Starts or stops watching for the phone being put face down, to match the setting. Called
+     * when these screens come to the front and when the setting changes.
+     */
+    fun watchFaceDown() {
+        val ctx = activity.applicationContext
+        val sensors = ctx.getSystemService(SensorManager::class.java) ?: return
+        val want = CamConfig.isQuickHideOn(ctx)
+        if (want == watchingFaceDown) return
+        if (want) {
+            val accelerometer = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
+            faceDownSamples = 0
+            sensors.registerListener(faceDown, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+        } else {
+            sensors.unregisterListener(faceDown)
+        }
+        watchingFaceDown = want
+    }
+
+    /** Stops watching (these screens left the front; the vault locks then anyway). */
+    fun stopFaceDown() {
+        if (!watchingFaceDown) return
+        activity.applicationContext.getSystemService(SensorManager::class.java)?.unregisterListener(faceDown)
+        watchingFaceDown = false
+    }
+
+    /** On Wi-Fi or another network with internet that isn't metered. Unknown counts as metered. */
+    private fun isUnmetered(ctx: Context): Boolean = try {
+        val cm = ctx.getSystemService(ConnectivityManager::class.java)
+        val caps = cm?.activeNetwork?.let { cm.getNetworkCapabilities(it) }
+        caps != null &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+    } catch (e: SecurityException) {
+        false
+    }
+
+    /**
+     * The backup's progress, as a quiet notification. Without the notification permission nothing
+     * shows; [ask] asks for it once (right after "Back up now" was tapped).
+     */
+    private fun showBackupNotice(title: String, text: String, done: Int, total: Int, ask: Boolean) {
+        val ctx = activity.applicationContext
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (ask) activity.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFY)
+            return
+        }
+        val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
+        nm.createNotificationChannel(
+            NotificationChannel(BACKUP_CHANNEL, title, NotificationManager.IMPORTANCE_LOW)
+        )
+        nm.notify(
+            BACKUP_NOTICE,
+            Notification.Builder(ctx, BACKUP_CHANNEL)
+                .setSmallIcon(android.R.drawable.stat_sys_upload)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setProgress(total, done, total <= 0)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .build(),
+        )
+    }
+
+    /** Takes the backup's notification away (also when these screens close mid-backup). */
+    fun cancelBackupNotice() {
+        activity.applicationContext.getSystemService(NotificationManager::class.java)?.cancel(BACKUP_NOTICE)
+    }
+
+    /** The place a restored item had when it was backed up, if any. */
+    private fun place(call: MethodCall): DoubleArray? {
+        val lat = call.argument<Number>("lat")?.toDouble() ?: return null
+        val lon = call.argument<Number>("lon")?.toDouble() ?: return null
+        return doubleArrayOf(lat, lon)
     }
 
     /** The photo picker's answer (see ZtAppActivity). */
@@ -307,5 +539,12 @@ class VaultChannel(
     companion object {
         const val CHANNEL = "dev.sagron.zerotrustcamera/vault"
         private const val TAG = "VaultChannel"
+        private const val FACE_DOWN_Z = -8.5f
+        private const val SAVER_SIDE = 3072
+        private const val SAVER_QUALITY = 80
+        private const val BACKUP_CHANNEL = "vault_backup"
+        private const val BACKUP_NOTICE = 4101
+        private const val REQUEST_NOTIFY = 4102
+        private const val REQUEST_LOCATION = 4103
     }
 }

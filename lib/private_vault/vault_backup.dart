@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 
 import '../app/auth_providers.dart';
+import '../app/camera_config.dart';
+import '../l10n/l10n.dart';
 import 'vault_backend.dart';
 import 'vault_library.dart';
 
@@ -22,8 +24,13 @@ class CameraMedia {
     required this.takenAt,
     required this.size,
     required this.file,
+    this.parts = const [],
     this.favourite = false,
     this.albums = const [],
+    this.lat,
+    this.lon,
+    this.saver = false,
+    this.thumb,
   });
 
   final String id;
@@ -34,12 +41,32 @@ class CameraMedia {
   final DateTime takenAt;
   final int size;
   final ZtAttachmentRef file;
+
+  /// A video over the attachment size limit is kept as several files, in
+  /// order; [file] is then the first of them. Empty for everything else.
+  final List<ZtAttachmentRef> parts;
   final bool favourite;
 
   /// Ids of [CameraAlbum]s this item is in.
   final List<String> albums;
 
+  /// Where it was taken, if the owner chose to keep places in the vault.
+  /// Inside the encrypted item, like everything else here.
+  final double? lat;
+  final double? lon;
+
+  /// The backed-up file is a smaller copy (space saver), not the original.
+  final bool saver;
+
+  /// A small preview, encrypted like the file, so another phone can show
+  /// what is in the account without downloading everything. Null for items
+  /// backed up before previews existed.
+  final ZtAttachmentRef? thumb;
+
   bool get isVideo => type == 'video';
+
+  /// Every file this item is kept in.
+  List<ZtAttachmentRef> get files => parts.isEmpty ? [file] : parts;
 
   CameraMedia copyWith({bool? favourite, List<String>? albums}) => CameraMedia(
     id: id,
@@ -48,8 +75,13 @@ class CameraMedia {
     takenAt: takenAt,
     size: size,
     file: file,
+    parts: parts,
     favourite: favourite ?? this.favourite,
     albums: albums ?? this.albums,
+    lat: lat,
+    lon: lon,
+    saver: saver,
+    thumb: thumb,
   );
 
   Map<String, Object?> toJson() => {
@@ -59,28 +91,43 @@ class CameraMedia {
     'takenAt': takenAt.millisecondsSinceEpoch,
     'size': size,
     'file': file.toJson(),
+    if (parts.isNotEmpty) 'parts': [for (final p in parts) p.toJson()],
     'favourite': favourite,
     'albums': albums,
+    if (lat != null && lon != null) ...{'lat': lat, 'lon': lon},
+    if (saver) 'saver': true,
+    if (thumb != null) 'thumb': thumb!.toJson(),
   };
 
-  static CameraMedia fromJson(String _, Map<String, Object?> j, DateTime _) =>
-      CameraMedia(
-        id: j['id']! as String,
-        type: j['type'] as String? ?? 'photo',
-        mime: j['mime'] as String? ?? 'image/jpeg',
-        takenAt: DateTime.fromMillisecondsSinceEpoch(
-          (j['takenAt'] as num?)?.toInt() ?? 0,
-        ),
-        size: (j['size'] as num?)?.toInt() ?? 0,
-        file: ZtAttachmentRef.fromJson(
-          (j['file']! as Map).cast<String, Object?>(),
-        ),
-        favourite: j['favourite'] == true,
-        albums: [
-          for (final a in (j['albums'] as List<Object?>? ?? const []))
-            if (a is String) a,
-        ],
-      );
+  static CameraMedia fromJson(
+    String _,
+    Map<String, Object?> j,
+    DateTime _,
+  ) => CameraMedia(
+    id: j['id']! as String,
+    type: j['type'] as String? ?? 'photo',
+    mime: j['mime'] as String? ?? 'image/jpeg',
+    takenAt: DateTime.fromMillisecondsSinceEpoch(
+      (j['takenAt'] as num?)?.toInt() ?? 0,
+    ),
+    size: (j['size'] as num?)?.toInt() ?? 0,
+    file: ZtAttachmentRef.fromJson((j['file']! as Map).cast<String, Object?>()),
+    parts: [
+      for (final p in (j['parts'] as List<Object?>? ?? const []))
+        if (p is Map) ZtAttachmentRef.fromJson(p.cast<String, Object?>()),
+    ],
+    favourite: j['favourite'] == true,
+    albums: [
+      for (final a in (j['albums'] as List<Object?>? ?? const []))
+        if (a is String) a,
+    ],
+    lat: (j['lat'] as num?)?.toDouble(),
+    lon: (j['lon'] as num?)?.toDouble(),
+    saver: j['saver'] == true,
+    thumb: j['thumb'] is Map
+        ? ZtAttachmentRef.fromJson((j['thumb']! as Map).cast<String, Object?>())
+        : null,
+  );
 }
 
 /// A vault album, kept in the account so a restore can put items back in it.
@@ -120,6 +167,9 @@ abstract class BackupStore {
   Future<void> deleteMedia(CameraMedia m);
   Future<ZtAttachmentRef> upload(Uint8List bytes, String mime);
   Future<Uint8List> download(ZtAttachmentRef ref);
+
+  /// Deletes an uploaded file that no item ended up using.
+  Future<void> discard(ZtAttachmentRef ref);
 }
 
 /// [BackupStore] on the core: synced items plus [ZtAttachments]. Needs the
@@ -151,9 +201,15 @@ class CoreBackupStore implements BackupStore {
 
   @override
   Future<void> deleteMedia(CameraMedia m) async {
-    await (await _files).delete(m.file);
+    final files = await _files;
+    for (final f in [...m.files, ?m.thumb]) {
+      await files.delete(f);
+    }
     await cameraMediaCollection.delete(_sync, m.id);
   }
+
+  @override
+  Future<void> discard(ZtAttachmentRef ref) async => (await _files).delete(ref);
 
   @override
   Future<ZtAttachmentRef> upload(Uint8List bytes, String mime) async =>
@@ -172,17 +228,26 @@ class BackupResult {
     this.tooLarge = 0,
     this.failed = 0,
     this.full = false,
+    this.paused = false,
   });
 
   /// Items newly backed up (or restored).
   final int done;
 
-  /// Videos over the attachment size limit, left on the phone only.
+  /// Files too large to back up, left on the phone only.
   final int tooLarge;
   final int failed;
 
   /// The account's storage is full; the rest waits.
   final bool full;
+
+  /// The rules (Wi-Fi only, only while charging) stopped holding part way;
+  /// the rest waits for the next time.
+  final bool paused;
+}
+
+class _BackupPaused implements Exception {
+  const _BackupPaused();
 }
 
 /// Backs the Private vault up to the account, and brings it back on a new
@@ -201,7 +266,13 @@ class VaultBackup {
 
   /// The signed-in user's id: where [store] reads and writes.
   final String account;
+
+  /// The most one file in the account can hold. A larger video goes up as
+  /// several files of this size.
   final int maxBytes;
+
+  /// The most files one video may be split into (2 GB at the usual limit).
+  static const maxParts = 100;
 
   /// True while a backup or restore runs, anywhere in the app.
   static final running = ValueNotifier<bool>(false);
@@ -237,6 +308,7 @@ class VaultBackup {
     VaultLibrary library,
     List<VaultItem> items, {
     void Function(int done, int total)? progress,
+    Future<bool> Function()? allowed,
   }) async {
     if (!library.backupFor(account)) return const BackupResult();
     await deletePending(library);
@@ -250,6 +322,17 @@ class VaultBackup {
       }
     }
     var done = 0, tooLarge = 0, failed = 0, step = 0;
+    BackupResult paused() => BackupResult(
+      done: done,
+      tooLarge: tooLarge,
+      failed: failed,
+      paused: true,
+    );
+    // Asked again before every file that goes up, so a backup that began
+    // on Wi-Fi does not carry on over mobile data.
+    var uploads = 0;
+    Future<bool> mayUpload() async =>
+        allowed == null || uploads++ == 0 || await allowed();
     for (final item in todo) {
       progress?.call(step++, todo.length);
       final favourite = library.favourites.contains(item.id);
@@ -265,12 +348,71 @@ class VaultBackup {
         }
         continue;
       }
-      if (item.size > maxBytes) {
-        tooLarge++;
+      // Space saver: a smaller copy of a photo, when one can be made.
+      VaultOriginal? small;
+      if (library.backup.spaceSaver && !item.isVideo) {
+        try {
+          small = await vault.spaceSaver(item.id);
+        } on Object {
+          // The original goes up instead.
+        }
+      }
+      if (item.size > maxBytes && small == null) {
+        if (!item.isVideo || item.size > maxBytes * maxParts) {
+          tooLarge++;
+          continue;
+        }
+        final uploaded = <ZtAttachmentRef>[];
+        try {
+          for (var at = 0; at < item.size; at += maxBytes) {
+            final want = min(maxBytes, item.size - at);
+            if (!await mayUpload()) throw const _BackupPaused();
+            final bytes = await vault.originalPart(item.id, at, want);
+            if (bytes.length != want) throw StateError('short read');
+            uploaded.add(await store.upload(bytes, 'video/mp4'));
+          }
+          final media = CameraMedia(
+            id: newBackupId(),
+            type: 'video',
+            mime: 'video/mp4',
+            takenAt: item.takenAt,
+            size: item.size,
+            file: uploaded.first,
+            parts: uploaded,
+            favourite: favourite,
+            albums: albums,
+            lat: item.lat,
+            lon: item.lon,
+            thumb: await _uploadThumb(item.id),
+          );
+          await store.saveMedia(media);
+          library.backedUp[item.id] = media.id;
+          done++;
+        } on Object catch (e) {
+          // Half a video is no use: what went up comes down again.
+          for (final ref in uploaded) {
+            try {
+              await store.discard(ref);
+            } on Object {
+              // Left behind; it counts toward storage until deleted.
+            }
+          }
+          if (e is _BackupPaused) return paused();
+          if (_isQuota(e)) {
+            return BackupResult(
+              done: done,
+              tooLarge: tooLarge,
+              failed: failed,
+              full: true,
+            );
+          }
+          failed++;
+        }
         continue;
       }
+      if (!await mayUpload()) return paused();
       try {
-        final original = await vault.original(item.id);
+        final original = small ?? await vault.original(item.id);
         if (original.bytes.length > maxBytes) {
           tooLarge++;
           continue;
@@ -285,6 +427,10 @@ class VaultBackup {
           file: ref,
           favourite: favourite,
           albums: albums,
+          lat: item.lat,
+          lon: item.lon,
+          saver: small != null,
+          thumb: await _uploadThumb(item.id),
         );
         await store.saveMedia(media);
         library.backedUp[item.id] = media.id;
@@ -307,6 +453,80 @@ class VaultBackup {
     return BackupResult(done: done, tooLarge: tooLarge, failed: failed);
   }
 
+  /// The item's small preview, uploaded for other phones to show. Null when
+  /// there is none or it didn't go up: the backup of the file still counts.
+  Future<ZtAttachmentRef?> _uploadThumb(String id) async {
+    try {
+      final bytes = await vault.thumb(id);
+      if (bytes == null || bytes.isEmpty) return null;
+      return await store.upload(bytes, 'image/jpeg');
+    } on Object {
+      return null;
+    }
+  }
+
+  /// What is in the account but not on this phone, newest first. Reads
+  /// only; nothing is changed.
+  Future<List<CameraMedia>> missing(VaultLibrary library) async {
+    // What this phone knows of another account's copies says nothing here.
+    final here = library.backup.account == account
+        ? {...library.backedUp.values, ...library.backupDeletes}
+        : const <String>{};
+    return [
+      for (final m in await store.media())
+        if (!here.contains(m.id)) m,
+    ]..sort((a, b) => b.takenAt.compareTo(a.takenAt));
+  }
+
+  /// Brings one backed-up item onto this phone, sealed into the vault with
+  /// its favourite mark, albums and place. Changes [library]; the caller
+  /// saves it. Returns the new vault id.
+  Future<String> keep(
+    VaultLibrary library,
+    CameraMedia m, {
+    Map<String, String>? albumNames,
+  }) async {
+    library.useBackupAccount(account);
+    final names =
+        albumNames ?? {for (final a in await store.albums()) a.id: a.name};
+    final String id;
+    if (m.parts.length > 1) {
+      final token = newBackupId();
+      try {
+        for (final part in m.parts) {
+          await vault.restorePart(token, await store.download(part));
+        }
+        id = await vault.restoreFinish(
+          token,
+          m.takenAt,
+          lat: m.lat,
+          lon: m.lon,
+        );
+      } on Object {
+        await vault.restoreCancel(token);
+        rethrow;
+      }
+    } else {
+      id = await vault.restore(
+        await store.download(m.file),
+        mime: m.mime,
+        isVideo: m.isVideo,
+        takenAt: m.takenAt,
+        lat: m.lat,
+        lon: m.lon,
+      );
+    }
+    library.backedUp[id] = m.id;
+    if (m.favourite) library.favourites.add(id);
+    for (final albumId in m.albums) {
+      if (!library.albums.containsKey(albumId)) {
+        library.addAlbum(names[albumId] ?? '', albumId);
+      }
+      library.addToAlbum(albumId, [id]);
+    }
+    return id;
+  }
+
   /// Seals every backed-up item this phone doesn't have into the vault,
   /// with its favourite mark and albums. Changes [library]; the caller saves
   /// it.
@@ -325,21 +545,7 @@ class VaultBackup {
     for (final m in missing) {
       progress?.call(step++, missing.length);
       try {
-        final bytes = await store.download(m.file);
-        final id = await vault.restore(
-          bytes,
-          mime: m.mime,
-          isVideo: m.isVideo,
-          takenAt: m.takenAt,
-        );
-        library.backedUp[id] = m.id;
-        if (m.favourite) library.favourites.add(id);
-        for (final albumId in m.albums) {
-          if (!library.albums.containsKey(albumId)) {
-            library.addAlbum(albumNames[albumId] ?? '', albumId);
-          }
-          library.addToAlbum(albumId, [id]);
-        }
+        await keep(library, m, albumNames: albumNames);
         done++;
       } on Object {
         failed++;
@@ -383,10 +589,40 @@ class VaultBackup {
   ).join();
 }
 
+/// Runs a backup or restore [job] with its progress in a notification, which
+/// goes away when the job ends. [ask] asks for the notification permission
+/// (only right after a tap).
+Future<T> withBackupNotice<T>(
+  VaultBackend vault,
+  AppL10n l,
+  Future<T> Function(void Function(int done, int total) progress) job, {
+  void Function(int done, int total)? progress,
+  bool ask = false,
+}) async {
+  var asked = !ask;
+  try {
+    return await job((done, total) {
+      progress?.call(done, total);
+      vault.backupNotice(
+        l.backupTitle,
+        l.backupProgress(done, total),
+        done,
+        total,
+        ask: !asked,
+      );
+      asked = true;
+    });
+  } finally {
+    await vault.backupNoticeEnd();
+  }
+}
+
 /// The id of the account backup can use right now, or null: signed in, and
 /// its own vault (the account key) unlocked.
 final backupAccountProvider = Provider<String?>(
-  (ref) => ref.watch(vaultControllerProvider) is VaultUnlocked
+  (ref) =>
+      !ref.watch(offlineBuildProvider) &&
+          ref.watch(vaultControllerProvider) is VaultUnlocked
       ? ref.watch(currentUserProvider)?.id
       : null,
 );

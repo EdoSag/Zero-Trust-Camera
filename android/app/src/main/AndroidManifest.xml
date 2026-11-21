@@ -4,6 +4,14 @@
          itself never uses the network). -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.USE_BIOMETRIC"/>
+    <!-- Only to tell Wi-Fi from mobile data, for the vault backup's
+         "Wi-Fi only" rule. -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
+    <!-- Optional, asked for only when "Add location" is turned on in the
+         Private vault. The place is kept in the vault item's sealed
+         details, never in a picture and never for gallery photos. -->
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
 
     <!-- The camera screens (launcher, camera intents, lock-screen camera,
          in-app gallery) are declared by the capture module's manifest and
@@ -60,6 +68,21 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/vault_share_paths"/>
         </provider>
+
+        <!-- Home screen widget: Private shot, Camera, Scan code, Document.
+             Exported so the launcher can ask it to draw; its buttons open
+             this app's own screens. -->
+        <receiver
+            android:name=".widgets.CameraWidgetProvider"
+            android:label="@string/widget_camera_label"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_camera_info" />
+        </receiver>
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

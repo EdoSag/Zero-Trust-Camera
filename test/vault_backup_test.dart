@@ -10,9 +10,60 @@ import 'package:zerotrust_camera/private_vault/vault_library.dart';
 class _Vault implements VaultBackend {
   final files = <String, VaultOriginal>{};
   final restored = <String, (Uint8List, String, bool)>{};
+  final places = <String, (double, double)>{};
 
   @override
   Future<VaultOriginal> original(String id) async => files[id]!;
+
+  /// Small previews, by item id.
+  final thumbs = <String, Uint8List>{};
+
+  @override
+  Future<Uint8List?> thumb(String id) async => thumbs[id];
+
+  /// Smaller copies the phone can make, by item id.
+  final small = <String, VaultOriginal>{};
+
+  @override
+  Future<VaultOriginal?> spaceSaver(String id) async => small[id];
+
+  @override
+  Future<Uint8List> originalPart(String id, int offset, int length) async {
+    partReads++;
+    return Uint8List.sublistView(files[id]!.bytes, offset, offset + length);
+  }
+
+  int partReads = 0;
+  final parts = <String, List<int>>{};
+  final cancelled = <String>[];
+  bool failFinish = false;
+
+  @override
+  Future<void> restorePart(String token, Uint8List bytes) async =>
+      (parts[token] ??= []).addAll(bytes);
+
+  @override
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  }) async {
+    if (failFinish) throw Exception('not sealed');
+    final id = 'new${restored.length + 1}';
+    restored[id] = (
+      Uint8List.fromList(parts.remove(token)!),
+      'video/mp4',
+      true,
+    );
+    return id;
+  }
+
+  @override
+  Future<void> restoreCancel(String token) async {
+    parts.remove(token);
+    cancelled.add(token);
+  }
 
   @override
   Future<String> restore(
@@ -20,9 +71,12 @@ class _Vault implements VaultBackend {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   }) async {
     final id = 'new${restored.length + 1}';
     restored[id] = (bytes, mime, isVideo);
+    if (lat != null && lon != null) places[id] = (lat, lon);
     return id;
   }
 
@@ -54,12 +108,21 @@ class _Account implements BackupStore {
   @override
   Future<void> deleteMedia(CameraMedia m) async {
     media_.remove(m.id);
-    files.remove(m.file.id);
+    for (final f in [...m.files, ?m.thumb]) {
+      files.remove(f.id);
+    }
   }
+
+  @override
+  Future<void> discard(ZtAttachmentRef ref) async => files.remove(ref.id);
+
+  /// Uploads start failing after this many.
+  int? failAfter;
 
   @override
   Future<ZtAttachmentRef> upload(Uint8List bytes, String mime) async {
     if (full) throw Exception('Storage quota exceeded');
+    if (failAfter != null && uploads >= failAfter!) throw Exception('offline');
     uploads++;
     final id = 'f$uploads';
     files[id] = bytes;
@@ -187,6 +250,131 @@ void main() {
     expect(account.media_[lib.backedUp['a']]!.favourite, isTrue);
   });
 
+  test('a place kept in the vault goes with the item and comes back', () async {
+    final lib = _on();
+    vault.files['a'] = VaultOriginal(Uint8List.fromList([1]), 'image/jpeg');
+    vault.files['b'] = VaultOriginal(Uint8List.fromList([2]), 'image/jpeg');
+    final placed = VaultItem(
+      id: 'a',
+      isVideo: false,
+      takenAt: _t,
+      size: 1,
+      lat: 32.0853,
+      lon: 34.7818,
+    );
+    await backup.backUp(lib, [placed, _photo('b')]);
+    final a = account.media_[lib.backedUp['a']]!;
+    expect((a.lat, a.lon), (32.0853, 34.7818));
+    // An item without a place says nothing about one.
+    final b = account.media_[lib.backedUp['b']]!;
+    expect(b.toJson().containsKey('lat'), isFalse);
+    // Through JSON, and back onto a new phone.
+    final back = CameraMedia.fromJson('', a.toJson(), _t);
+    expect((back.lat, back.lon), (32.0853, 34.7818));
+    final fresh = VaultLibrary();
+    await backup.restore(fresh);
+    expect(vault.places.values, [(32.0853, 34.7818)]);
+  });
+
+  test('another phone sees what it lacks, and keeps one item', () async {
+    final lib = _on();
+    lib.addAlbum('Trip', 'al1');
+    lib.addToAlbum('al1', ['a']);
+    vault.files['a'] = VaultOriginal(Uint8List.fromList([1, 2]), 'image/jpeg');
+    vault.files['b'] = VaultOriginal(Uint8List.fromList([3]), 'image/jpeg');
+    vault.thumbs['a'] = Uint8List.fromList([7, 7]);
+    await backup.backUp(lib, [_photo('a'), _photo('b')]);
+    final a = account.media_[lib.backedUp['a']]!;
+    // The preview went up as its own file; an item without one still counts.
+    expect(account.files[a.thumb!.id], [7, 7]);
+    expect(account.media_[lib.backedUp['b']]!.thumb, isNull);
+    expect(CameraMedia.fromJson('', a.toJson(), _t).thumb?.id, a.thumb!.id);
+    // This phone has everything.
+    expect(await backup.missing(lib), isEmpty);
+
+    // A second phone, same account, empty vault.
+    final other = VaultLibrary();
+    final second = VaultBackup(vault: vault, store: account, account: 'u1');
+    final lacking = await second.missing(other);
+    expect(lacking.map((m) => m.id).toSet(), {
+      lib.backedUp['a'],
+      lib.backedUp['b'],
+    });
+    // Looking changed nothing.
+    expect(other.backup.account, isNull);
+    final id = await second.keep(other, a);
+    expect(vault.restored[id]!.$1, [1, 2]);
+    expect(other.albums['al1']?.name, 'Trip');
+    expect(other.albums['al1']?.items, [id]);
+    expect((await second.missing(other)).single.id, lib.backedUp['b']);
+    // Kept is not turned on: the second phone uploads nothing by itself.
+    expect(other.backup.on, isFalse);
+
+    // Deleting the item for good takes its preview with it.
+    await account.deleteMedia(a);
+    expect(account.files.containsKey(a.thumb!.id), isFalse);
+  });
+
+  test('space saver: photos go up smaller, the rest as they are', () async {
+    final lib = _on()..backup.spaceSaver = true;
+    vault.files['a'] = VaultOriginal(
+      Uint8List.fromList([1, 2, 3]),
+      'image/jpeg',
+    );
+    vault.small['a'] = VaultOriginal(Uint8List.fromList([9]), 'image/webp');
+    // No smaller copy can be made of this one (RAW): the original goes up.
+    vault.files['b'] = VaultOriginal(
+      Uint8List.fromList([4, 5]),
+      'image/x-adobe-dng',
+    );
+    // Too large as it is, but its smaller copy fits.
+    vault.small['big'] = VaultOriginal(Uint8List.fromList([7]), 'image/webp');
+    final small = VaultBackup(
+      vault: vault,
+      store: account,
+      account: 'u1',
+      maxBytes: 4,
+    );
+    final r = await small.backUp(lib, [
+      _photo('a'),
+      _photo('b', size: 2),
+      _photo('big', size: 50),
+    ]);
+    expect(r.done, 3);
+    expect(r.tooLarge, 0);
+    final a = account.media_[lib.backedUp['a']]!;
+    expect((a.mime, a.size, a.saver), ('image/webp', 1, true));
+    expect(account.files[a.file.id], [9]);
+    final b = account.media_[lib.backedUp['b']]!;
+    expect((b.mime, b.saver), ('image/x-adobe-dng', false));
+    expect(account.media_[lib.backedUp['big']]!.saver, isTrue);
+    expect(CameraMedia.fromJson('', a.toJson(), _t).saver, isTrue);
+
+    // Off: the original, even when a smaller copy could be made.
+    final off = _on();
+    await small.backUp(off, [_photo('a')]);
+    expect(account.media_[off.backedUp['a']]!.mime, 'image/jpeg');
+  });
+
+  test('stops when the rules stop holding, and carries on next time', () async {
+    final lib = VaultLibrary()..useBackupAccount('u1');
+    lib.backup.on = true;
+    for (final id in ['a', 'b', 'c']) {
+      vault.files[id] = VaultOriginal(Uint8List.fromList([1]), 'image/jpeg');
+    }
+    final items = [_photo('a'), _photo('b'), _photo('c')];
+    // Wi-Fi goes away after the first file.
+    final r = await backup.backUp(lib, items, allowed: () async => false);
+    expect(r.paused, isTrue);
+    expect(r.done, 1);
+    expect(account.uploads, 1);
+
+    final again = await backup.backUp(lib, items, allowed: () async => true);
+    expect(again.paused, isFalse);
+    expect(again.done, 2);
+    expect(account.uploads, 3);
+  });
+
   test('only the albums picked, videos only when asked, trash never', () async {
     final lib = VaultLibrary()
       ..backup.on = true
@@ -201,10 +389,74 @@ void main() {
     expect(backup.eligible(lib, items).map((i) => i.id), ['a', 'v']);
   });
 
-  test('files over the limit stay on the phone and are counted', () async {
+  test('a large video goes up in parts and comes back whole', () async {
     final lib = _on()..backup.videos = true;
-    final r = await backup.backUp(lib, [_video('big', size: 11)]);
-    expect(r.tooLarge, 1);
+    final bytes = Uint8List.fromList(List.generate(25, (i) => i));
+    vault.files['v'] = VaultOriginal(bytes, 'video/mp4');
+    lib.favourites.add('v');
+
+    final r = await backup.backUp(lib, [_video('v', size: 25)]);
+    expect(r.done, 1);
+    expect(r.tooLarge, 0);
+    // 10 + 10 + 5, never the whole file at once.
+    expect(account.uploads, 3);
+    expect(vault.partReads, 3);
+    final m = account.media_[lib.backedUp['v']]!;
+    expect(m.parts.map((p) => p.size), [10, 10, 5]);
+    expect(m.file.id, m.parts.first.id);
+    expect(m.size, 25);
+
+    // It survives being stored, and a second run uploads nothing.
+    final stored = CameraMedia.fromJson(m.id, m.toJson(), _t);
+    expect(stored.parts.map((p) => p.id), m.parts.map((p) => p.id));
+    await backup.backUp(lib, [_video('v', size: 25)]);
+    expect(account.uploads, 3);
+
+    // A new phone gets the same bytes back, as one video.
+    final fresh = VaultLibrary();
+    final back = await backup.restore(fresh);
+    expect(back.done, 1);
+    expect(vault.restored.values.single.$1, bytes);
+    expect(vault.restored.values.single.$3, isTrue);
+    expect(fresh.favourites, hasLength(1));
+
+    // Deleted for good on the phone: every part leaves the account.
+    lib.forget(['v']);
+    await backup.backUp(lib, []);
+    expect(account.media_, isEmpty);
+    expect(account.files, isEmpty);
+  });
+
+  test('a large video that fails half way leaves nothing behind', () async {
+    final lib = _on()..backup.videos = true;
+    vault.files['v'] = VaultOriginal(Uint8List(25), 'video/mp4');
+    account.failAfter = 2;
+    final r = await backup.backUp(lib, [_video('v', size: 25)]);
+    expect(r.done, 0);
+    expect(r.failed, 1);
+    expect(account.files, isEmpty);
+    expect(account.media_, isEmpty);
+    expect(lib.backedUp, isEmpty);
+  });
+
+  test('a large restore that fails wipes its parts', () async {
+    final lib = _on()..backup.videos = true;
+    vault.files['v'] = VaultOriginal(Uint8List(25), 'video/mp4');
+    await backup.backUp(lib, [_video('v', size: 25)]);
+    vault.failFinish = true;
+    final r = await backup.restore(VaultLibrary());
+    expect(r.failed, 1);
+    expect(vault.cancelled, hasLength(1));
+    expect(vault.restored, isEmpty);
+  });
+
+  test('a large photo, or a video past the cap, stays on the phone', () async {
+    final lib = _on()..backup.videos = true;
+    final r = await backup.backUp(lib, [
+      _photo('raw', size: 11),
+      _video('huge', size: 10 * VaultBackup.maxParts + 1),
+    ]);
+    expect(r.tooLarge, 2);
     expect(account.uploads, 0);
   });
 
@@ -283,6 +535,24 @@ void main() {
     final old = VaultLibrary.fromJson('{"v":1,"albums":[]}');
     expect(old.backup.on, isFalse);
     expect(old.backedUp, isEmpty);
+  });
+
+  test('the rules: Wi-Fi only by default, charging only when asked', () {
+    final s = BackupSettings();
+    expect(s.allows(unmetered: false, charging: true), isFalse);
+    expect(s.allows(unmetered: true, charging: false), isTrue);
+    s.chargingOnly = true;
+    expect(s.allows(unmetered: true, charging: false), isFalse);
+    expect(s.allows(unmetered: true, charging: true), isTrue);
+    s.wifiOnly = false;
+    expect(s.allows(unmetered: false, charging: true), isTrue);
+    final back = BackupSettings.fromJson(s.toJson());
+    expect(back.wifiOnly, isFalse);
+    expect(back.chargingOnly, isTrue);
+    // Settings saved before the rules existed: Wi-Fi only.
+    final old = BackupSettings.fromJson(<String, Object?>{'on': true});
+    expect(old.wifiOnly, isTrue);
+    expect(old.chargingOnly, isFalse);
   });
 
   test('the item kinds round-trip through JSON', () {

@@ -2,6 +2,10 @@ package dev.sagron.zerotrustcamera.capture.zt
 
 import android.app.Activity
 import android.graphics.Color
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.media.MediaDataSource
 import android.media.MediaPlayer
 import android.os.Bundle
@@ -14,6 +18,7 @@ import android.view.WindowManager
 import android.widget.FrameLayout
 import android.widget.MediaController
 import android.widget.Toast
+import dev.sagron.zerotrustcamera.capture.CamConfig
 import dev.sagron.zerotrustcamera.capture.R
 import java.io.RandomAccessFile
 
@@ -106,6 +111,37 @@ class VaultVideoActivity : Activity(), SurfaceHolder.Callback, MediaController.M
         return true
     }
 
+    // "Lock when face down" holds here too: the vault screens behind stop watching while this
+    // player is in front.
+    private var faceDownSamples = 0
+    private val faceDown = object : SensorEventListener {
+        override fun onSensorChanged(event: SensorEvent) {
+            faceDownSamples = if (event.values[2] < FACE_DOWN_Z) faceDownSamples + 1 else 0
+            if (faceDownSamples >= 2) {
+                faceDownSamples = 0
+                release()
+                VaultSession.lock()
+                finish()
+            }
+        }
+
+        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (!CamConfig.isQuickHideOn(this)) return
+        val sensors = getSystemService(SensorManager::class.java) ?: return
+        val accelerometer = sensors.getDefaultSensor(Sensor.TYPE_ACCELEROMETER) ?: return
+        faceDownSamples = 0
+        sensors.registerListener(faceDown, accelerometer, SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        getSystemService(SensorManager::class.java)?.unregisterListener(faceDown)
+    }
+
     override fun onStop() {
         super.onStop()
         // Gone to another app or the screen went off: the video stops and the vault locks.
@@ -170,5 +206,6 @@ class VaultVideoActivity : Activity(), SurfaceHolder.Callback, MediaController.M
     companion object {
         private const val TAG = "VaultVideoActivity"
         const val EXTRA_ID = "id"
+        private const val FACE_DOWN_Z = -8.5f
     }
 }

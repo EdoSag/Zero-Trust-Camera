@@ -22,8 +22,10 @@ built on [Zero-Trust-Core](https://github.com/EdoSag/Zero-Trust-Core).
 - **Clean files by default.** A saved photo keeps only its orientation. A
   saved video has its recording time cleared. Two switches under More
   settings keep the date and time, or the camera model, for people who want
-  them. Location is never saved: the app does not ask for the location
-  permission at all.
+  them. Location is never written into a photo or video. The Private vault
+  can keep the place of new items in their encrypted details if that is
+  turned on there (off by default; the location permission is asked for only
+  then), and copies saved or shared out of the vault never carry it.
 - **Works as the default camera**: other apps can ask it for a photo or a
   video, and those files never carry any metadata. Double-press power opens it
   from the lock screen, where it only shows what was taken in that session.

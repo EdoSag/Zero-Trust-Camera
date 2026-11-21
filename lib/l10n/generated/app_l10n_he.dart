@@ -23,7 +23,7 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get accountOptional =>
-      'לא חובה: המצלמה והכספת הפרטית עובדות בלי חשבון. חשבון יידרש לגיבוי מוצפן, שיגיע בגרסה מאוחרת יותר.';
+      'לא חובה: המצלמה והכספת הפרטית עובדות בלי חשבון. חשבון נדרש רק לגיבוי המוצפן של הכספת.';
 
   @override
   String get accountManage => 'סיסמה, אבטחה ויציאה מהחשבון';
@@ -36,7 +36,7 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get privacyLocationNever =>
-      'לא נשמר אף פעם. לאפליקציה אין הרשאת מיקום.';
+      'לא נשמר אף פעם בתמונה או בסרטון. רק בתוך הכספת הפרטית, ורק אם מפעילים זאת שם.';
 
   @override
   String get privacyDateTime => 'תאריך ושעה';
@@ -264,6 +264,13 @@ class AppL10nHe extends AppL10n {
       'דפים ישרים ונקיים כ-PDF, והטקסט נקרא בטלפון עצמו';
 
   @override
+  String get homePanorama => 'פנורמה (בטא)';
+
+  @override
+  String get homePanoramaSubtitle =>
+      'מסתובבים לאט והטלפון מחבר את הנוף לתמונה רחבה אחת';
+
+  @override
   String get homeProCamera => 'מצלמה מקצועית';
 
   @override
@@ -318,7 +325,7 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get backupVideosSubtitle =>
-      'עד 20MB לכל סרטון. סרטונים ארוכים יותר נשארים רק בטלפון הזה.';
+      'סרטונים תופסים הרבה מקום. עד 2GB לכל סרטון; ארוכים יותר נשארים רק בטלפון הזה.';
 
   @override
   String get backupNow => 'גיבוי עכשיו';
@@ -357,4 +364,198 @@ class AppL10nHe extends AppL10n {
   String backupProgress(int done, int total) {
     return '$done מתוך $total';
   }
+
+  @override
+  String get backupWifiOnly => 'רק ב-Wi-Fi';
+
+  @override
+  String get backupWifiOnlySubtitle =>
+      'הגיבוי האוטומטי מחכה ל-Wi-Fi ואינו משתמש בנתונים סלולריים';
+
+  @override
+  String get backupChargingOnly => 'רק בזמן טעינה';
+
+  @override
+  String get backupChargingOnlySubtitle =>
+      'הגיבוי האוטומטי מחכה עד שהטלפון מחובר למטען';
+
+  @override
+  String get backupNowSubtitle => 'רץ מיד, בכל רשת';
+
+  @override
+  String get vaultSearch => 'חיפוש';
+
+  @override
+  String get vaultSearchClose => 'סגירת החיפוש';
+
+  @override
+  String get vaultSearchHint => 'אלבום, חודש, שנה או תאריך';
+
+  @override
+  String get vaultSearchDates => 'בחירת תאריכים';
+
+  @override
+  String get vaultSearchEmpty => 'אין בכספת פריטים תואמים';
+
+  @override
+  String get protectTitle => 'איך התמונות שלך מוגנות';
+
+  @override
+  String get protectSubtitle =>
+      'מה מוצפן, מה יוצא מהטלפון, ועל מה האפליקציה לא יכולה להגן';
+
+  @override
+  String get protectGalleryTitle => 'תמונות בגלריה';
+
+  @override
+  String get protectGalleryBody =>
+      'נשמרות רק עם מה שתמונה צריכה: גודל, סיבוב וצבע. בלי מיקום, תאריך, דגם הטלפון או תמונה ממוזערת נסתרת, אלא אם הפעלת תאריך או דגם בהגדרות המצלמה. אלה קבצים רגילים: כל אפליקציה שקיבלה גישה לתמונות יכולה לפתוח אותם.';
+
+  @override
+  String get protectVaultTitle => 'הכספת הפרטית';
+
+  @override
+  String get protectVaultBody =>
+      'כל תמונה מוצפנת בזיכרון, עם מפתח משלה, לפני שהיא מגיעה לאחסון. המפתח הזה נעול למפתח הכספת של הטלפון, שנפתח רק אחרי טביעת אצבע, זיהוי פנים או נעילת המסך. ממסך הנעילה המצלמה יכולה להוסיף לכספת אבל לא לפתוח אותה. אם מפעילים מיקום עבור הכספת, המקום נשמר בפרטים המוצפנים של הפריט, אף פעם לא בתמונה עצמה.';
+
+  @override
+  String get protectVideoTitle => 'סרטונים פרטיים';
+
+  @override
+  String get protectVideoBody =>
+      'סרטון מוקלט לקובץ שרק האפליקציה הזו יכולה לגשת אליו, מוצפן כשעוצרים, ואז הקובץ נדרס ונמחק. עד העצירה הוא מוגן על ידי הצפנת האחסון של אנדרואיד, לא על ידי הכספת. \"הקלטת סרטונים פרטיים בזיכרון\" בהגדרות המצלמה משאירה את ההקלטה מחוץ לאחסון; אורך הסרטון מוגבל אז לפי זיכרון הטלפון.';
+
+  @override
+  String get protectBackupTitle => 'גיבוי מוצפן';
+
+  @override
+  String get protectBackupBody =>
+      'כבוי עד שמפעילים אותו. כל קובץ מוצפן בטלפון הזה עם מפתח משלו לפני שהוא נשלח לחשבון Zero Trust שלך. השרת רואה גדלים וזמנים, לעולם לא תמונות או שמות אלבומים. מי שיכול להיכנס לחשבון שלך ולפתוח אותו יכול לשחזר אותן, לכן יש לשמור היטב על הסיסמה.';
+
+  @override
+  String get protectNetworkTitle => 'רשת';
+
+  @override
+  String get protectNetworkBody =>
+      'במסכי המצלמה אין קוד רשת. האפליקציה מתחברת לאינטרנט רק עבור החשבון והגיבוי, ורק אם משתמשים בהם.';
+
+  @override
+  String get protectPermissionsTitle => 'הרשאות';
+
+  @override
+  String get protectPermissionsBody =>
+      'מצלמה. מיקרופון, לווידאו בלבד. התראות, להתקדמות הגיבוי ולשגיאות שמירה. מצב הרשת, כדי להבדיל בין Wi-Fi לנתונים סלולריים עבור הגיבוי. מיקום, שמתבקש רק אם מפעילים מיקום עבור הכספת הפרטית. בלי גישה לקבצים שלך.';
+
+  @override
+  String get protectLimitsTitle => 'על מה היא לא יכולה להגן';
+
+  @override
+  String get protectLimitsBody =>
+      'טלפון פתוח כשהכספת פתוחה. תמונות ששומרים או משתפים מחוץ לכספת: הן יוצאות כקבצים רגילים, בלי מיקום, תאריך או פרטי הטלפון. טלפון שמישהו אחר מכיר את נעילת המסך שלו.';
+
+  @override
+  String get defaultCameraTitle => 'שימוש כמצלמה שלך';
+
+  @override
+  String get defaultCameraSubtitle =>
+      'פתיחת ZT Camera מכפתור ההפעלה וממסך הנעילה';
+
+  @override
+  String get defaultCameraIntro =>
+      'באנדרואיד אין מתג אחד למצלמת ברירת המחדל, ולכן נדרשים שני שלבים.';
+
+  @override
+  String get defaultCameraStep1 =>
+      'לוחצים פעמיים על כפתור ההפעלה, או פותחים את המצלמה ממסך הנעילה. אם אנדרואיד שואל באיזו מצלמה להשתמש, בוחרים ZT Camera ומקישים על תמיד.';
+
+  @override
+  String get defaultCameraStep2 =>
+      'אם מצלמה אחרת נפתחת בלי לשאול, פותחים את פרטי האפליקציה של אותה מצלמה, מקישים על פתיחה כברירת מחדל, מנקים את ברירות המחדל שלה, וחוזרים לשלב 1.';
+
+  @override
+  String get defaultCameraOpenSettings => 'פתיחת אפליקציות ברירת מחדל';
+
+  @override
+  String get defaultCameraOtherApps =>
+      'בתוך אפליקציות אחרות, למשל כפתור המצלמה באפליקציית צ\'אט, אנדרואיד 11 ומעלה משתמש תמיד במצלמה שהגיעה עם הטלפון. אף אפליקציה לא יכולה לשנות זאת.';
+
+  @override
+  String get defaultCameraCardTitle => 'להפוך את ZT Camera למצלמה שלך?';
+
+  @override
+  String get defaultCameraCardBody =>
+      'פתיחה מכפתור ההפעלה וממסך הנעילה במקום המצלמה של הטלפון.';
+
+  @override
+  String get defaultCameraShowMe => 'איך עושים את זה';
+
+  @override
+  String get defaultCameraNotNow => 'לא עכשיו';
+
+  @override
+  String get vaultMore => 'עוד';
+
+  @override
+  String get vaultQuickHide => 'נעילה כשהטלפון הפוך';
+
+  @override
+  String get vaultQuickHideOn =>
+      'הכספת תינעל מעכשיו כשמניחים את הטלפון עם המסך כלפי מטה';
+
+  @override
+  String get vaultLocation => 'הוספת מיקום לתמונות בכספת';
+
+  @override
+  String get vaultLocationOn =>
+      'תמונות חדשות בכספת הפרטית ישמרו את המיקום שלהן, רק בתוך הכספת. עותקים שנשמרים או משותפים לא נושאים אותו אף פעם.';
+
+  @override
+  String get backupSpaceSaver => 'חיסכון במקום';
+
+  @override
+  String get backupSpaceSaverSubtitle =>
+      'תמונות עולות כעותקים קטנים יותר. המקור נשאר בטלפון הזה, אבל שחזור יחזיר את העותקים הקטנים. סרטונים ותמונות RAW לא משתנים.';
+
+  @override
+  String get accountMediaTitle => 'בחשבון שלך';
+
+  @override
+  String get accountMediaIntro =>
+      'גובו מטלפון אחר ואינם בטלפון הזה. מקישים על פריט כדי לפתוח אותו מהחשבון, או שומרים אותו בטלפון הזה.';
+
+  @override
+  String get accountMediaEmpty => 'כל מה שבחשבון שלך כבר נמצא בטלפון הזה.';
+
+  @override
+  String get accountMediaFailed =>
+      'לא ניתן להגיע לחשבון. יש לבדוק את החיבור ולנסות שוב.';
+
+  @override
+  String get accountMediaKeep => 'שמירה בטלפון הזה';
+
+  @override
+  String get accountMediaKept => 'נשמר בכספת בטלפון הזה';
+
+  @override
+  String get accountMediaBusy =>
+      'גיבוי או שחזור פועל כעת. יש לנסות שוב כשיסתיים.';
+
+  @override
+  String get accountMediaVideoNote =>
+      'כדי לנגן את הסרטון יש לשמור אותו בטלפון הזה.';
+
+  @override
+  String get accountMediaRawNote =>
+      'כדי לפתוח את תמונת ה-RAW יש לשמור אותה בטלפון הזה.';
+
+  @override
+  String get offlineBuildTitle => 'גרסה לא מקוונת';
+
+  @override
+  String get offlineBuildBody =>
+      'לגרסה הזו אין הרשאת אינטרנט, ולכן אין חשבון ואין גיבוי. הכול נשאר בטלפון הזה.';
+
+  @override
+  String get protectNetworkOffline =>
+      'זו הגרסה הלא מקוונת: לאפליקציה אין הרשאת אינטרנט כלל. שום דבר לא יכול לצאת מהטלפון דרכה.';
 }

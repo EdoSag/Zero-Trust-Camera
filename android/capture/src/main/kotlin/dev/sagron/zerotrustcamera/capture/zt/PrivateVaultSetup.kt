@@ -49,6 +49,29 @@ object PrivateVaultSetup {
         }
     }
 
+    /**
+     * Makes sure the vault exists, for one camera screen that saves to it (the "Private shot"
+     * widget button). The setting for where photos usually go is left as it is.
+     */
+    fun ensureForShot(activity: FragmentActivity, onDone: (Boolean) -> Unit) {
+        if (VaultKeys.isSetUp(activity)) {
+            onDone(true)
+            return
+        }
+        VaultKeys.setUp(activity) { result ->
+            VaultSession.lock()
+            when (result) {
+                VaultKeys.Result.OK -> {}
+                VaultKeys.Result.NO_SCREEN_LOCK ->
+                    toast(activity, R.string.vault_needs_screen_lock)
+                VaultKeys.Result.CANCELLED -> {}
+                else ->
+                    toast(activity, R.string.private_shot_failed)
+            }
+            onDone(result == VaultKeys.Result.OK)
+        }
+    }
+
     private fun toast(activity: FragmentActivity, msg: Int) {
         Toast.makeText(activity, msg, Toast.LENGTH_LONG).show()
     }

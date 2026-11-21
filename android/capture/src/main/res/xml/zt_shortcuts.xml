@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ZT Camera: long-press the launcher icon for the document scanner or the pro camera -->
+<!-- ZT Camera: long-press the launcher icon for the document scanner, the pro camera or a panorama -->
 <shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
     <shortcut
         android:shortcutId="scan_document"
@@ -22,5 +22,16 @@
             android:action="android.intent.action.VIEW"
             android:targetPackage="dev.sagron.zerotrustcamera"
             android:targetClass="dev.sagron.zerotrustcamera.capture.zt.ProCameraActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="panorama"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_pano"
+        android:shortcutShortLabel="@string/pano_shortcut"
+        android:shortcutLongLabel="@string/pano_shortcut">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="dev.sagron.zerotrustcamera"
+            android:targetClass="dev.sagron.zerotrustcamera.capture.zt.PanoramaActivity" />
     </shortcut>
 </shortcuts>

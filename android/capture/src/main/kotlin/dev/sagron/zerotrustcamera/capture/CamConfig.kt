@@ -132,6 +132,10 @@ class CamConfig(private val mActivity: MainActivity) {
             const val PRIVATE_VAULT = "zt_private_vault"
             const val SAVE_PLACE_CHOSEN = "zt_save_place_chosen"
 
+            // ZT Camera: a Private mode video is held in memory while it records, so nothing
+            // unsealed is written to storage (off by default)
+            const val RECORD_IN_MEMORY = "zt_record_in_memory"
+
             // ZT Camera: photos with a gain map (Ultra HDR) and videos at 60 frames a second,
             // where the camera can
             const val ULTRA_HDR = "zt_ultra_hdr"
@@ -139,6 +143,8 @@ class CamConfig(private val mActivity: MainActivity) {
 
             // ZT Camera: scanned codes kept in the Private vault (off by default)
             const val SCAN_HISTORY = "zt_scan_history"
+            const val QUICK_HIDE = "zt_quick_hide"
+            const val VAULT_LOCATION = "zt_vault_location"
 
             const val GYROSCOPE_SUGGESTIONS = "gyroscope_suggestions"
 
@@ -246,6 +252,26 @@ class CamConfig(private val mActivity: MainActivity) {
         fun setScanHistoryOn(ctx: Context, on: Boolean) {
             ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
                 .edit().putBoolean(SettingValues.Key.SCAN_HISTORY, on).apply()
+        }
+
+        /** Quick hide: the open vault locks when the phone is put face down. */
+        fun isQuickHideOn(ctx: Context): Boolean =
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(SettingValues.Key.QUICK_HIDE, false)
+
+        fun setQuickHideOn(ctx: Context, on: Boolean) {
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putBoolean(SettingValues.Key.QUICK_HIDE, on).apply()
+        }
+
+        /** The place of new Private vault items is kept in their sealed details (see VaultLocation). */
+        fun isVaultLocationOn(ctx: Context): Boolean =
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(SettingValues.Key.VAULT_LOCATION, false)
+
+        fun setVaultLocationOn(ctx: Context, on: Boolean) {
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putBoolean(SettingValues.Key.VAULT_LOCATION, on).apply()
         }
 
         val FRONT_CAMERA_SELECTOR = CameraSelector.Builder()
@@ -701,6 +727,14 @@ class CamConfig(private val mActivity: MainActivity) {
                 .putBoolean(SettingValues.Key.SAVE_PLACE_CHOSEN, true).apply()
         }
 
+    // ZT Camera (beta): in Private mode a video is recorded into memory, not into a file, and
+    // sealed from there. Shorter videos only: see VideoCapturer.memoryLimitBytes.
+    var recordInMemory: Boolean
+        get() = commonPref.getBoolean(SettingValues.Key.RECORD_IN_MEMORY, false)
+        set(value) {
+            commonPref.edit().putBoolean(SettingValues.Key.RECORD_IN_MEMORY, value).apply()
+        }
+
     val savePlaceChosen: Boolean
         get() = commonPref.getBoolean(SettingValues.Key.SAVE_PLACE_CHOSEN, false)
 
@@ -733,9 +767,13 @@ class CamConfig(private val mActivity: MainActivity) {
         false
     }
 
+    // ZT Camera: this camera screen saves to the Private vault whatever the setting says
+    // (the "Private shot" widget button). Never stored.
+    var privateShot = false
+
     /** The key a new capture is sealed to, or null when it goes to the gallery. */
     fun vaultKeyForCapture(): ByteArray? =
-        if (privateVault && !isInCaptureMode && mActivity !is VideoCaptureActivity)
+        if ((privateVault || privateShot) && !isInCaptureMode && mActivity !is VideoCaptureActivity)
             VaultKeys.publicKey(mActivity)
         else null
 

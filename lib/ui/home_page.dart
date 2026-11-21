@@ -9,6 +9,8 @@ import '../app/camera_bridge.dart';
 import '../app/camera_config.dart';
 import '../l10n/l10n.dart';
 import '../private_vault/vault_page.dart';
+import 'data_protection_page.dart';
+import 'default_camera.dart';
 
 /// Opened from the camera's settings: the optional Zero-Trust account, what
 /// photos keep, language, appearance and about. Needs no account.
@@ -30,6 +32,7 @@ class HomePage extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final themeMode = ref.watch(themeModeProvider);
     final language = ref.watch(ztLanguageProvider);
+    final offline = ref.watch(offlineBuildProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -65,8 +68,16 @@ class HomePage extends ConsumerWidget {
             ),
           ),
 
+          const DefaultCameraCard(),
+
           _Header(zt.account),
-          if (user == null)
+          if (offline)
+            ListTile(
+              leading: const Icon(Icons.wifi_off_outlined),
+              title: Text(l.offlineBuildTitle),
+              subtitle: Text(l.offlineBuildBody),
+            )
+          else if (user == null)
             ListTile(
               leading: const Icon(Icons.account_circle_outlined),
               title: Text(l.accountSignIn),
@@ -103,6 +114,13 @@ class HomePage extends ConsumerWidget {
             trailing: const Icon(Icons.chevron_right),
             onTap: () => ref.read(cameraBridgeProvider).openProCamera(),
           ),
+          ListTile(
+            leading: const Icon(Icons.panorama_horizontal_outlined),
+            title: Text(l.homePanorama),
+            subtitle: Text(l.homePanoramaSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => ref.read(cameraBridgeProvider).openPanorama(),
+          ),
 
           _Header(l.privacySection),
           ListTile(
@@ -124,6 +142,29 @@ class HomePage extends ConsumerWidget {
             leading: const Icon(Icons.apps_outlined),
             title: Text(l.privacyOtherApps),
             subtitle: Text(l.privacyOtherAppsNever),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.shield_outlined),
+            title: Text(l.protectTitle),
+            subtitle: Text(l.protectSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DataProtectionPage(),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: Text(l.defaultCameraTitle),
+            subtitle: Text(l.defaultCameraSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DefaultCameraPage(),
+              ),
+            ),
           ),
 
           _Header(zt.appearance),

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The home screen widget's words. -->
+<resources>
+    <string name="widget_camera_app" translatable="false">ZT Camera</string>
+    <string name="widget_camera_label" translatable="false">ZT Camera</string>
+    <string name="widget_camera_description">Private shot straight into the encrypted vault, plus the camera, the code scanner and the document scanner.</string>
+    <string name="widget_private_shot">Private shot</string>
+    <string name="widget_open_camera">Camera</string>
+    <string name="widget_scan_code">Scan code</string>
+    <string name="widget_scan_document">Document</string>
+</resources>

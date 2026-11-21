@@ -29,7 +29,10 @@ Future<void> main() async {
     url: dotenv.env['SUPABASE_URL']!,
     publishableKey: dotenv.env['SUPABASE_ANON_KEY']!,
   );
-  unawaited(EmailLinks.listen());
+  // The Offline build has no account, so no email links to wait for.
+  if (!const bool.fromEnvironment('ZT_OFFLINE')) {
+    unawaited(EmailLinks.listen());
+  }
   // The camera screens started from GrapheneOS Camera (MIT): its notice is
   // listed under Open source licences.
   LicenseRegistry.addLicense(() async* {

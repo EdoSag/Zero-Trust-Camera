@@ -373,4 +373,20 @@
     <string name="pro_saved">נשמר בגלריה</string>
     <string name="pro_saved_vault">נשמר בכספת הפרטית</string>
     <string name="pro_failed">לא ניתן לצלם</string>
+    <!-- ZT Camera: Private shot (home screen widget) -->
+    <string name="private_shot_on">התמונות נשמרות בכספת הפרטית</string>
+    <string name="private_shot_failed">לא ניתן היה להגדיר את הכספת הפרטית, ולכן המצלמה לא נפתחה.</string>
+    <!-- ZT Camera: panorama -->
+    <string name="pano_shortcut">פנורמה</string>
+    <string name="pano_hint_start">מחזיקים את הטלפון זקוף ולוחצים על התחלה</string>
+    <string name="pano_hint_sweep">מסתובבים לאט לצד אחד. שומרים על הטלפון ישר.</string>
+    <string name="pano_start">התחלה</string>
+    <string name="pano_done">סיום</string>
+    <string name="pano_failed">לא ניתן היה ליצור את הפנורמה</string>
+    <string name="pano_too_short">צריך להסתובב עוד קצת כדי ליצור פנורמה</string>
+    <string name="pano_no_sensor">בטלפון הזה אין חיישן תנועה, ולכן אי אפשר ליצור בו פנורמות</string>
+    <!-- ZT Camera: record in memory -->
+    <string name="recorder_check">בדיקת המקליט: %1$s</string>
+    <string name="record_in_memory_title">הקלטת וידאו בזיכרון (בטא)</string>
+    <string name="record_in_memory_subtitle">במצב פרטי הסרטון נשמר בזיכרון עד שהוא ננעל, כך ששום דבר גלוי לא נכתב לאחסון. ההקלטה נעצרת מעצמה בכמה מאות MB.</string>
 </resources>

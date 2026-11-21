@@ -56,6 +56,11 @@ object VaultStore {
 
     // ---- saving (public key only) --------------------------------------------------------------
 
+    /** Latitude and longitude, kept only in the item's sealed details (see VaultLocation). */
+    private fun putPlace(meta: JSONObject, place: DoubleArray?) {
+        if (place != null && place.size == 2) meta.put("lat", place[0]).put("lon", place[1])
+    }
+
     /** Seals a finished photo. Returns the item id and the thumbnail for the viewfinder. */
     fun savePhoto(
         ctx: Context,
@@ -64,6 +69,7 @@ object VaultStore {
         takenAt: Long,
         imported: Boolean = false,
         mime: String = "image/jpeg",
+        place: DoubleArray? = null,
     ): Pair<String, Bitmap?> {
         val id = newId()
         val thumb = photoThumbnail(jpeg)
@@ -74,6 +80,7 @@ object VaultStore {
             .put("takenAt", takenAt)
             .put("size", jpeg.size)
             .put("imported", imported)
+        putPlace(meta, place)
         thumb?.let { meta.put("width", it.second.first).put("height", it.second.second) }
         writeSealed(file(ctx, id, "media"), pub, ByteArrayInputStream(jpeg))
         thumb?.let { writeSealed(file(ctx, id, "thumb"), pub, ByteArrayInputStream(it.first)) }
@@ -85,7 +92,14 @@ object VaultStore {
      * Seals a RAW photo (DNG) from the pro camera, with the thumbnail and size taken from the JPEG
      * shot alongside it, and wipes the plain DNG file. Returns the item id.
      */
-    fun saveRaw(ctx: Context, pub: ByteArray, dng: File, jpeg: ByteArray, takenAt: Long): String {
+    fun saveRaw(
+        ctx: Context,
+        pub: ByteArray,
+        dng: File,
+        jpeg: ByteArray,
+        takenAt: Long,
+        place: DoubleArray? = null,
+    ): String {
         try {
             val id = newId()
             val thumb = photoThumbnail(jpeg)
@@ -96,6 +110,7 @@ object VaultStore {
                 .put("takenAt", takenAt)
                 .put("size", dng.length())
                 .put("imported", false)
+            putPlace(meta, place)
             thumb?.let { meta.put("width", it.second.first).put("height", it.second.second) }
             FileInputStream(dng).use { writeSealed(file(ctx, id, "media"), pub, it) }
             thumb?.let { writeSealed(file(ctx, id, "thumb"), pub, ByteArrayInputStream(it.first)) }
@@ -110,7 +125,14 @@ object VaultStore {
      * Seals a finished recording and wipes the plain file it was recorded to. Returns the item id
      * and a thumbnail, or null if it couldn't be sealed (the plain file is wiped either way).
      */
-    fun saveVideo(ctx: Context, pub: ByteArray, plain: File, takenAt: Long, imported: Boolean = false): Pair<String, Bitmap?>? {
+    fun saveVideo(
+        ctx: Context,
+        pub: ByteArray,
+        plain: File,
+        takenAt: Long,
+        imported: Boolean = false,
+        place: DoubleArray? = null,
+    ): Pair<String, Bitmap?>? {
         try {
             val id = newId()
             var frame: Bitmap? = null
@@ -121,6 +143,7 @@ object VaultStore {
                 .put("takenAt", takenAt)
                 .put("size", plain.length())
                 .put("imported", imported)
+            putPlace(meta, place)
             try {
                 MediaMetadataRetriever().use { r ->
                     r.setDataSource(plain.path)
@@ -245,6 +268,33 @@ object VaultStore {
             MediaVault.open(input.buffered(1 shl 16), out, priv)
             out.toByteArray()
         }
+
+    /**
+     * [length] bytes of an item from [offset], opened one chunk at a time: for backing up a
+     * video too large to hold in memory. Shorter only at the end of the file.
+     */
+    fun mediaPart(ctx: Context, id: String, priv: ByteArray, offset: Long, length: Int): ByteArray {
+        require(offset >= 0 && length >= 0) { "bad range" }
+        FileInputStream(file(ctx, id, "media")).use { input ->
+            MediaVault.Reader(input.channel, priv).use { reader ->
+                val want = minOf(length.toLong(), maxOf(0L, reader.size() - offset)).toInt()
+                val out = ByteArray(want)
+                var done = 0
+                while (done < want) {
+                    val n = reader.read(offset + done, out, done, want - done)
+                    if (n <= 0) break
+                    done += n
+                }
+                return if (done == want) out else out.copyOf(done)
+            }
+        }
+    }
+
+    /** Where the parts of a large video coming back from the backup are put together. */
+    fun restoreFile(ctx: Context, token: String): File {
+        require(token.matches(Regex("[0-9a-f]{32}"))) { "bad token" }
+        return File(tempDir(ctx), "$token.restore.mp4")
+    }
 
     /** Opens an item into a plain file (for saving or sharing). */
     fun openTo(ctx: Context, id: String, priv: ByteArray, target: File) {

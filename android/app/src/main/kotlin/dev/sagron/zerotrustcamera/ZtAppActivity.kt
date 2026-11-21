@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import dev.sagron.zerotrustcamera.capture.zt.DocScanActivity
+import dev.sagron.zerotrustcamera.capture.zt.PanoramaActivity
 import dev.sagron.zerotrustcamera.capture.zt.ProCameraActivity
 import dev.sagron.zerotrustcamera.capture.zt.VaultSession
 import dev.sagron.zerotrustcamera.capture.zt.ZtApp
@@ -71,6 +72,25 @@ class ZtAppActivity : FlutterFragmentActivity() {
                         ProCameraActivity.open(this)
                         result.success(null)
                     }
+                    "openPanorama" -> {
+                        PanoramaActivity.open(this)
+                        result.success(null)
+                    }
+                    // Android's "Default apps" screen, or this app's own page when the
+                    // phone has none.
+                    "openDefaultApps" -> {
+                        try {
+                            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            startActivity(
+                                Intent(
+                                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    android.net.Uri.fromParts("package", packageName, null),
+                                )
+                            )
+                        }
+                        result.success(null)
+                    }
                     "takeScreen" -> {
                         result.success(requestedScreen)
                         requestedScreen = null
@@ -83,6 +103,12 @@ class ZtAppActivity : FlutterFragmentActivity() {
     override fun onResume() {
         super.onResume()
         vault?.keepOpenUntilResume = false
+        vault?.watchFaceDown()
+    }
+
+    override fun onPause() {
+        vault?.stopFaceDown()
+        super.onPause()
     }
 
     override fun onStop() {
@@ -93,6 +119,12 @@ class ZtAppActivity : FlutterFragmentActivity() {
         if (vault?.keepOpenUntilResume != true && !isChangingConfigurations) {
             VaultSession.lock()
         }
+    }
+
+    override fun onDestroy() {
+        // A backup cut short leaves no stuck notification behind.
+        vault?.cancelBackupNotice()
+        super.onDestroy()
     }
 
     private companion object {

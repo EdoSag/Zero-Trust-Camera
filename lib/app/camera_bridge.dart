@@ -45,6 +45,28 @@ class CameraBridge {
     }
   }
 
+  /// Opens the panorama mode (native).
+  Future<void> openPanorama() async {
+    try {
+      await _channel.invokeMethod<void>('openPanorama');
+    } on PlatformException {
+      // Nothing opens; the home screen stays.
+    } on MissingPluginException {
+      // Not on Android.
+    }
+  }
+
+  /// Opens Android's "Default apps" settings (native).
+  Future<void> openDefaultApps() async {
+    try {
+      await _channel.invokeMethod<void>('openDefaultApps');
+    } on PlatformException {
+      // Nothing opens; the steps on screen still apply.
+    } on MissingPluginException {
+      // Not on Android.
+    }
+  }
+
   /// Opens the document scanner (native, in the capture module).
   Future<void> openDocScanner() async {
     try {
