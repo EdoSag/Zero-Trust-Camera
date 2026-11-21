@@ -196,6 +196,7 @@ class BackupResult {
     this.tooLarge = 0,
     this.failed = 0,
     this.full = false,
+    this.paused = false,
   });
 
   /// Items newly backed up (or restored).
@@ -207,6 +208,14 @@ class BackupResult {
 
   /// The account's storage is full; the rest waits.
   final bool full;
+
+  /// The rules (Wi-Fi only, only while charging) stopped holding part way;
+  /// the rest waits for the next time.
+  final bool paused;
+}
+
+class _BackupPaused implements Exception {
+  const _BackupPaused();
 }
 
 /// Backs the Private vault up to the account, and brings it back on a new
@@ -267,6 +276,7 @@ class VaultBackup {
     VaultLibrary library,
     List<VaultItem> items, {
     void Function(int done, int total)? progress,
+    Future<bool> Function()? allowed,
   }) async {
     if (!library.backupFor(account)) return const BackupResult();
     await deletePending(library);
@@ -280,6 +290,17 @@ class VaultBackup {
       }
     }
     var done = 0, tooLarge = 0, failed = 0, step = 0;
+    BackupResult paused() => BackupResult(
+      done: done,
+      tooLarge: tooLarge,
+      failed: failed,
+      paused: true,
+    );
+    // Asked again before every file that goes up, so a backup that began
+    // on Wi-Fi does not carry on over mobile data.
+    var uploads = 0;
+    Future<bool> mayUpload() async =>
+        allowed == null || uploads++ == 0 || await allowed();
     for (final item in todo) {
       progress?.call(step++, todo.length);
       final favourite = library.favourites.contains(item.id);
@@ -304,6 +325,7 @@ class VaultBackup {
         try {
           for (var at = 0; at < item.size; at += maxBytes) {
             final want = min(maxBytes, item.size - at);
+            if (!await mayUpload()) throw const _BackupPaused();
             final bytes = await vault.originalPart(item.id, at, want);
             if (bytes.length != want) throw StateError('short read');
             uploaded.add(await store.upload(bytes, 'video/mp4'));
@@ -331,6 +353,7 @@ class VaultBackup {
               // Left behind; it counts toward storage until deleted.
             }
           }
+          if (e is _BackupPaused) return paused();
           if (_isQuota(e)) {
             return BackupResult(
               done: done,
@@ -343,6 +366,7 @@ class VaultBackup {
         }
         continue;
       }
+      if (!await mayUpload()) return paused();
       try {
         final original = await vault.original(item.id);
         if (original.bytes.length > maxBytes) {
