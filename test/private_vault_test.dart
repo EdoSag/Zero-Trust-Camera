@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
+import 'package:zerotrust_camera/app/camera_config.dart';
 import 'package:zerotrust_camera/private_vault/vault_backend.dart';
 import 'package:zerotrust_camera/private_vault/vault_backup.dart';
 import 'package:zerotrust_camera/private_vault/vault_library.dart';
@@ -919,6 +920,29 @@ void main() {
       );
       // The vault remembers which copy this is, so it won't upload it again.
       expect(VaultLibrary.fromJson(vault.state).backedUp.values, ['m1']);
+    });
+
+    testWidgets('the Offline build shows no backup and no account list', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [
+            vaultBackendProvider.overrideWithValue(vault),
+            offlineBuildProvider.overrideWithValue(true),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byTooltip('Encrypted backup'), findsNothing);
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      expect(find.text('Scan history'), findsOneWidget);
+      expect(find.text('In your account'), findsNothing);
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {

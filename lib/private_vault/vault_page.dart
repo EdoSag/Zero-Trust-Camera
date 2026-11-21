@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../app/camera_bridge.dart';
+import '../app/camera_config.dart';
 import '../l10n/l10n.dart';
 import 'account_media_page.dart';
 import 'backup_page.dart';
@@ -206,6 +207,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   Future<void> _autoBackup() async {
     // Only for the account backup was turned on for: after a switch of
     // accounts nothing goes up until it is turned on again.
+    if (ref.read(offlineBuildProvider)) return;
     final account = ref.read(backupAccountProvider);
     if (account == null || !_library.backupFor(account)) return;
     final library = _library;
@@ -662,6 +664,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     final status = _status;
     final unlocked = status?.unlocked == true;
     final selecting = _selected.isNotEmpty;
+    final offline = ref.watch(offlineBuildProvider);
 
     return PopScope(
       canPop: !selecting,
@@ -693,11 +696,13 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                 tooltip: l.vaultImport,
                 onPressed: _busy ? null : _import,
               ),
-              IconButton(
-                icon: const Icon(Icons.cloud_outlined),
-                tooltip: l.vaultBackup,
-                onPressed: _openBackup,
-              ),
+              // The Offline build has no account to back up to.
+              if (!offline)
+                IconButton(
+                  icon: const Icon(Icons.cloud_outlined),
+                  tooltip: l.vaultBackup,
+                  onPressed: _openBackup,
+                ),
               IconButton(
                 icon: const Icon(Icons.lock_outline),
                 tooltip: l.vaultLock,
@@ -717,7 +722,8 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 0, child: Text(l.scanHistoryTitle)),
-                  PopupMenuItem(value: 3, child: Text(l.accountMediaTitle)),
+                  if (!offline)
+                    PopupMenuItem(value: 3, child: Text(l.accountMediaTitle)),
                   CheckedPopupMenuItem(
                     value: 1,
                     checked: _quickHide,

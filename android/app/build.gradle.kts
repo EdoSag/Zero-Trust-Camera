@@ -16,6 +16,11 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(FileInputStream(keystorePropertiesFile))
 }
 
+// The Offline build: `flutter build apk --android-project-arg zt.offline=true
+// --dart-define=ZT_OFFLINE=true`. Same app and same id, without the internet
+// permission (src/offline/AndroidManifest.xml), so no account and no backup.
+val ztOffline = (project.findProperty("zt.offline") as String?) == "true"
+
 android {
     namespace = "dev.sagron.zerotrustcamera"
     // CameraX 1.6 and androidx.core 1.19 (the camera screens, :capture) need
@@ -37,6 +42,12 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        if (ztOffline) versionNameSuffix = "-offline"
+    }
+
+    if (ztOffline) {
+        // Release only: debug and profile builds need the network for Flutter's tools.
+        sourceSets.getByName("release").manifest.srcFile("src/offline/AndroidManifest.xml")
     }
 
     signingConfigs {
