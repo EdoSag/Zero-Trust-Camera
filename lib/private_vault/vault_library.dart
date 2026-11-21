@@ -204,6 +204,7 @@ class BackupSettings {
     this.videos = false,
     this.wifiOnly = true,
     this.chargingOnly = false,
+    this.spaceSaver = false,
     this.account,
   }) : albums = albums ?? {};
 
@@ -219,6 +220,7 @@ class BackupSettings {
       videos: j['videos'] == true,
       wifiOnly: j['wifiOnly'] != false,
       chargingOnly: j['chargingOnly'] == true,
+      spaceSaver: j['spaceSaver'] == true,
       account: j['account'] as String?,
     );
   }
@@ -243,6 +245,10 @@ class BackupSettings {
   /// The backup that runs by itself waits for the charger.
   bool chargingOnly;
 
+  /// Photos go up as smaller copies (the originals stay on the phone).
+  /// Videos and RAW photos always go up as they are.
+  bool spaceSaver;
+
   /// Whether the backup that runs by itself may run now.
   bool allows({required bool unmetered, required bool charging}) =>
       (!wifiOnly || unmetered) && (!chargingOnly || charging);
@@ -254,6 +260,7 @@ class BackupSettings {
     'videos': videos,
     'wifiOnly': wifiOnly,
     'chargingOnly': chargingOnly,
+    'spaceSaver': spaceSaver,
     'account': account,
   };
 }

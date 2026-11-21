@@ -942,6 +942,18 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.'**
   String get vaultLocationOn;
+
+  /// No description provided for @backupSpaceSaver.
+  ///
+  /// In en, this message translates to:
+  /// **'Space saver'**
+  String get backupSpaceSaver;
+
+  /// No description provided for @backupSpaceSaverSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed.'**
+  String get backupSpaceSaverSubtitle;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

@@ -15,6 +15,12 @@ class _Vault implements VaultBackend {
   @override
   Future<VaultOriginal> original(String id) async => files[id]!;
 
+  /// Smaller copies the phone can make, by item id.
+  final small = <String, VaultOriginal>{};
+
+  @override
+  Future<VaultOriginal?> spaceSaver(String id) async => small[id];
+
   @override
   Future<Uint8List> originalPart(String id, int offset, int length) async {
     partReads++;
@@ -262,6 +268,47 @@ void main() {
     final fresh = VaultLibrary();
     await backup.restore(fresh);
     expect(vault.places.values, [(32.0853, 34.7818)]);
+  });
+
+  test('space saver: photos go up smaller, the rest as they are', () async {
+    final lib = _on()..backup.spaceSaver = true;
+    vault.files['a'] = VaultOriginal(
+      Uint8List.fromList([1, 2, 3]),
+      'image/jpeg',
+    );
+    vault.small['a'] = VaultOriginal(Uint8List.fromList([9]), 'image/webp');
+    // No smaller copy can be made of this one (RAW): the original goes up.
+    vault.files['b'] = VaultOriginal(
+      Uint8List.fromList([4, 5]),
+      'image/x-adobe-dng',
+    );
+    // Too large as it is, but its smaller copy fits.
+    vault.small['big'] = VaultOriginal(Uint8List.fromList([7]), 'image/webp');
+    final small = VaultBackup(
+      vault: vault,
+      store: account,
+      account: 'u1',
+      maxBytes: 4,
+    );
+    final r = await small.backUp(lib, [
+      _photo('a'),
+      _photo('b', size: 2),
+      _photo('big', size: 50),
+    ]);
+    expect(r.done, 3);
+    expect(r.tooLarge, 0);
+    final a = account.media_[lib.backedUp['a']]!;
+    expect((a.mime, a.size, a.saver), ('image/webp', 1, true));
+    expect(account.files[a.file.id], [9]);
+    final b = account.media_[lib.backedUp['b']]!;
+    expect((b.mime, b.saver), ('image/x-adobe-dng', false));
+    expect(account.media_[lib.backedUp['big']]!.saver, isTrue);
+    expect(CameraMedia.fromJson('', a.toJson(), _t).saver, isTrue);
+
+    // Off: the original, even when a smaller copy could be made.
+    final off = _on();
+    await small.backUp(off, [_photo('a')]);
+    expect(account.media_[off.backedUp['a']]!.mime, 'image/jpeg');
   });
 
   test('stops when the rules stop holding, and carries on next time', () async {

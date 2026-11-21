@@ -28,6 +28,7 @@ class CameraMedia {
     this.albums = const [],
     this.lat,
     this.lon,
+    this.saver = false,
   });
 
   final String id;
@@ -52,6 +53,9 @@ class CameraMedia {
   final double? lat;
   final double? lon;
 
+  /// The backed-up file is a smaller copy (space saver), not the original.
+  final bool saver;
+
   bool get isVideo => type == 'video';
 
   /// Every file this item is kept in.
@@ -69,6 +73,7 @@ class CameraMedia {
     albums: albums ?? this.albums,
     lat: lat,
     lon: lon,
+    saver: saver,
   );
 
   Map<String, Object?> toJson() => {
@@ -82,6 +87,7 @@ class CameraMedia {
     'favourite': favourite,
     'albums': albums,
     if (lat != null && lon != null) ...{'lat': lat, 'lon': lon},
+    if (saver) 'saver': true,
   };
 
   static CameraMedia fromJson(String _, Map<String, Object?> j, DateTime _) =>
@@ -107,6 +113,7 @@ class CameraMedia {
         ],
         lat: (j['lat'] as num?)?.toDouble(),
         lon: (j['lon'] as num?)?.toDouble(),
+        saver: j['saver'] == true,
       );
 }
 
@@ -328,7 +335,16 @@ class VaultBackup {
         }
         continue;
       }
-      if (item.size > maxBytes) {
+      // Space saver: a smaller copy of a photo, when one can be made.
+      VaultOriginal? small;
+      if (library.backup.spaceSaver && !item.isVideo) {
+        try {
+          small = await vault.spaceSaver(item.id);
+        } on Object {
+          // The original goes up instead.
+        }
+      }
+      if (item.size > maxBytes && small == null) {
         if (!item.isVideo || item.size > maxBytes * maxParts) {
           tooLarge++;
           continue;
@@ -382,7 +398,7 @@ class VaultBackup {
       }
       if (!await mayUpload()) return paused();
       try {
-        final original = await vault.original(item.id);
+        final original = small ?? await vault.original(item.id);
         if (original.bytes.length > maxBytes) {
           tooLarge++;
           continue;
@@ -399,6 +415,7 @@ class VaultBackup {
           albums: albums,
           lat: item.lat,
           lon: item.lon,
+          saver: small != null,
         );
         await store.saveMedia(media);
         library.backedUp[item.id] = media.id;

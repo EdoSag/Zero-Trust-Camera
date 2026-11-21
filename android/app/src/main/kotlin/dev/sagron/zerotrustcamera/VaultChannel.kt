@@ -144,6 +144,48 @@ class VaultChannel(
                     "mime" to VaultStore.meta(ctx, id, priv).optString("mime", "image/jpeg"),
                 )
             }
+            "spaceSaver" -> unlocked(result) { priv ->
+                // A smaller copy of a photo for the backup's space saver: at most SAVER_SIDE on
+                // its long side, as WebP. Null for videos and RAW, and when it wouldn't be smaller.
+                val id = call.argument<String>("id")!!
+                val meta = VaultStore.meta(ctx, id, priv)
+                if (meta.optString("type") == VaultStore.TYPE_VIDEO ||
+                    meta.optString("mime") == VaultStore.MIME_DNG
+                ) {
+                    null
+                } else {
+                    val bytes = VaultStore.media(ctx, id, priv)
+                    try {
+                        val bmp = android.graphics.ImageDecoder.decodeBitmap(
+                            android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+                        ) { d, info, _ ->
+                            d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                            val long = maxOf(info.size.width, info.size.height)
+                            if (long > SAVER_SIDE) {
+                                val f = SAVER_SIDE.toFloat() / long
+                                d.setTargetSize(
+                                    maxOf(1, (info.size.width * f).toInt()),
+                                    maxOf(1, (info.size.height * f).toInt()),
+                                )
+                            }
+                        }
+                        val format = if (Build.VERSION.SDK_INT >= 30) {
+                            android.graphics.Bitmap.CompressFormat.WEBP_LOSSY
+                        } else {
+                            @Suppress("DEPRECATION")
+                            android.graphics.Bitmap.CompressFormat.WEBP
+                        }
+                        val small = java.io.ByteArrayOutputStream().use { out ->
+                            bmp.compress(format, SAVER_QUALITY, out)
+                            bmp.recycle()
+                            out.toByteArray()
+                        }
+                        if (small.size < bytes.size) mapOf("bytes" to small, "mime" to "image/webp") else null
+                    } finally {
+                        bytes.fill(0)
+                    }
+                }
+            }
             "originalPart" -> unlocked(result) { priv ->
                 // One piece of a large video, for the encrypted backup.
                 VaultStore.mediaPart(
@@ -498,6 +540,8 @@ class VaultChannel(
         const val CHANNEL = "dev.sagron.zerotrustcamera/vault"
         private const val TAG = "VaultChannel"
         private const val FACE_DOWN_Z = -8.5f
+        private const val SAVER_SIDE = 3072
+        private const val SAVER_QUALITY = 80
         private const val BACKUP_CHANNEL = "vault_backup"
         private const val BACKUP_NOTICE = 4101
         private const val REQUEST_NOTIFY = 4102

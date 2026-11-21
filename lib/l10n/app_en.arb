@@ -188,5 +188,7 @@
   "vaultQuickHide": "Lock when face down",
   "vaultQuickHideOn": "The vault now locks when you put the phone face down",
   "vaultLocation": "Add location to vault photos",
-  "vaultLocationOn": "New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it."
+  "vaultLocationOn": "New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.",
+  "backupSpaceSaver": "Space saver",
+  "backupSpaceSaverSubtitle": "Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed."
 }
