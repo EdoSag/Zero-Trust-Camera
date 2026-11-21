@@ -1855,6 +1855,10 @@ open class MainActivity : ZtBaseActivity(),
     fun locationCamConfigChanged(required: Boolean) {
         if (required) {
             requestLocation()
+        } else if (savesToVault && dev.sagron.zerotrustcamera.capture.zt.VaultLocation.allowed(this)) {
+            // ZT Camera: geo-tagging of pictures is always off, and every reload of the settings
+            // says so again. The place of Private vault items is a separate thing and keeps going.
+            dev.sagron.zerotrustcamera.capture.zt.VaultLocation.start(this)
         } else {
             application.disableLocationFetching()
         }
