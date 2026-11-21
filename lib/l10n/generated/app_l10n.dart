@@ -954,6 +954,60 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed.'**
   String get backupSpaceSaverSubtitle;
+
+  /// No description provided for @accountMediaTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'In your account'**
+  String get accountMediaTitle;
+
+  /// No description provided for @accountMediaIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Backed up from another phone and not on this one. Tap one to open it from your account, or keep it on this phone.'**
+  String get accountMediaIntro;
+
+  /// No description provided for @accountMediaEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Everything in your account is already on this phone.'**
+  String get accountMediaEmpty;
+
+  /// No description provided for @accountMediaFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t reach your account. Check the connection and try again.'**
+  String get accountMediaFailed;
+
+  /// No description provided for @accountMediaKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep on this phone'**
+  String get accountMediaKeep;
+
+  /// No description provided for @accountMediaKept.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved to the vault on this phone'**
+  String get accountMediaKept;
+
+  /// No description provided for @accountMediaBusy.
+  ///
+  /// In en, this message translates to:
+  /// **'A backup or restore is running. Try again when it ends.'**
+  String get accountMediaBusy;
+
+  /// No description provided for @accountMediaVideoNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this video on this phone to play it.'**
+  String get accountMediaVideoNote;
+
+  /// No description provided for @accountMediaRawNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep this RAW photo on this phone to open it.'**
+  String get accountMediaRawNote;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

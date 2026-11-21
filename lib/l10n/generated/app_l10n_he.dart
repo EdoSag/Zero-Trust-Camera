@@ -515,4 +515,36 @@ class AppL10nHe extends AppL10n {
   @override
   String get backupSpaceSaverSubtitle =>
       'תמונות עולות כעותקים קטנים יותר. המקור נשאר בטלפון הזה, אבל שחזור יחזיר את העותקים הקטנים. סרטונים ותמונות RAW לא משתנים.';
+
+  @override
+  String get accountMediaTitle => 'בחשבון שלך';
+
+  @override
+  String get accountMediaIntro =>
+      'גובו מטלפון אחר ואינם בטלפון הזה. מקישים על פריט כדי לפתוח אותו מהחשבון, או שומרים אותו בטלפון הזה.';
+
+  @override
+  String get accountMediaEmpty => 'כל מה שבחשבון שלך כבר נמצא בטלפון הזה.';
+
+  @override
+  String get accountMediaFailed =>
+      'לא ניתן להגיע לחשבון. יש לבדוק את החיבור ולנסות שוב.';
+
+  @override
+  String get accountMediaKeep => 'שמירה בטלפון הזה';
+
+  @override
+  String get accountMediaKept => 'נשמר בכספת בטלפון הזה';
+
+  @override
+  String get accountMediaBusy =>
+      'גיבוי או שחזור פועל כעת. יש לנסות שוב כשיסתיים.';
+
+  @override
+  String get accountMediaVideoNote =>
+      'כדי לנגן את הסרטון יש לשמור אותו בטלפון הזה.';
+
+  @override
+  String get accountMediaRawNote =>
+      'כדי לפתוח את תמונת ה-RAW יש לשמור אותה בטלפון הזה.';
 }

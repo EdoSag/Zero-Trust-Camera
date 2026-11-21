@@ -29,6 +29,7 @@ class CameraMedia {
     this.lat,
     this.lon,
     this.saver = false,
+    this.thumb,
   });
 
   final String id;
@@ -56,6 +57,11 @@ class CameraMedia {
   /// The backed-up file is a smaller copy (space saver), not the original.
   final bool saver;
 
+  /// A small preview, encrypted like the file, so another phone can show
+  /// what is in the account without downloading everything. Null for items
+  /// backed up before previews existed.
+  final ZtAttachmentRef? thumb;
+
   bool get isVideo => type == 'video';
 
   /// Every file this item is kept in.
@@ -74,6 +80,7 @@ class CameraMedia {
     lat: lat,
     lon: lon,
     saver: saver,
+    thumb: thumb,
   );
 
   Map<String, Object?> toJson() => {
@@ -88,33 +95,38 @@ class CameraMedia {
     'albums': albums,
     if (lat != null && lon != null) ...{'lat': lat, 'lon': lon},
     if (saver) 'saver': true,
+    if (thumb != null) 'thumb': thumb!.toJson(),
   };
 
-  static CameraMedia fromJson(String _, Map<String, Object?> j, DateTime _) =>
-      CameraMedia(
-        id: j['id']! as String,
-        type: j['type'] as String? ?? 'photo',
-        mime: j['mime'] as String? ?? 'image/jpeg',
-        takenAt: DateTime.fromMillisecondsSinceEpoch(
-          (j['takenAt'] as num?)?.toInt() ?? 0,
-        ),
-        size: (j['size'] as num?)?.toInt() ?? 0,
-        file: ZtAttachmentRef.fromJson(
-          (j['file']! as Map).cast<String, Object?>(),
-        ),
-        parts: [
-          for (final p in (j['parts'] as List<Object?>? ?? const []))
-            if (p is Map) ZtAttachmentRef.fromJson(p.cast<String, Object?>()),
-        ],
-        favourite: j['favourite'] == true,
-        albums: [
-          for (final a in (j['albums'] as List<Object?>? ?? const []))
-            if (a is String) a,
-        ],
-        lat: (j['lat'] as num?)?.toDouble(),
-        lon: (j['lon'] as num?)?.toDouble(),
-        saver: j['saver'] == true,
-      );
+  static CameraMedia fromJson(
+    String _,
+    Map<String, Object?> j,
+    DateTime _,
+  ) => CameraMedia(
+    id: j['id']! as String,
+    type: j['type'] as String? ?? 'photo',
+    mime: j['mime'] as String? ?? 'image/jpeg',
+    takenAt: DateTime.fromMillisecondsSinceEpoch(
+      (j['takenAt'] as num?)?.toInt() ?? 0,
+    ),
+    size: (j['size'] as num?)?.toInt() ?? 0,
+    file: ZtAttachmentRef.fromJson((j['file']! as Map).cast<String, Object?>()),
+    parts: [
+      for (final p in (j['parts'] as List<Object?>? ?? const []))
+        if (p is Map) ZtAttachmentRef.fromJson(p.cast<String, Object?>()),
+    ],
+    favourite: j['favourite'] == true,
+    albums: [
+      for (final a in (j['albums'] as List<Object?>? ?? const []))
+        if (a is String) a,
+    ],
+    lat: (j['lat'] as num?)?.toDouble(),
+    lon: (j['lon'] as num?)?.toDouble(),
+    saver: j['saver'] == true,
+    thumb: j['thumb'] is Map
+        ? ZtAttachmentRef.fromJson((j['thumb']! as Map).cast<String, Object?>())
+        : null,
+  );
 }
 
 /// A vault album, kept in the account so a restore can put items back in it.
@@ -189,7 +201,7 @@ class CoreBackupStore implements BackupStore {
   @override
   Future<void> deleteMedia(CameraMedia m) async {
     final files = await _files;
-    for (final f in m.files) {
+    for (final f in [...m.files, ?m.thumb]) {
       await files.delete(f);
     }
     await cameraMediaCollection.delete(_sync, m.id);
@@ -348,6 +360,7 @@ class VaultBackup {
             albums: albums,
             lat: item.lat,
             lon: item.lon,
+            thumb: await _uploadThumb(item.id),
           );
           await store.saveMedia(media);
           library.backedUp[item.id] = media.id;
@@ -392,6 +405,7 @@ class VaultBackup {
           lat: item.lat,
           lon: item.lon,
           saver: small != null,
+          thumb: await _uploadThumb(item.id),
         );
         await store.saveMedia(media);
         library.backedUp[item.id] = media.id;
@@ -414,6 +428,80 @@ class VaultBackup {
     return BackupResult(done: done, tooLarge: tooLarge, failed: failed);
   }
 
+  /// The item's small preview, uploaded for other phones to show. Null when
+  /// there is none or it didn't go up: the backup of the file still counts.
+  Future<ZtAttachmentRef?> _uploadThumb(String id) async {
+    try {
+      final bytes = await vault.thumb(id);
+      if (bytes == null || bytes.isEmpty) return null;
+      return await store.upload(bytes, 'image/jpeg');
+    } on Object {
+      return null;
+    }
+  }
+
+  /// What is in the account but not on this phone, newest first. Reads
+  /// only; nothing is changed.
+  Future<List<CameraMedia>> missing(VaultLibrary library) async {
+    // What this phone knows of another account's copies says nothing here.
+    final here = library.backup.account == account
+        ? {...library.backedUp.values, ...library.backupDeletes}
+        : const <String>{};
+    return [
+      for (final m in await store.media())
+        if (!here.contains(m.id)) m,
+    ]..sort((a, b) => b.takenAt.compareTo(a.takenAt));
+  }
+
+  /// Brings one backed-up item onto this phone, sealed into the vault with
+  /// its favourite mark, albums and place. Changes [library]; the caller
+  /// saves it. Returns the new vault id.
+  Future<String> keep(
+    VaultLibrary library,
+    CameraMedia m, {
+    Map<String, String>? albumNames,
+  }) async {
+    library.useBackupAccount(account);
+    final names =
+        albumNames ?? {for (final a in await store.albums()) a.id: a.name};
+    final String id;
+    if (m.parts.length > 1) {
+      final token = newBackupId();
+      try {
+        for (final part in m.parts) {
+          await vault.restorePart(token, await store.download(part));
+        }
+        id = await vault.restoreFinish(
+          token,
+          m.takenAt,
+          lat: m.lat,
+          lon: m.lon,
+        );
+      } on Object {
+        await vault.restoreCancel(token);
+        rethrow;
+      }
+    } else {
+      id = await vault.restore(
+        await store.download(m.file),
+        mime: m.mime,
+        isVideo: m.isVideo,
+        takenAt: m.takenAt,
+        lat: m.lat,
+        lon: m.lon,
+      );
+    }
+    library.backedUp[id] = m.id;
+    if (m.favourite) library.favourites.add(id);
+    for (final albumId in m.albums) {
+      if (!library.albums.containsKey(albumId)) {
+        library.addAlbum(names[albumId] ?? '', albumId);
+      }
+      library.addToAlbum(albumId, [id]);
+    }
+    return id;
+  }
+
   /// Seals every backed-up item this phone doesn't have into the vault,
   /// with its favourite mark and albums. Changes [library]; the caller saves
   /// it.
@@ -432,41 +520,7 @@ class VaultBackup {
     for (final m in missing) {
       progress?.call(step++, missing.length);
       try {
-        final String id;
-        if (m.parts.length > 1) {
-          final token = newBackupId();
-          try {
-            for (final part in m.parts) {
-              await vault.restorePart(token, await store.download(part));
-            }
-            id = await vault.restoreFinish(
-              token,
-              m.takenAt,
-              lat: m.lat,
-              lon: m.lon,
-            );
-          } on Object {
-            await vault.restoreCancel(token);
-            rethrow;
-          }
-        } else {
-          id = await vault.restore(
-            await store.download(m.file),
-            mime: m.mime,
-            isVideo: m.isVideo,
-            takenAt: m.takenAt,
-            lat: m.lat,
-            lon: m.lon,
-          );
-        }
-        library.backedUp[id] = m.id;
-        if (m.favourite) library.favourites.add(id);
-        for (final albumId in m.albums) {
-          if (!library.albums.containsKey(albumId)) {
-            library.addAlbum(albumNames[albumId] ?? '', albumId);
-          }
-          library.addToAlbum(albumId, [id]);
-        }
+        await keep(library, m, albumNames: albumNames);
         done++;
       } on Object {
         failed++;

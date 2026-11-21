@@ -15,6 +15,12 @@ class _Vault implements VaultBackend {
   @override
   Future<VaultOriginal> original(String id) async => files[id]!;
 
+  /// Small previews, by item id.
+  final thumbs = <String, Uint8List>{};
+
+  @override
+  Future<Uint8List?> thumb(String id) async => thumbs[id];
+
   /// Smaller copies the phone can make, by item id.
   final small = <String, VaultOriginal>{};
 
@@ -102,7 +108,7 @@ class _Account implements BackupStore {
   @override
   Future<void> deleteMedia(CameraMedia m) async {
     media_.remove(m.id);
-    for (final f in m.files) {
+    for (final f in [...m.files, ?m.thumb]) {
       files.remove(f.id);
     }
   }
@@ -268,6 +274,45 @@ void main() {
     final fresh = VaultLibrary();
     await backup.restore(fresh);
     expect(vault.places.values, [(32.0853, 34.7818)]);
+  });
+
+  test('another phone sees what it lacks, and keeps one item', () async {
+    final lib = _on();
+    lib.addAlbum('Trip', 'al1');
+    lib.addToAlbum('al1', ['a']);
+    vault.files['a'] = VaultOriginal(Uint8List.fromList([1, 2]), 'image/jpeg');
+    vault.files['b'] = VaultOriginal(Uint8List.fromList([3]), 'image/jpeg');
+    vault.thumbs['a'] = Uint8List.fromList([7, 7]);
+    await backup.backUp(lib, [_photo('a'), _photo('b')]);
+    final a = account.media_[lib.backedUp['a']]!;
+    // The preview went up as its own file; an item without one still counts.
+    expect(account.files[a.thumb!.id], [7, 7]);
+    expect(account.media_[lib.backedUp['b']]!.thumb, isNull);
+    expect(CameraMedia.fromJson('', a.toJson(), _t).thumb?.id, a.thumb!.id);
+    // This phone has everything.
+    expect(await backup.missing(lib), isEmpty);
+
+    // A second phone, same account, empty vault.
+    final other = VaultLibrary();
+    final second = VaultBackup(vault: vault, store: account, account: 'u1');
+    final lacking = await second.missing(other);
+    expect(lacking.map((m) => m.id).toSet(), {
+      lib.backedUp['a'],
+      lib.backedUp['b'],
+    });
+    // Looking changed nothing.
+    expect(other.backup.account, isNull);
+    final id = await second.keep(other, a);
+    expect(vault.restored[id]!.$1, [1, 2]);
+    expect(other.albums['al1']?.name, 'Trip');
+    expect(other.albums['al1']?.items, [id]);
+    expect((await second.missing(other)).single.id, lib.backedUp['b']);
+    // Kept is not turned on: the second phone uploads nothing by itself.
+    expect(other.backup.on, isFalse);
+
+    // Deleting the item for good takes its preview with it.
+    await account.deleteMedia(a);
+    expect(account.files.containsKey(a.thumb!.id), isFalse);
   });
 
   test('space saver: photos go up smaller, the rest as they are', () async {

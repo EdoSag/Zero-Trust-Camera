@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 
 import '../app/camera_bridge.dart';
 import '../l10n/l10n.dart';
+import 'account_media_page.dart';
 import 'backup_page.dart';
 import 'scan_history_page.dart';
 import 'vault_backend.dart';
@@ -257,6 +258,17 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       ),
     );
     // A restore adds items the list here doesn't have yet.
+    if (mounted) await _refresh();
+  }
+
+  /// What is in the account but not on this phone (from another phone).
+  Future<void> _openAccountMedia() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => AccountMediaPage(library: _library, save: _save),
+      ),
+    );
+    // Items kept from the account are new here.
     if (mounted) await _refresh();
   }
 
@@ -700,10 +712,12 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                     ),
                   ),
                   1 => _setQuickHide(!_quickHide),
-                  _ => _setLocation(!_location),
+                  2 => _setLocation(!_location),
+                  _ => _openAccountMedia(),
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 0, child: Text(l.scanHistoryTitle)),
+                  PopupMenuItem(value: 3, child: Text(l.accountMediaTitle)),
                   CheckedPopupMenuItem(
                     value: 1,
                     checked: _quickHide,
