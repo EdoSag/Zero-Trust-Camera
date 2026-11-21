@@ -117,6 +117,16 @@ class ProCameraActivity : ZtBaseActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        VaultLocation.startForViewfinder(this)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        VaultLocation.stop(this)
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         provider?.unbindAll()
