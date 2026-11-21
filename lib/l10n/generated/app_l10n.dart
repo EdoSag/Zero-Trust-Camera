@@ -690,6 +690,36 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'{done} of {total}'**
   String backupProgress(int done, int total);
+
+  /// No description provided for @backupWifiOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Wi-Fi only'**
+  String get backupWifiOnly;
+
+  /// No description provided for @backupWifiOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The automatic backup waits for Wi-Fi and doesn\'t use mobile data'**
+  String get backupWifiOnlySubtitle;
+
+  /// No description provided for @backupChargingOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Only while charging'**
+  String get backupChargingOnly;
+
+  /// No description provided for @backupChargingOnlySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The automatic backup waits until the phone is on the charger'**
+  String get backupChargingOnlySubtitle;
+
+  /// No description provided for @backupNowSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Runs right away, on any network'**
+  String get backupNowSubtitle;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

@@ -100,6 +100,12 @@ class ZtAppActivity : FlutterFragmentActivity() {
         }
     }
 
+    override fun onDestroy() {
+        // A backup cut short leaves no stuck notification behind.
+        vault?.cancelBackupNotice()
+        super.onDestroy()
+    }
+
     private companion object {
         const val CHANNEL = "dev.sagron.zerotrustcamera/app"
         const val MAX_IMPORT = 100

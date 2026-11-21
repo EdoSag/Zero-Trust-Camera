@@ -148,6 +148,31 @@ abstract class VaultBackend {
     required bool isVideo,
     required DateTime takenAt,
   });
+
+  /// Whether the phone is on an unmetered network and charging.
+  Future<BackupConditions> backupConditions();
+
+  /// Shows (or updates) the backup's progress notification. Asks for the
+  /// notification permission once when [ask] is set; without it nothing shows.
+  Future<void> backupNotice(
+    String title,
+    String text,
+    int done,
+    int total, {
+    bool ask = false,
+  });
+
+  /// Takes the progress notification away.
+  Future<void> backupNoticeEnd();
+}
+
+/// What the phone is connected to right now, for the backup's rules.
+class BackupConditions {
+  const BackupConditions({required this.unmetered, required this.charging});
+
+  /// On Wi-Fi or another network that isn't metered.
+  final bool unmetered;
+  final bool charging;
 }
 
 class VaultOriginal {
@@ -325,6 +350,52 @@ class ChannelVaultBackend implements VaultBackend {
     'video': isVideo,
     'takenAt': takenAt.millisecondsSinceEpoch,
   }))!;
+
+  @override
+  Future<BackupConditions> backupConditions() async {
+    try {
+      final m = await _channel.invokeMapMethod<String, Object?>(
+        'backupConditions',
+      );
+      return BackupConditions(
+        unmetered: m?['unmetered'] == true,
+        charging: m?['charging'] == true,
+      );
+    } on Object {
+      // Unknown counts as mobile data and on battery: the backup waits.
+      return const BackupConditions(unmetered: false, charging: false);
+    }
+  }
+
+  @override
+  Future<void> backupNotice(
+    String title,
+    String text,
+    int done,
+    int total, {
+    bool ask = false,
+  }) async {
+    try {
+      await _channel.invokeMethod<void>('backupNotice', {
+        'title': title,
+        'text': text,
+        'done': done,
+        'total': total,
+        'ask': ask,
+      });
+    } on Object {
+      // The backup goes on without its notification.
+    }
+  }
+
+  @override
+  Future<void> backupNoticeEnd() async {
+    try {
+      await _channel.invokeMethod<void>('backupNoticeEnd');
+    } on Object {
+      // Nothing was showing.
+    }
+  }
 }
 
 final vaultBackendProvider = Provider<VaultBackend>(

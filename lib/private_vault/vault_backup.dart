@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 
 import '../app/auth_providers.dart';
+import '../l10n/l10n.dart';
 import 'vault_backend.dart';
 import 'vault_library.dart';
 
@@ -467,6 +468,34 @@ class VaultBackup {
     16,
     (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
   ).join();
+}
+
+/// Runs a backup or restore [job] with its progress in a notification, which
+/// goes away when the job ends. [ask] asks for the notification permission
+/// (only right after a tap).
+Future<T> withBackupNotice<T>(
+  VaultBackend vault,
+  AppL10n l,
+  Future<T> Function(void Function(int done, int total) progress) job, {
+  void Function(int done, int total)? progress,
+  bool ask = false,
+}) async {
+  var asked = !ask;
+  try {
+    return await job((done, total) {
+      progress?.call(done, total);
+      vault.backupNotice(
+        l.backupTitle,
+        l.backupProgress(done, total),
+        done,
+        total,
+        ask: !asked,
+      );
+      asked = true;
+    });
+  } finally {
+    await vault.backupNoticeEnd();
+  }
 }
 
 /// The id of the account backup can use right now, or null: signed in, and

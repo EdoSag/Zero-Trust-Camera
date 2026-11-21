@@ -367,4 +367,21 @@ class AppL10nEn extends AppL10n {
   String backupProgress(int done, int total) {
     return '$done of $total';
   }
+
+  @override
+  String get backupWifiOnly => 'Wi-Fi only';
+
+  @override
+  String get backupWifiOnlySubtitle =>
+      'The automatic backup waits for Wi-Fi and doesn\'t use mobile data';
+
+  @override
+  String get backupChargingOnly => 'Only while charging';
+
+  @override
+  String get backupChargingOnlySubtitle =>
+      'The automatic backup waits until the phone is on the charger';
+
+  @override
+  String get backupNowSubtitle => 'Runs right away, on any network';
 }

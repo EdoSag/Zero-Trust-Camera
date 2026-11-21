@@ -149,14 +149,33 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     if (account == null || !_library.backupFor(account)) return;
     final library = _library;
     final items = _items;
+    final l = context.l10n;
     try {
+      // The rules (Wi-Fi only, only while charging) are for this quiet
+      // backup; "Back up now" on the backup screen always runs.
+      final now = await _vault.backupConditions();
+      if (!library.backup.allows(
+        unmetered: now.unmetered,
+        charging: now.charging,
+      )) {
+        return;
+      }
       final engine = VaultBackup(
         vault: _vault,
         store: ref.read(backupStoreProvider),
         account: account,
       );
+      final somethingNew = engine
+          .eligible(library, items)
+          .any((i) => !library.backedUp.containsKey(i.id));
       final r = await VaultBackup.exclusive(() async {
-        final r = await engine.backUp(library, items);
+        final r = somethingNew
+            ? await withBackupNotice(
+                _vault,
+                l,
+                (p) => engine.backUp(library, items, progress: p),
+              )
+            : await engine.backUp(library, items);
         // Saved even with nothing new: copies deleted from the account
         // leave the queue.
         if (identical(library, _library)) {

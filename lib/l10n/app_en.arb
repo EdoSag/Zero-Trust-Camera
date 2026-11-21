@@ -146,5 +146,10 @@
   "@backupFailed": {"placeholders": {"count": {"type": "int"}}},
   "backupFull": "Your account's storage is full. The rest will wait.",
   "backupProgress": "{done} of {total}",
-  "@backupProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}}
+  "@backupProgress": {"placeholders": {"done": {"type": "int"}, "total": {"type": "int"}}},
+  "backupWifiOnly": "Wi-Fi only",
+  "backupWifiOnlySubtitle": "The automatic backup waits for Wi-Fi and doesn't use mobile data",
+  "backupChargingOnly": "Only while charging",
+  "backupChargingOnlySubtitle": "The automatic backup waits until the phone is on the charger",
+  "backupNowSubtitle": "Runs right away, on any network"
 }
