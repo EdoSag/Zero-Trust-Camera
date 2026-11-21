@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_camera/private_vault/vault_backend.dart';
 import 'package:zerotrust_camera/private_vault/vault_backup.dart';
@@ -920,6 +922,44 @@ void main() {
       // The vault remembers which copy this is, so it won't upload it again.
       expect(VaultLibrary.fromJson(vault.state).backedUp.values, ['m1']);
     });
+
+    testWidgets(
+      'In your account: an open photo closes when the account locks',
+      (tester) async {
+        _phone(tester);
+        final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+        final account = StateProvider<String?>((ref) => 'u1');
+        late WidgetRef outer;
+        await tester.pumpWidget(
+          app(
+            Consumer(
+              builder: (context, ref, _) {
+                outer = ref;
+                return PrivateVaultPage(now: () => now);
+              },
+            ),
+            overrides: [
+              vaultBackendProvider.overrideWithValue(vault),
+              backupStoreProvider.overrideWithValue(_OtherPhoneStore()),
+              backupAccountProvider.overrideWith((ref) => ref.watch(account)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('More'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('In your account'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('account_m1')));
+        await tester.pumpAndSettle();
+        expect(find.text('Keep on this phone'), findsOneWidget);
+
+        outer.read(account.notifier).state = null;
+        await tester.pumpAndSettle();
+        expect(find.text('Keep on this phone'), findsNothing);
+        expect(find.byKey(const ValueKey('account_m1')), findsNothing);
+      },
+    );
 
     testWidgets('locking from the app bar hides everything', (tester) async {
       _phone(tester);

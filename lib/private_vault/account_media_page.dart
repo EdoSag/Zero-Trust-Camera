@@ -129,6 +129,20 @@ class _AccountMediaPageState extends ConsumerState<AccountMediaPage> {
   Widget build(BuildContext context) {
     final l = context.l10n;
     final media = _media;
+    // The account locked (its idle lock) or changed: a photo open on top
+    // closes, and the previews decrypted so far are dropped.
+    ref.listen<String?>(backupAccountProvider, (before, now) {
+      if (before == now) return;
+      final me = ModalRoute.of(context);
+      if (me != null && !me.isCurrent) {
+        Navigator.of(context).popUntil((r) => r == me);
+      }
+      setState(() {
+        _thumbs.clear();
+        _media = null;
+      });
+      if (now != null) _load();
+    });
     final ready = ref.watch(backupAccountProvider) != null;
     final Widget body;
     if (!ready) {
