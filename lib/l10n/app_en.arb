@@ -190,5 +190,14 @@
   "vaultLocation": "Add location to vault photos",
   "vaultLocationOn": "New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.",
   "backupSpaceSaver": "Space saver",
-  "backupSpaceSaverSubtitle": "Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed."
+  "backupSpaceSaverSubtitle": "Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed.",
+  "accountMediaTitle": "In your account",
+  "accountMediaIntro": "Backed up from another phone and not on this one. Tap one to open it from your account, or keep it on this phone.",
+  "accountMediaEmpty": "Everything in your account is already on this phone.",
+  "accountMediaFailed": "Couldn't reach your account. Check the connection and try again.",
+  "accountMediaKeep": "Keep on this phone",
+  "accountMediaKept": "Saved to the vault on this phone",
+  "accountMediaBusy": "A backup or restore is running. Try again when it ends.",
+  "accountMediaVideoNote": "Keep this video on this phone to play it.",
+  "accountMediaRawNote": "Keep this RAW photo on this phone to open it."
 }

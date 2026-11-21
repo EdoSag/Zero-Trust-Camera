@@ -518,4 +518,37 @@ class AppL10nEn extends AppL10n {
   @override
   String get backupSpaceSaverSubtitle =>
       'Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed.';
+
+  @override
+  String get accountMediaTitle => 'In your account';
+
+  @override
+  String get accountMediaIntro =>
+      'Backed up from another phone and not on this one. Tap one to open it from your account, or keep it on this phone.';
+
+  @override
+  String get accountMediaEmpty =>
+      'Everything in your account is already on this phone.';
+
+  @override
+  String get accountMediaFailed =>
+      'Couldn\'t reach your account. Check the connection and try again.';
+
+  @override
+  String get accountMediaKeep => 'Keep on this phone';
+
+  @override
+  String get accountMediaKept => 'Saved to the vault on this phone';
+
+  @override
+  String get accountMediaBusy =>
+      'A backup or restore is running. Try again when it ends.';
+
+  @override
+  String get accountMediaVideoNote =>
+      'Keep this video on this phone to play it.';
+
+  @override
+  String get accountMediaRawNote =>
+      'Keep this RAW photo on this phone to open it.';
 }

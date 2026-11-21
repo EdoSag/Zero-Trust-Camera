@@ -3,6 +3,8 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_camera/private_vault/vault_backend.dart';
 import 'package:zerotrust_camera/private_vault/vault_backup.dart';
@@ -267,6 +269,34 @@ class FakeVault implements VaultBackend {
 
   @override
   Future<void> backupNoticeEnd() async => noticesEnded++;
+}
+
+/// An account holding one photo backed up from another phone.
+class _OtherPhoneStore implements BackupStore {
+  final photo = CameraMedia(
+    id: 'm1',
+    type: 'photo',
+    mime: 'image/png',
+    takenAt: DateTime(2026, 11, 2),
+    size: 70,
+    file: ZtAttachmentRef(id: 'f1', key: Uint8List(32), size: 70),
+  );
+  int downloads = 0;
+
+  @override
+  Future<List<CameraMedia>> media() async => [photo];
+
+  @override
+  Future<List<CameraAlbum>> albums() async => const [];
+
+  @override
+  Future<Uint8List> download(ZtAttachmentRef ref) async {
+    downloads++;
+    return _onePixelPng;
+  }
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 /// An account that only counts how often the backup looked at it.
@@ -838,6 +868,98 @@ void main() {
       expect(tester.widget<Text>(place).data, '32.08530, 34.78180');
       expect(tester.getRect(place).right, lessThanOrEqualTo(360));
     });
+
+    testWidgets('In your account: open a photo from another phone, keep it', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      final store = _OtherPhoneStore();
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [
+            vaultBackendProvider.overrideWithValue(vault),
+            backupStoreProvider.overrideWithValue(store),
+            backupAccountProvider.overrideWithValue('u1'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('In your account'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Backed up from another phone'),
+        findsOneWidget,
+      );
+      // Listing downloads no photo.
+      expect(store.downloads, 0);
+      expect(vault.restored, isEmpty);
+
+      await tester.tap(find.byKey(const ValueKey('account_m1')));
+      await tester.pumpAndSettle();
+      // Opened from the account, in memory: still nothing on this phone.
+      expect(store.downloads, 1);
+      expect(vault.restored, isEmpty);
+      final keep = find.text('Keep on this phone');
+      final button = tester.getRect(
+        find.ancestor(of: keep, matching: find.byType(FilledButton)),
+      );
+      expect(button.left, greaterThanOrEqualTo(0));
+      expect(button.right, lessThanOrEqualTo(360));
+      expect(button.bottom, lessThanOrEqualTo(800));
+
+      await tester.tap(keep);
+      await tester.pumpAndSettle();
+      expect(vault.restored.single.$2, 'image/png');
+      expect(find.byKey(const ValueKey('account_m1')), findsNothing);
+      expect(
+        find.text('Everything in your account is already on this phone.'),
+        findsOneWidget,
+      );
+      // The vault remembers which copy this is, so it won't upload it again.
+      expect(VaultLibrary.fromJson(vault.state).backedUp.values, ['m1']);
+    });
+
+    testWidgets(
+      'In your account: an open photo closes when the account locks',
+      (tester) async {
+        _phone(tester);
+        final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+        final account = StateProvider<String?>((ref) => 'u1');
+        late WidgetRef outer;
+        await tester.pumpWidget(
+          app(
+            Consumer(
+              builder: (context, ref, _) {
+                outer = ref;
+                return PrivateVaultPage(now: () => now);
+              },
+            ),
+            overrides: [
+              vaultBackendProvider.overrideWithValue(vault),
+              backupStoreProvider.overrideWithValue(_OtherPhoneStore()),
+              backupAccountProvider.overrideWith((ref) => ref.watch(account)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        await tester.tap(find.byTooltip('More'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('In your account'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.byKey(const ValueKey('account_m1')));
+        await tester.pumpAndSettle();
+        expect(find.text('Keep on this phone'), findsOneWidget);
+
+        outer.read(account.notifier).state = null;
+        await tester.pumpAndSettle();
+        expect(find.text('Keep on this phone'), findsNothing);
+        expect(find.byKey(const ValueKey('account_m1')), findsNothing);
+      },
+    );
 
     testWidgets('locking from the app bar hides everything', (tester) async {
       _phone(tester);
