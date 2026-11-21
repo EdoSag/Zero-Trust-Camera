@@ -183,6 +183,13 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
                 onChanged: (v) => _change(() => _s.videos = v),
               ),
               SwitchListTile(
+                secondary: const Icon(Icons.compress),
+                title: Text(l.backupSpaceSaver),
+                subtitle: Text(l.backupSpaceSaverSubtitle),
+                value: _s.spaceSaver,
+                onChanged: (v) => _change(() => _s.spaceSaver = v),
+              ),
+              SwitchListTile(
                 secondary: const Icon(Icons.wifi),
                 title: Text(l.backupWifiOnly),
                 subtitle: Text(l.backupWifiOnlySubtitle),

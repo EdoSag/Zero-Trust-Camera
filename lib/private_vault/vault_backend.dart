@@ -137,6 +137,10 @@ abstract class VaultBackend {
   /// The item's file exactly as sealed, for the encrypted backup.
   Future<VaultOriginal> original(String id);
 
+  /// A smaller copy of a photo, for the backup's space saver. Null for
+  /// videos and RAW photos, and when a copy wouldn't be smaller.
+  Future<VaultOriginal?> spaceSaver(String id);
+
   /// [length] bytes of a video's file from [offset], for backing up a video
   /// too large to hold in memory or send as one file.
   Future<Uint8List> originalPart(String id, int offset, int length);
@@ -354,6 +358,14 @@ class ChannelVaultBackend implements VaultBackend {
   Future<VaultOriginal> original(String id) async {
     final m = (await _call<Map<Object?, Object?>>('original', {'id': id}))!;
     return VaultOriginal(m['bytes']! as Uint8List, m['mime']! as String);
+  }
+
+  @override
+  Future<VaultOriginal?> spaceSaver(String id) async {
+    final m = await _call<Map<Object?, Object?>>('spaceSaver', {'id': id});
+    return m == null
+        ? null
+        : VaultOriginal(m['bytes']! as Uint8List, m['mime']! as String);
   }
 
   @override

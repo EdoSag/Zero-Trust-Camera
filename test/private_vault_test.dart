@@ -225,6 +225,9 @@ class FakeVault implements VaultBackend {
   Future<void> setVaultLocation(bool on) async =>
       location = VaultLocationState(on: on, granted: on);
 
+  @override
+  Future<VaultOriginal?> spaceSaver(String id) async => null;
+
   bool quickHideOn = false;
   void Function()? lockedListener;
 

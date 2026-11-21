@@ -511,4 +511,11 @@ class AppL10nEn extends AppL10n {
   @override
   String get vaultLocationOn =>
       'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.';
+
+  @override
+  String get backupSpaceSaver => 'Space saver';
+
+  @override
+  String get backupSpaceSaverSubtitle =>
+      'Photos go up as smaller copies. The originals stay on this phone, but a restore brings back the smaller copies. Videos and RAW photos are not changed.';
 }

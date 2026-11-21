@@ -508,4 +508,11 @@ class AppL10nHe extends AppL10n {
   @override
   String get vaultLocationOn =>
       'תמונות חדשות בכספת הפרטית ישמרו את המיקום שלהן, רק בתוך הכספת. עותקים שנשמרים או משותפים לא נושאים אותו אף פעם.';
+
+  @override
+  String get backupSpaceSaver => 'חיסכון במקום';
+
+  @override
+  String get backupSpaceSaverSubtitle =>
+      'תמונות עולות כעותקים קטנים יותר. המקור נשאר בטלפון הזה, אבל שחזור יחזיר את העותקים הקטנים. סרטונים ותמונות RAW לא משתנים.';
 }
