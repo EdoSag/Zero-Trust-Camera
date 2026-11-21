@@ -188,5 +188,10 @@
         "type": "int"
       }
     }
-  }
+  },
+  "backupWifiOnly": "רק ב-Wi-Fi",
+  "backupWifiOnlySubtitle": "הגיבוי האוטומטי מחכה ל-Wi-Fi ואינו משתמש בנתונים סלולריים",
+  "backupChargingOnly": "רק בזמן טעינה",
+  "backupChargingOnlySubtitle": "הגיבוי האוטומטי מחכה עד שהטלפון מחובר למטען",
+  "backupNowSubtitle": "רץ מיד, בכל רשת"
 }

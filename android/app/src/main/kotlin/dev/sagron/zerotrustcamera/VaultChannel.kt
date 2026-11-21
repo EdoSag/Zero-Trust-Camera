@@ -1,8 +1,18 @@
 package dev.sagron.zerotrustcamera
 
+import android.Manifest
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.ClipData
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.net.Uri
+import android.os.BatteryManager
+import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.view.WindowManager
@@ -274,8 +284,71 @@ class VaultChannel(
                     .putExtra(VaultVideoActivity.EXTRA_ID, call.argument<String>("id")))
                 result.success(null)
             }
+            "backupConditions" -> result.success(mapOf(
+                "unmetered" to isUnmetered(ctx),
+                "charging" to (ctx.getSystemService(BatteryManager::class.java)?.isCharging == true),
+            ))
+            "backupNotice" -> {
+                showBackupNotice(
+                    call.argument<String>("title") ?: "",
+                    call.argument<String>("text") ?: "",
+                    call.argument<Number>("done")?.toInt() ?: 0,
+                    call.argument<Number>("total")?.toInt() ?: 0,
+                    call.argument<Boolean>("ask") == true,
+                )
+                result.success(null)
+            }
+            "backupNoticeEnd" -> {
+                cancelBackupNotice()
+                result.success(null)
+            }
             else -> result.notImplemented()
         }
+    }
+
+    /** On Wi-Fi or another network with internet that isn't metered. Unknown counts as metered. */
+    private fun isUnmetered(ctx: Context): Boolean = try {
+        val cm = ctx.getSystemService(ConnectivityManager::class.java)
+        val caps = cm?.activeNetwork?.let { cm.getNetworkCapabilities(it) }
+        caps != null &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+    } catch (e: SecurityException) {
+        false
+    }
+
+    /**
+     * The backup's progress, as a quiet notification. Without the notification permission nothing
+     * shows; [ask] asks for it once (right after "Back up now" was tapped).
+     */
+    private fun showBackupNotice(title: String, text: String, done: Int, total: Int, ask: Boolean) {
+        val ctx = activity.applicationContext
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            if (ask) activity.requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), REQUEST_NOTIFY)
+            return
+        }
+        val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
+        nm.createNotificationChannel(
+            NotificationChannel(BACKUP_CHANNEL, title, NotificationManager.IMPORTANCE_LOW)
+        )
+        nm.notify(
+            BACKUP_NOTICE,
+            Notification.Builder(ctx, BACKUP_CHANNEL)
+                .setSmallIcon(android.R.drawable.stat_sys_upload)
+                .setContentTitle(title)
+                .setContentText(text)
+                .setProgress(total, done, total <= 0)
+                .setOngoing(true)
+                .setOnlyAlertOnce(true)
+                .build(),
+        )
+    }
+
+    /** Takes the backup's notification away (also when these screens close mid-backup). */
+    fun cancelBackupNotice() {
+        activity.applicationContext.getSystemService(NotificationManager::class.java)?.cancel(BACKUP_NOTICE)
     }
 
     /** The photo picker's answer (see ZtAppActivity). */
@@ -341,5 +414,8 @@ class VaultChannel(
     companion object {
         const val CHANNEL = "dev.sagron.zerotrustcamera/vault"
         private const val TAG = "VaultChannel"
+        private const val BACKUP_CHANNEL = "vault_backup"
+        private const val BACKUP_NOTICE = 4101
+        private const val REQUEST_NOTIFY = 4102
     }
 }

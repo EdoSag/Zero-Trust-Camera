@@ -364,4 +364,21 @@ class AppL10nHe extends AppL10n {
   String backupProgress(int done, int total) {
     return '$done מתוך $total';
   }
+
+  @override
+  String get backupWifiOnly => 'רק ב-Wi-Fi';
+
+  @override
+  String get backupWifiOnlySubtitle =>
+      'הגיבוי האוטומטי מחכה ל-Wi-Fi ואינו משתמש בנתונים סלולריים';
+
+  @override
+  String get backupChargingOnly => 'רק בזמן טעינה';
+
+  @override
+  String get backupChargingOnlySubtitle =>
+      'הגיבוי האוטומטי מחכה עד שהטלפון מחובר למטען';
+
+  @override
+  String get backupNowSubtitle => 'רץ מיד, בכל רשת';
 }

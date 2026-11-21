@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 
 import '../app/auth_providers.dart';
+import '../l10n/l10n.dart';
 import 'vault_backend.dart';
 import 'vault_library.dart';
 
@@ -195,6 +196,7 @@ class BackupResult {
     this.tooLarge = 0,
     this.failed = 0,
     this.full = false,
+    this.paused = false,
   });
 
   /// Items newly backed up (or restored).
@@ -206,6 +208,14 @@ class BackupResult {
 
   /// The account's storage is full; the rest waits.
   final bool full;
+
+  /// The rules (Wi-Fi only, only while charging) stopped holding part way;
+  /// the rest waits for the next time.
+  final bool paused;
+}
+
+class _BackupPaused implements Exception {
+  const _BackupPaused();
 }
 
 /// Backs the Private vault up to the account, and brings it back on a new
@@ -266,6 +276,7 @@ class VaultBackup {
     VaultLibrary library,
     List<VaultItem> items, {
     void Function(int done, int total)? progress,
+    Future<bool> Function()? allowed,
   }) async {
     if (!library.backupFor(account)) return const BackupResult();
     await deletePending(library);
@@ -279,6 +290,17 @@ class VaultBackup {
       }
     }
     var done = 0, tooLarge = 0, failed = 0, step = 0;
+    BackupResult paused() => BackupResult(
+      done: done,
+      tooLarge: tooLarge,
+      failed: failed,
+      paused: true,
+    );
+    // Asked again before every file that goes up, so a backup that began
+    // on Wi-Fi does not carry on over mobile data.
+    var uploads = 0;
+    Future<bool> mayUpload() async =>
+        allowed == null || uploads++ == 0 || await allowed();
     for (final item in todo) {
       progress?.call(step++, todo.length);
       final favourite = library.favourites.contains(item.id);
@@ -303,6 +325,7 @@ class VaultBackup {
         try {
           for (var at = 0; at < item.size; at += maxBytes) {
             final want = min(maxBytes, item.size - at);
+            if (!await mayUpload()) throw const _BackupPaused();
             final bytes = await vault.originalPart(item.id, at, want);
             if (bytes.length != want) throw StateError('short read');
             uploaded.add(await store.upload(bytes, 'video/mp4'));
@@ -330,6 +353,7 @@ class VaultBackup {
               // Left behind; it counts toward storage until deleted.
             }
           }
+          if (e is _BackupPaused) return paused();
           if (_isQuota(e)) {
             return BackupResult(
               done: done,
@@ -342,6 +366,7 @@ class VaultBackup {
         }
         continue;
       }
+      if (!await mayUpload()) return paused();
       try {
         final original = await vault.original(item.id);
         if (original.bytes.length > maxBytes) {
@@ -467,6 +492,34 @@ class VaultBackup {
     16,
     (_) => _random.nextInt(256).toRadixString(16).padLeft(2, '0'),
   ).join();
+}
+
+/// Runs a backup or restore [job] with its progress in a notification, which
+/// goes away when the job ends. [ask] asks for the notification permission
+/// (only right after a tap).
+Future<T> withBackupNotice<T>(
+  VaultBackend vault,
+  AppL10n l,
+  Future<T> Function(void Function(int done, int total) progress) job, {
+  void Function(int done, int total)? progress,
+  bool ask = false,
+}) async {
+  var asked = !ask;
+  try {
+    return await job((done, total) {
+      progress?.call(done, total);
+      vault.backupNotice(
+        l.backupTitle,
+        l.backupProgress(done, total),
+        done,
+        total,
+        ask: !asked,
+      );
+      asked = true;
+    });
+  } finally {
+    await vault.backupNoticeEnd();
+  }
 }
 
 /// The id of the account backup can use right now, or null: signed in, and

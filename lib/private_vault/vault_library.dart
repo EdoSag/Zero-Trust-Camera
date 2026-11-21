@@ -202,6 +202,8 @@ class BackupSettings {
     this.everything = true,
     Set<String>? albums,
     this.videos = false,
+    this.wifiOnly = true,
+    this.chargingOnly = false,
     this.account,
   }) : albums = albums ?? {};
 
@@ -215,6 +217,8 @@ class BackupSettings {
           if (a is String) a,
       },
       videos: j['videos'] == true,
+      wifiOnly: j['wifiOnly'] != false,
+      chargingOnly: j['chargingOnly'] == true,
       account: j['account'] as String?,
     );
   }
@@ -232,11 +236,24 @@ class BackupSettings {
   /// Videos too (each up to the attachment size limit).
   bool videos;
 
+  /// The backup that runs by itself waits for Wi-Fi (a network that isn't
+  /// metered). "Back up now" always runs.
+  bool wifiOnly;
+
+  /// The backup that runs by itself waits for the charger.
+  bool chargingOnly;
+
+  /// Whether the backup that runs by itself may run now.
+  bool allows({required bool unmetered, required bool charging}) =>
+      (!wifiOnly || unmetered) && (!chargingOnly || charging);
+
   Map<String, Object?> toJson() => {
     'on': on,
     'everything': everything,
     'albums': albums.toList(),
     'videos': videos,
+    'wifiOnly': wifiOnly,
+    'chargingOnly': chargingOnly,
     'account': account,
   };
 }

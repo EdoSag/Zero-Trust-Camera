@@ -229,6 +229,25 @@ void main() {
     expect(account.media_[lib.backedUp['a']]!.favourite, isTrue);
   });
 
+  test('stops when the rules stop holding, and carries on next time', () async {
+    final lib = VaultLibrary()..useBackupAccount('u1');
+    lib.backup.on = true;
+    for (final id in ['a', 'b', 'c']) {
+      vault.files[id] = VaultOriginal(Uint8List.fromList([1]), 'image/jpeg');
+    }
+    final items = [_photo('a'), _photo('b'), _photo('c')];
+    // Wi-Fi goes away after the first file.
+    final r = await backup.backUp(lib, items, allowed: () async => false);
+    expect(r.paused, isTrue);
+    expect(r.done, 1);
+    expect(account.uploads, 1);
+
+    final again = await backup.backUp(lib, items, allowed: () async => true);
+    expect(again.paused, isFalse);
+    expect(again.done, 2);
+    expect(account.uploads, 3);
+  });
+
   test('only the albums picked, videos only when asked, trash never', () async {
     final lib = VaultLibrary()
       ..backup.on = true
@@ -389,6 +408,24 @@ void main() {
     final old = VaultLibrary.fromJson('{"v":1,"albums":[]}');
     expect(old.backup.on, isFalse);
     expect(old.backedUp, isEmpty);
+  });
+
+  test('the rules: Wi-Fi only by default, charging only when asked', () {
+    final s = BackupSettings();
+    expect(s.allows(unmetered: false, charging: true), isFalse);
+    expect(s.allows(unmetered: true, charging: false), isTrue);
+    s.chargingOnly = true;
+    expect(s.allows(unmetered: true, charging: false), isFalse);
+    expect(s.allows(unmetered: true, charging: true), isTrue);
+    s.wifiOnly = false;
+    expect(s.allows(unmetered: false, charging: true), isTrue);
+    final back = BackupSettings.fromJson(s.toJson());
+    expect(back.wifiOnly, isFalse);
+    expect(back.chargingOnly, isTrue);
+    // Settings saved before the rules existed: Wi-Fi only.
+    final old = BackupSettings.fromJson(<String, Object?>{'on': true});
+    expect(old.wifiOnly, isTrue);
+    expect(old.chargingOnly, isFalse);
   });
 
   test('the item kinds round-trip through JSON', () {

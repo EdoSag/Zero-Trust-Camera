@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:zero_trust_core/zero_trust_core.dart';
 import 'package:zerotrust_camera/private_vault/vault_backend.dart';
+import 'package:zerotrust_camera/private_vault/vault_backup.dart';
 import 'package:zerotrust_camera/private_vault/vault_library.dart';
 import 'package:zerotrust_camera/private_vault/vault_page.dart';
 
@@ -204,6 +205,45 @@ class FakeVault implements VaultBackend {
     _check();
     edited.add(id);
   }
+
+  BackupConditions conditions = const BackupConditions(
+    unmetered: true,
+    charging: true,
+  );
+  final List<String> notices = [];
+  int noticesEnded = 0;
+
+  @override
+  Future<BackupConditions> backupConditions() async => conditions;
+
+  @override
+  Future<void> backupNotice(
+    String title,
+    String text,
+    int done,
+    int total, {
+    bool ask = false,
+  }) async => notices.add(text);
+
+  @override
+  Future<void> backupNoticeEnd() async => noticesEnded++;
+}
+
+/// An account that only counts how often the backup looked at it.
+class _CountingStore implements BackupStore {
+  int looks = 0;
+
+  @override
+  Future<List<CameraMedia>> media() async {
+    looks++;
+    return const [];
+  }
+
+  @override
+  Future<List<CameraAlbum>> albums() async => const [];
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 VaultItem _item(String id, DateTime at, {bool video = false}) =>
@@ -525,6 +565,58 @@ void main() {
       expect(find.textContaining('Sign in to your Zero Trust'), findsOneWidget);
       expect(find.text('Back up now'), findsNothing);
       expect(vault.originals, isEmpty);
+    });
+
+    testWidgets('the quiet backup waits for Wi-Fi and the charger', (
+      tester,
+    ) async {
+      _phone(tester);
+      final lib = VaultLibrary()
+        ..backup.account = 'u1'
+        ..backup.on = true
+        ..backup.chargingOnly = true;
+      lib.backedUp['a'] = 'm1';
+      Future<int> looksWith(BackupConditions c) async {
+        final vault = FakeVault(
+          unlocked: true,
+          items: [_item('a', now)],
+          state: lib.toJson(),
+        )..conditions = c;
+        final store = _CountingStore();
+        await tester.pumpWidget(
+          app(
+            PrivateVaultPage(key: UniqueKey(), now: () => now),
+            overrides: [
+              vaultBackendProvider.overrideWithValue(vault),
+              backupStoreProvider.overrideWithValue(store),
+              backupAccountProvider.overrideWithValue('u1'),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        // Nothing new to upload: no notification either way.
+        expect(vault.notices, isEmpty);
+        return store.looks;
+      }
+
+      expect(
+        await looksWith(
+          const BackupConditions(unmetered: false, charging: true),
+        ),
+        0,
+      );
+      expect(
+        await looksWith(
+          const BackupConditions(unmetered: true, charging: false),
+        ),
+        0,
+      );
+      expect(
+        await looksWith(
+          const BackupConditions(unmetered: true, charging: true),
+        ),
+        greaterThan(0),
+      );
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {

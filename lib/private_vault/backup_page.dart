@@ -75,9 +75,15 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
       // One at a time, the quiet backup on opening the vault included.
       text = await VaultBackup.exclusive(() async {
         try {
-          final r = await job((done, total) {
-            if (mounted) setState(() => _progress = (done, total));
-          });
+          final r = await withBackupNotice(
+            ref.read(vaultBackendProvider),
+            l,
+            job,
+            progress: (done, total) {
+              if (mounted) setState(() => _progress = (done, total));
+            },
+            ask: true,
+          );
           return say(l, r);
         } finally {
           await widget.save();
@@ -176,8 +182,23 @@ class _VaultBackupPageState extends ConsumerState<VaultBackupPage> {
                 value: _s.videos,
                 onChanged: (v) => _change(() => _s.videos = v),
               ),
+              SwitchListTile(
+                secondary: const Icon(Icons.wifi),
+                title: Text(l.backupWifiOnly),
+                subtitle: Text(l.backupWifiOnlySubtitle),
+                value: _s.wifiOnly,
+                onChanged: (v) => _change(() => _s.wifiOnly = v),
+              ),
+              SwitchListTile(
+                secondary: const Icon(Icons.battery_charging_full_outlined),
+                title: Text(l.backupChargingOnly),
+                subtitle: Text(l.backupChargingOnlySubtitle),
+                value: _s.chargingOnly,
+                onChanged: (v) => _change(() => _s.chargingOnly = v),
+              ),
               ListTile(
                 leading: const Icon(Icons.backup_outlined),
+                subtitle: Text(l.backupNowSubtitle),
                 title: Text(l.backupNow),
                 enabled: !running,
                 onTap: () => _run(
