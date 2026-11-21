@@ -26,6 +26,7 @@ import dev.sagron.zerotrustcamera.capture.CamConfig
 import dev.sagron.zerotrustcamera.capture.zt.Ocr
 import dev.sagron.zerotrustcamera.capture.zt.PhotoEditActivity
 import dev.sagron.zerotrustcamera.capture.zt.VaultKeys
+import dev.sagron.zerotrustcamera.capture.zt.VaultLocation
 import dev.sagron.zerotrustcamera.capture.zt.VaultSession
 import dev.sagron.zerotrustcamera.capture.zt.VaultStore
 import dev.sagron.zerotrustcamera.capture.zt.VaultTransfer
@@ -170,7 +171,7 @@ class VaultChannel(
                 val pub = VaultKeys.publicKey(ctx) ?: throw IllegalStateException("no vault")
                 val f = VaultStore.restoreFile(ctx, call.argument<String>("token")!!)
                 val takenAt = call.argument<Number>("takenAt")?.toLong() ?: System.currentTimeMillis()
-                VaultStore.saveVideo(ctx, pub, f, takenAt)?.first
+                VaultStore.saveVideo(ctx, pub, f, takenAt, place = place(call))?.first
                     ?: throw java.io.IOException("video not sealed")
             }
             "restoreCancel" -> background(result) {
@@ -187,7 +188,7 @@ class VaultChannel(
                         call.argument<Boolean>("video") == true -> {
                             val f = VaultStore.newTempFile(ctx, ".mp4")
                             f.writeBytes(bytes)
-                            VaultStore.saveVideo(ctx, pub, f, takenAt)?.first
+                            VaultStore.saveVideo(ctx, pub, f, takenAt, place = place(call))?.first
                                 ?: throw java.io.IOException("video not sealed")
                         }
                         mime == VaultStore.MIME_DNG -> {
@@ -208,9 +209,9 @@ class VaultChannel(
                             }
                             val f = VaultStore.newTempFile(ctx, ".dng")
                             f.writeBytes(bytes)
-                            VaultStore.saveRaw(ctx, pub, f, jpeg, takenAt)
+                            VaultStore.saveRaw(ctx, pub, f, jpeg, takenAt, place(call))
                         }
-                        else -> VaultStore.savePhoto(ctx, pub, bytes, takenAt, mime = mime).first
+                        else -> VaultStore.savePhoto(ctx, pub, bytes, takenAt, mime = mime, place = place(call)).first
                     }
                 } finally {
                     bytes.fill(0)
@@ -286,6 +287,25 @@ class VaultChannel(
                 keepOpenUntilResume = true
                 activity.startActivity(Intent(activity, VaultVideoActivity::class.java)
                     .putExtra(VaultVideoActivity.EXTRA_ID, call.argument<String>("id")))
+                result.success(null)
+            }
+            "vaultLocation" -> result.success(mapOf(
+                "on" to CamConfig.isVaultLocationOn(ctx),
+                "granted" to VaultLocation.granted(ctx),
+            ))
+            "setVaultLocation" -> {
+                val on = call.argument<Boolean>("on") == true
+                CamConfig.setVaultLocationOn(ctx, on)
+                // Asked for only here, when the owner turns it on.
+                if (on && !VaultLocation.granted(ctx)) {
+                    activity.requestPermissions(
+                        arrayOf(
+                            Manifest.permission.ACCESS_COARSE_LOCATION,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                        ),
+                        REQUEST_LOCATION,
+                    )
+                }
                 result.success(null)
             }
             "quickHide" -> result.success(CamConfig.isQuickHideOn(ctx))
@@ -407,6 +427,13 @@ class VaultChannel(
         activity.applicationContext.getSystemService(NotificationManager::class.java)?.cancel(BACKUP_NOTICE)
     }
 
+    /** The place a restored item had when it was backed up, if any. */
+    private fun place(call: MethodCall): DoubleArray? {
+        val lat = call.argument<Number>("lat")?.toDouble() ?: return null
+        val lon = call.argument<Number>("lon")?.toDouble() ?: return null
+        return doubleArrayOf(lat, lon)
+    }
+
     /** The photo picker's answer (see ZtAppActivity). */
     fun onPicked(uris: List<Uri>) {
         val result = pendingImport ?: return
@@ -474,5 +501,6 @@ class VaultChannel(
         private const val BACKUP_CHANNEL = "vault_backup"
         private const val BACKUP_NOTICE = 4101
         private const val REQUEST_NOTIFY = 4102
+        private const val REQUEST_LOCATION = 4103
     }
 }

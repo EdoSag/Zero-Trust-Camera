@@ -36,7 +36,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get privacyLocationNever =>
-      'Never saved. The app has no location permission.';
+      'Never saved in a photo or video. Only inside the Private vault, and only if you turn it on there.';
 
   @override
   String get privacyDateTime => 'Date and time';
@@ -419,7 +419,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get protectVaultBody =>
-      'Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone\'s vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can\'t open it.';
+      'Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone\'s vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can\'t open it. If you turn on location for the vault, the place is kept in the item\'s encrypted details, never in the picture.';
 
   @override
   String get protectVideoTitle => 'Private videos';
@@ -447,7 +447,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get protectPermissionsBody =>
-      'Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. No location and no access to your files.';
+      'Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. Location, asked for only if you turn on location for the Private vault. No access to your files.';
 
   @override
   String get protectLimitsTitle => 'What it can\'t protect';
@@ -504,4 +504,11 @@ class AppL10nEn extends AppL10n {
   @override
   String get vaultQuickHideOn =>
       'The vault now locks when you put the phone face down';
+
+  @override
+  String get vaultLocation => 'Add location to vault photos';
+
+  @override
+  String get vaultLocationOn =>
+      'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.';
 }

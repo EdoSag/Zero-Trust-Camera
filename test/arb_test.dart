@@ -47,12 +47,33 @@ void main() {
     expect(arb('he').keys.toSet(), arb('en').keys.toSet());
   });
 
-  test('the camera never asks for location', () {
+  test('location: no media location, and never read for gallery photos', () {
     for (final manifest in [
       'android/app/src/main/AndroidManifest.xml',
       'android/capture/src/main/AndroidManifest.xml',
     ]) {
-      expect(File(manifest).readAsStringSync(), isNot(contains('LOCATION')));
+      expect(
+        File(manifest).readAsStringSync(),
+        isNot(contains('ACCESS_MEDIA_LOCATION')),
+      );
+      expect(
+        File(manifest).readAsStringSync(),
+        isNot(contains('BACKGROUND_LOCATION')),
+      );
     }
+    // The upstream geo-tagging switch, which wrote the place into the
+    // picture itself, stays forced off.
+    final config = File(
+      'android/capture/src/main/kotlin/dev/sagron/zerotrustcamera/capture/'
+      'CamConfig.kt',
+    ).readAsStringSync();
+    expect(config, contains('requireLocation = false'));
+    // The only place a location is read for a capture: the vault's own
+    // helper, which answers nothing unless it was turned on.
+    final helper = File(
+      'android/capture/src/main/kotlin/dev/sagron/zerotrustcamera/capture/'
+      'zt/VaultLocation.kt',
+    ).readAsStringSync();
+    expect(helper, contains('if (!allowed(ctx)) return null'));
   });
 }

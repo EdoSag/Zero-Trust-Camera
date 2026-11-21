@@ -37,7 +37,7 @@ void main() {
     expect(location, lessThan(dateTime));
     expect(dateTime, lessThan(model));
     expect(
-      find.text('Never saved. The app has no location permission.'),
+      find.textContaining('Only inside the Private vault'),
       findsOneWidget,
     );
     expect(

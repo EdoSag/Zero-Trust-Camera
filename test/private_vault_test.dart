@@ -180,8 +180,12 @@ class FakeVault implements VaultBackend {
   Future<void> restorePart(String token, Uint8List bytes) async {}
 
   @override
-  Future<String> restoreFinish(String token, DateTime takenAt) async =>
-      'restored';
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  }) async => 'restored';
 
   @override
   Future<void> restoreCancel(String token) async {}
@@ -192,6 +196,8 @@ class FakeVault implements VaultBackend {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   }) async {
     restored.add((bytes, mime, isVideo, takenAt));
     final id = 'restored${restored.length}';
@@ -206,6 +212,18 @@ class FakeVault implements VaultBackend {
     _check();
     edited.add(id);
   }
+
+  VaultLocationState location = const VaultLocationState(
+    on: false,
+    granted: false,
+  );
+
+  @override
+  Future<VaultLocationState> vaultLocation() async => location;
+
+  @override
+  Future<void> setVaultLocation(bool on) async =>
+      location = VaultLocationState(on: on, granted: on);
 
   bool quickHideOn = false;
   void Function()? lockedListener;
@@ -768,7 +786,7 @@ void main() {
       await tester.tap(find.byTooltip('More'));
       await tester.pumpAndSettle();
       expect(find.text('Lock when face down'), findsOneWidget);
-      await tester.tap(find.byType(CheckedPopupMenuItem<int>));
+      await tester.tap(find.byType(CheckedPopupMenuItem<int>).first);
       await tester.pumpAndSettle();
       expect(vault.quickHideOn, isTrue);
       expect(find.byKey(const ValueKey('a')), findsOneWidget);
@@ -777,6 +795,45 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('a')), findsNothing);
       expect(find.text('The vault is locked'), findsOneWidget);
+    });
+
+    testWidgets('location: off until turned on in More; shown on the photo', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(
+        unlocked: true,
+        items: [
+          VaultItem(
+            id: 'a',
+            isVideo: false,
+            takenAt: now,
+            lat: 32.0853,
+            lon: 34.7818,
+          ),
+        ],
+      );
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(vault.location.on, isFalse);
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      expect(find.text('Add location to vault photos'), findsOneWidget);
+      await tester.tap(find.byType(CheckedPopupMenuItem<int>).last);
+      await tester.pumpAndSettle();
+      expect(vault.location.on, isTrue);
+      expect(find.textContaining('inside the vault only'), findsOneWidget);
+
+      await tester.tap(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      final place = find.byKey(const ValueKey('vault_place'));
+      expect(tester.widget<Text>(place).data, '32.08530, 34.78180');
+      expect(tester.getRect(place).right, lessThanOrEqualTo(360));
     });
 
     testWidgets('locking from the app bar hides everything', (tester) async {

@@ -440,7 +440,7 @@ class PanoramaActivity : ZtBaseActivity(), SensorEventListener {
                 try {
                     if (pub != null) {
                         vault = true
-                        VaultStore.savePhoto(ctx, pub, jpeg, System.currentTimeMillis())
+                        VaultStore.savePhoto(ctx, pub, jpeg, System.currentTimeMillis(), place = VaultLocation.now(ctx))
                     } else {
                         VaultTransfer.saveJpegToGallery(ctx, jpeg)
                     }

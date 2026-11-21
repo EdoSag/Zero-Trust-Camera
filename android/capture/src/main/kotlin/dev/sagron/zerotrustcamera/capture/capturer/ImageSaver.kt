@@ -194,7 +194,10 @@ class ImageSaver(
 
         if (vaultKey != null) {
             val thumbnail = try {
-                VaultStore.savePhoto(appContext, vaultKey, processedJpegBytes, captureTime.time).second
+                VaultStore.savePhoto(
+                    appContext, vaultKey, processedJpegBytes, captureTime.time,
+                    place = dev.sagron.zerotrustcamera.capture.zt.VaultLocation.now(appContext),
+                ).second
             } catch (e: Exception) {
                 throw ImageSaverException(Place.FILE_WRITE, e)
             }

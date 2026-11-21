@@ -747,6 +747,8 @@ open class MainActivity : ZtBaseActivity(),
         if (camConfig.requireLocation) {
             requestLocation()
         }
+        // ZT Camera: the place of Private vault items, when that was turned on in the vault.
+        if (savesToVault) dev.sagron.zerotrustcamera.capture.zt.VaultLocation.start(this)
 
         // If the preview of video capture activity isn't showing
         if (!(this is VideoCaptureActivity && thirdOption.isVisible)) {
@@ -784,6 +786,7 @@ open class MainActivity : ZtBaseActivity(),
         if (camConfig.requireLocation) {
             application.dropLocationUpdates()
         }
+        dev.sagron.zerotrustcamera.capture.zt.VaultLocation.stop(this)
         lastFrame = null
         framePrefetchedAt = 0
     }

@@ -10,6 +10,7 @@ import 'package:zerotrust_camera/private_vault/vault_library.dart';
 class _Vault implements VaultBackend {
   final files = <String, VaultOriginal>{};
   final restored = <String, (Uint8List, String, bool)>{};
+  final places = <String, (double, double)>{};
 
   @override
   Future<VaultOriginal> original(String id) async => files[id]!;
@@ -30,7 +31,12 @@ class _Vault implements VaultBackend {
       (parts[token] ??= []).addAll(bytes);
 
   @override
-  Future<String> restoreFinish(String token, DateTime takenAt) async {
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  }) async {
     if (failFinish) throw Exception('not sealed');
     final id = 'new${restored.length + 1}';
     restored[id] = (
@@ -53,9 +59,12 @@ class _Vault implements VaultBackend {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   }) async {
     final id = 'new${restored.length + 1}';
     restored[id] = (bytes, mime, isVideo);
+    if (lat != null && lon != null) places[id] = (lat, lon);
     return id;
   }
 
@@ -227,6 +236,32 @@ void main() {
     expect(again.done, 0);
     expect(account.uploads, 2);
     expect(account.media_[lib.backedUp['a']]!.favourite, isTrue);
+  });
+
+  test('a place kept in the vault goes with the item and comes back', () async {
+    final lib = _on();
+    vault.files['a'] = VaultOriginal(Uint8List.fromList([1]), 'image/jpeg');
+    vault.files['b'] = VaultOriginal(Uint8List.fromList([2]), 'image/jpeg');
+    final placed = VaultItem(
+      id: 'a',
+      isVideo: false,
+      takenAt: _t,
+      size: 1,
+      lat: 32.0853,
+      lon: 34.7818,
+    );
+    await backup.backUp(lib, [placed, _photo('b')]);
+    final a = account.media_[lib.backedUp['a']]!;
+    expect((a.lat, a.lon), (32.0853, 34.7818));
+    // An item without a place says nothing about one.
+    final b = account.media_[lib.backedUp['b']]!;
+    expect(b.toJson().containsKey('lat'), isFalse);
+    // Through JSON, and back onto a new phone.
+    final back = CameraMedia.fromJson('', a.toJson(), _t);
+    expect((back.lat, back.lon), (32.0853, 34.7818));
+    final fresh = VaultLibrary();
+    await backup.restore(fresh);
+    expect(vault.places.values, [(32.0853, 34.7818)]);
   });
 
   test('only the albums picked, videos only when asked, trash never', () async {

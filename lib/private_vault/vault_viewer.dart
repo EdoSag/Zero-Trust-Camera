@@ -91,8 +91,24 @@ class _VaultViewerState extends ConsumerState<VaultViewer> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: Text(
-          MaterialLocalizations.of(context).formatMediumDate(item.takenAt),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              MaterialLocalizations.of(context).formatMediumDate(item.takenAt),
+            ),
+            // The place, when the owner chose to keep places in the vault.
+            if (item.hasPlace)
+              Text(
+                '${item.lat!.toStringAsFixed(5)}, '
+                '${item.lon!.toStringAsFixed(5)}',
+                key: const ValueKey('vault_place'),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+              ),
+          ],
         ),
       ),
       body: PageView.builder(

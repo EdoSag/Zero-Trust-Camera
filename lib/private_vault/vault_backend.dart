@@ -13,6 +13,8 @@ class VaultItem {
     this.height,
     this.duration,
     this.imported = false,
+    this.lat,
+    this.lon,
   });
 
   factory VaultItem.fromMap(Map<Object?, Object?> m) => VaultItem(
@@ -28,6 +30,8 @@ class VaultItem {
         ? null
         : Duration(milliseconds: (m['durationMs']! as num).toInt()),
     imported: m['imported'] == true,
+    lat: (m['lat'] as num?)?.toDouble(),
+    lon: (m['lon'] as num?)?.toDouble(),
   );
 
   final String id;
@@ -38,6 +42,13 @@ class VaultItem {
   final int? height;
   final Duration? duration;
   final bool imported;
+
+  /// Where it was taken, when "Add location" was on. Kept only in the
+  /// vault's sealed details, never in the picture.
+  final double? lat;
+  final double? lon;
+
+  bool get hasPlace => lat != null && lon != null;
 }
 
 class VaultStatus {
@@ -136,7 +147,12 @@ abstract class VaultBackend {
 
   /// Seals the video whose parts were given to [restorePart]; returns its
   /// new id.
-  Future<String> restoreFinish(String token, DateTime takenAt);
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  });
 
   /// Wipes the parts of a restore that didn't finish.
   Future<void> restoreCancel(String token);
@@ -147,7 +163,16 @@ abstract class VaultBackend {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   });
+
+  /// Whether new vault items keep their place, and whether the phone's
+  /// location permission was given.
+  Future<VaultLocationState> vaultLocation();
+
+  /// Turns it on or off. Turning it on asks for the location permission.
+  Future<void> setVaultLocation(bool on);
 
   /// Quick hide: whether the open vault locks when the phone is put face
   /// down.
@@ -173,6 +198,13 @@ abstract class VaultBackend {
 
   /// Takes the progress notification away.
   Future<void> backupNoticeEnd();
+}
+
+class VaultLocationState {
+  const VaultLocationState({required this.on, required this.granted});
+
+  final bool on;
+  final bool granted;
 }
 
 /// What the phone is connected to right now, for the backup's rules.
@@ -337,11 +369,17 @@ class ChannelVaultBackend implements VaultBackend {
       _call<void>('restorePart', {'token': token, 'bytes': bytes});
 
   @override
-  Future<String> restoreFinish(String token, DateTime takenAt) async =>
-      (await _call<String>('restoreFinish', {
-        'token': token,
-        'takenAt': takenAt.millisecondsSinceEpoch,
-      }))!;
+  Future<String> restoreFinish(
+    String token,
+    DateTime takenAt, {
+    double? lat,
+    double? lon,
+  }) async => (await _call<String>('restoreFinish', {
+    'token': token,
+    'takenAt': takenAt.millisecondsSinceEpoch,
+    'lat': lat,
+    'lon': lon,
+  }))!;
 
   @override
   Future<void> restoreCancel(String token) =>
@@ -353,12 +391,35 @@ class ChannelVaultBackend implements VaultBackend {
     required String mime,
     required bool isVideo,
     required DateTime takenAt,
+    double? lat,
+    double? lon,
   }) async => (await _call<String>('restore', {
     'bytes': bytes,
     'mime': mime,
     'video': isVideo,
     'takenAt': takenAt.millisecondsSinceEpoch,
+    'lat': lat,
+    'lon': lon,
   }))!;
+
+  @override
+  Future<VaultLocationState> vaultLocation() async {
+    try {
+      final m = await _channel.invokeMapMethod<String, Object?>(
+        'vaultLocation',
+      );
+      return VaultLocationState(
+        on: m?['on'] == true,
+        granted: m?['granted'] == true,
+      );
+    } on MissingPluginException {
+      return const VaultLocationState(on: false, granted: false);
+    }
+  }
+
+  @override
+  Future<void> setVaultLocation(bool on) =>
+      _call<void>('setVaultLocation', {'on': on});
 
   @override
   Future<bool> quickHide() async {

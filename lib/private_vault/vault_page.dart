@@ -59,6 +59,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   final _searchText = TextEditingController();
   DateTimeRange? _searchRange;
   bool _quickHide = false;
+  bool _location = false;
   final Set<String> _selected = {};
   final Map<String, Future<Uint8List?>> _thumbs = {};
   bool _busy = false;
@@ -77,6 +78,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     // Quick hide locked the vault: show it locked.
     _vault.onLocked(() => unawaited(_refresh()));
     unawaited(_readQuickHide());
+    unawaited(_readLocation());
     unawaited(_refresh(autoUnlock: true));
   }
 
@@ -92,7 +94,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // The native side locks the vault when the app is left; show it locked.
-    if (state == AppLifecycleState.resumed) unawaited(_refresh());
+    if (state == AppLifecycleState.resumed) {
+      unawaited(_refresh());
+      // The permission prompt may just have been answered.
+      unawaited(_readLocation());
+    }
   }
 
   Future<void> _readQuickHide() async {
@@ -101,6 +107,27 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       if (mounted) setState(() => _quickHide = on);
     } on Object {
       // Shown as off.
+    }
+  }
+
+  Future<void> _readLocation() async {
+    try {
+      final s = await _vault.vaultLocation();
+      // On without the permission adds nothing: shown as off.
+      if (mounted) setState(() => _location = s.on && s.granted);
+    } on Object {
+      // Shown as off.
+    }
+  }
+
+  Future<void> _setLocation(bool on) async {
+    setState(() => _location = on);
+    try {
+      await _vault.setVaultLocation(on);
+      if (on) _say((l) => l.vaultLocationOn);
+    } on Object {
+      if (mounted) setState(() => _location = !on);
+      _say((l) => l.vaultFailed);
     }
   }
 
@@ -672,7 +699,8 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                       builder: (_) => const ScanHistoryPage(),
                     ),
                   ),
-                  _ => _setQuickHide(!_quickHide),
+                  1 => _setQuickHide(!_quickHide),
+                  _ => _setLocation(!_location),
                 },
                 itemBuilder: (_) => [
                   PopupMenuItem(value: 0, child: Text(l.scanHistoryTitle)),
@@ -680,6 +708,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                     value: 1,
                     checked: _quickHide,
                     child: Text(l.vaultQuickHide),
+                  ),
+                  CheckedPopupMenuItem(
+                    value: 2,
+                    checked: _location,
+                    child: Text(l.vaultLocation),
                   ),
                 ],
               ),

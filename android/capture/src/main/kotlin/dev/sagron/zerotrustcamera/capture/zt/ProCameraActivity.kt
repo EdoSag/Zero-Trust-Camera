@@ -541,8 +541,10 @@ class ProCameraActivity : ZtBaseActivity() {
         val pub = if (CamConfig.isPrivateVaultOn(ctx) && VaultKeys.isSetUp(ctx)) VaultKeys.publicKey(ctx) else null
         val ok = try {
             if (pub != null) {
-                VaultStore.savePhoto(ctx, pub, jpeg, now)
-                dng?.let { VaultStore.saveRaw(ctx, pub, it, jpeg, now) }
+                // A place only if the viewfinder learned one in the last minutes.
+                val place = VaultLocation.now(ctx)
+                VaultStore.savePhoto(ctx, pub, jpeg, now, place = place)
+                dng?.let { VaultStore.saveRaw(ctx, pub, it, jpeg, now, place) }
             } else {
                 VaultTransfer.saveJpegToGallery(ctx, jpeg)
                 dng?.let { VaultTransfer.saveDngToGallery(ctx, it) }
