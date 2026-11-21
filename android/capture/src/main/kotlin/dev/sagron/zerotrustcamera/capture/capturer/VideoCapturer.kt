@@ -126,6 +126,12 @@ class VideoCapturer(private val mActivity: MainActivity) {
     ) {
         var isFinalized = false
 
+        // ZT Camera, in-memory recordings only: watches whether the recorder goes back and
+        // changes parts of the file it already wrote (see RecorderCheck).
+        var recorderCheck: dev.sagron.zerotrustcamera.capture.zt.RecorderCheck? = null
+        @Volatile var recorderCheckOn = false
+        var recorderCheckThread: Thread? = null
+
         // The free storage is read again once the recording has grown to this many bytes
         var nextStorageCheckBytes = 0L
 
@@ -152,11 +158,51 @@ class VideoCapturer(private val mActivity: MainActivity) {
             FileInputStream(path).close()
             return RecordingContext(Uri.fromFile(path), out!!, shouldAddToGallery = false,
                 isPendingMediaStoreUri = false, vaultTemp = path, vaultKey = vaultKey, memory = keep)
+                .also { startRecorderCheck(it) }
         } catch (e: Exception) {
             Log.w("VideoCapturer", "no in-memory recording", e)
             try { keep?.close() } catch (ignored: Exception) {}
             try { out?.close() } catch (ignored: Exception) {}
             return null
+        }
+    }
+
+    // Follows an in-memory recording as it grows, taking a checksum of each part once the file
+    // has moved a whole part past it. Only reads.
+    private fun startRecorderCheck(recordingCtx: RecordingContext) {
+        val path = recordingCtx.vaultTemp ?: return
+        val check = dev.sagron.zerotrustcamera.capture.zt.RecorderCheck()
+        recordingCtx.recorderCheck = check
+        recordingCtx.recorderCheckOn = true
+        recordingCtx.recorderCheckThread = kotlin.concurrent.thread(name = "recorder-check") {
+            try {
+                java.io.RandomAccessFile(path, "r").use { f ->
+                    while (recordingCtx.recorderCheckOn) {
+                        check.observe(f.channel)
+                        Thread.sleep(300)
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("VideoCapturer", "recorder check stopped", e)
+            }
+        }
+    }
+
+    // Stops following and says which parts changed after they were written, as one line, or
+    // null when there was nothing to check. Must run before anything here edits the file.
+    private fun finishRecorderCheck(recordingCtx: RecordingContext): String? {
+        val check = recordingCtx.recorderCheck ?: return null
+        val path = recordingCtx.vaultTemp ?: return null
+        recordingCtx.recorderCheckOn = false
+        try {
+            recordingCtx.recorderCheckThread?.join(2000)
+        } catch (ignored: InterruptedException) {
+        }
+        return try {
+            java.io.RandomAccessFile(path, "r").use { check.finish(it.channel).line() }
+        } catch (e: Exception) {
+            Log.w("VideoCapturer", "recorder check failed", e)
+            null
         }
     }
 
@@ -475,6 +521,10 @@ class VideoCapturer(private val mActivity: MainActivity) {
             // ZT Camera: an MP4 always carries when it was recorded. Cleared here, while the file
             // is still hidden from other apps, unless the person chose to keep the date and time.
             // A video recorded for another app never keeps it.
+            // Before the recording time is cleared below, which edits the start of the file.
+            val recorderCheckLine = finishRecorderCheck(recordingCtx)
+            recorderCheckLine?.let { Log.i("VideoCapturer", "recorder check: $it") }
+
             val forOtherApp = mActivity is VideoCaptureActivity
             val timeCleared =
                 !(forOtherApp || !camConfig.keepDateTime) || clearRecordingDate(recordingCtx.uri)
@@ -496,6 +546,9 @@ class VideoCapturer(private val mActivity: MainActivity) {
                     }
                     if (!timeCleared) {
                         mActivity.showMessage(R.string.video_time_not_cleared)
+                    } else if (failedWithError == null && recorderCheckLine != null) {
+                        // Beta: shown so it can be reported back (see RecorderCheck).
+                        mActivity.showMessage(mActivity.getString(R.string.recorder_check, recorderCheckLine))
                     }
                     mActivity.showThumbnail(null, sealed.second)
                 }
@@ -766,6 +819,8 @@ class VideoCapturer(private val mActivity: MainActivity) {
 
     // Gives an in-memory recording back to the system. Nothing of it is left anywhere.
     private fun releaseMemory(recordingCtx: RecordingContext) {
+        // Also ends the check of a recording that was dropped before it finished.
+        recordingCtx.recorderCheckOn = false
         try {
             recordingCtx.memory?.close()
         } catch (e: Exception) {

@@ -434,6 +434,7 @@
     <string name="pano_too_short">Turn a little further to make a panorama</string>
     <string name="pano_no_sensor">This phone has no motion sensor, so it can\'t make panoramas</string>
     <!-- ZT Camera: record in memory -->
+    <string name="recorder_check">Recorder check: %1$s</string>
     <string name="record_in_memory_title">Record videos in memory (beta)</string>
     <string name="record_in_memory_subtitle">In Private mode a video is held in memory until it is sealed, so nothing unsealed is written to storage. Videos stop by themselves at a few hundred MB.</string>
 </resources>
