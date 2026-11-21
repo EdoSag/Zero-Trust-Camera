@@ -148,7 +148,7 @@ abstract class AppL10n {
   /// No description provided for @privacyLocationNever.
   ///
   /// In en, this message translates to:
-  /// **'Never saved. The app has no location permission.'**
+  /// **'Never saved in a photo or video. Only inside the Private vault, and only if you turn it on there.'**
   String get privacyLocationNever;
 
   /// No description provided for @privacyDateTime.
@@ -784,7 +784,7 @@ abstract class AppL10n {
   /// No description provided for @protectVaultBody.
   ///
   /// In en, this message translates to:
-  /// **'Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone\'s vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can\'t open it.'**
+  /// **'Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone\'s vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can\'t open it. If you turn on location for the vault, the place is kept in the item\'s encrypted details, never in the picture.'**
   String get protectVaultBody;
 
   /// No description provided for @protectVideoTitle.
@@ -832,7 +832,7 @@ abstract class AppL10n {
   /// No description provided for @protectPermissionsBody.
   ///
   /// In en, this message translates to:
-  /// **'Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. No location and no access to your files.'**
+  /// **'Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. Location, asked for only if you turn on location for the Private vault. No access to your files.'**
   String get protectPermissionsBody;
 
   /// No description provided for @protectLimitsTitle.
@@ -930,6 +930,18 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'The vault now locks when you put the phone face down'**
   String get vaultQuickHideOn;
+
+  /// No description provided for @vaultLocation.
+  ///
+  /// In en, this message translates to:
+  /// **'Add location to vault photos'**
+  String get vaultLocation;
+
+  /// No description provided for @vaultLocationOn.
+  ///
+  /// In en, this message translates to:
+  /// **'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.'**
+  String get vaultLocationOn;
 }
 
 class _AppL10nDelegate extends LocalizationsDelegate<AppL10n> {

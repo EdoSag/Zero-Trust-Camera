@@ -26,6 +26,8 @@ class CameraMedia {
     this.parts = const [],
     this.favourite = false,
     this.albums = const [],
+    this.lat,
+    this.lon,
   });
 
   final String id;
@@ -45,6 +47,11 @@ class CameraMedia {
   /// Ids of [CameraAlbum]s this item is in.
   final List<String> albums;
 
+  /// Where it was taken, if the owner chose to keep places in the vault.
+  /// Inside the encrypted item, like everything else here.
+  final double? lat;
+  final double? lon;
+
   bool get isVideo => type == 'video';
 
   /// Every file this item is kept in.
@@ -60,6 +67,8 @@ class CameraMedia {
     parts: parts,
     favourite: favourite ?? this.favourite,
     albums: albums ?? this.albums,
+    lat: lat,
+    lon: lon,
   );
 
   Map<String, Object?> toJson() => {
@@ -72,6 +81,7 @@ class CameraMedia {
     if (parts.isNotEmpty) 'parts': [for (final p in parts) p.toJson()],
     'favourite': favourite,
     'albums': albums,
+    if (lat != null && lon != null) ...{'lat': lat, 'lon': lon},
   };
 
   static CameraMedia fromJson(String _, Map<String, Object?> j, DateTime _) =>
@@ -95,6 +105,8 @@ class CameraMedia {
           for (final a in (j['albums'] as List<Object?>? ?? const []))
             if (a is String) a,
         ],
+        lat: (j['lat'] as num?)?.toDouble(),
+        lon: (j['lon'] as num?)?.toDouble(),
       );
 }
 
@@ -340,6 +352,8 @@ class VaultBackup {
             parts: uploaded,
             favourite: favourite,
             albums: albums,
+            lat: item.lat,
+            lon: item.lon,
           );
           await store.saveMedia(media);
           library.backedUp[item.id] = media.id;
@@ -383,6 +397,8 @@ class VaultBackup {
           file: ref,
           favourite: favourite,
           albums: albums,
+          lat: item.lat,
+          lon: item.lon,
         );
         await store.saveMedia(media);
         library.backedUp[item.id] = media.id;
@@ -430,7 +446,12 @@ class VaultBackup {
             for (final part in m.parts) {
               await vault.restorePart(token, await store.download(part));
             }
-            id = await vault.restoreFinish(token, m.takenAt);
+            id = await vault.restoreFinish(
+              token,
+              m.takenAt,
+              lat: m.lat,
+              lon: m.lon,
+            );
           } on Object {
             await vault.restoreCancel(token);
             rethrow;
@@ -441,6 +462,8 @@ class VaultBackup {
             mime: m.mime,
             isVideo: m.isVideo,
             takenAt: m.takenAt,
+            lat: m.lat,
+            lon: m.lon,
           );
         }
         library.backedUp[id] = m.id;

@@ -481,7 +481,10 @@ class VideoCapturer(private val mActivity: MainActivity) {
 
             val vaultTemp = recordingCtx.vaultTemp
             if (vaultTemp != null) {
-                val sealed = VaultStore.saveVideo(mActivity, recordingCtx.vaultKey!!, vaultTemp, startedAt)
+                val sealed = VaultStore.saveVideo(
+                    mActivity, recordingCtx.vaultKey!!, vaultTemp, startedAt,
+                    place = dev.sagron.zerotrustcamera.capture.zt.VaultLocation.now(mActivity),
+                )
                 releaseMemory(recordingCtx)
                 handler.post {
                     if (sealed == null) {

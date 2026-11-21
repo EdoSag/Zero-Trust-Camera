@@ -8,7 +8,7 @@
   "accountManage": "Password, security and sign out",
   "privacySection": "What your photos keep",
   "privacyLocation": "Location",
-  "privacyLocationNever": "Never saved. The app has no location permission.",
+  "privacyLocationNever": "Never saved in a photo or video. Only inside the Private vault, and only if you turn it on there.",
   "privacyDateTime": "Date and time",
   "privacyModel": "Phone make and model",
   "privacyOffByDefault": "Not saved, unless you turn it on in the camera's settings",
@@ -162,7 +162,7 @@
   "protectGalleryTitle": "Photos in the gallery",
   "protectGalleryBody": "Saved with only what a picture needs: size, rotation and colour. No location, date, phone model or hidden thumbnail, unless you turn date or model on in the camera's settings. They are ordinary files: any app you allow to see your photos can open them.",
   "protectVaultTitle": "The Private vault",
-  "protectVaultBody": "Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone's vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can't open it.",
+  "protectVaultBody": "Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone's vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can't open it. If you turn on location for the vault, the place is kept in the item's encrypted details, never in the picture.",
   "protectVideoTitle": "Private videos",
   "protectVideoBody": "A video is recorded to a file only this app can reach, encrypted when you stop, and the file is then overwritten and deleted. Until you stop it is protected by Android's storage encryption, not by the vault. \"Record Private videos in memory\" in the camera's settings keeps the recording off storage; clips are then limited by the phone's memory.",
   "protectBackupTitle": "Encrypted backup",
@@ -170,7 +170,7 @@
   "protectNetworkTitle": "Network",
   "protectNetworkBody": "The camera screens have no network code. The app goes online only for your account and the backup, and only if you use them.",
   "protectPermissionsTitle": "Permissions",
-  "protectPermissionsBody": "Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. No location and no access to your files.",
+  "protectPermissionsBody": "Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. Location, asked for only if you turn on location for the Private vault. No access to your files.",
   "protectLimitsTitle": "What it can't protect",
   "protectLimitsBody": "A phone that is unlocked with the vault open. Photos you save or share out of the vault: they leave as ordinary files, without location, date or phone details. A phone whose screen lock someone else knows.",
   "defaultCameraTitle": "Use as your camera",
@@ -186,5 +186,7 @@
   "defaultCameraNotNow": "Not now",
   "vaultMore": "More",
   "vaultQuickHide": "Lock when face down",
-  "vaultQuickHideOn": "The vault now locks when you put the phone face down"
+  "vaultQuickHideOn": "The vault now locks when you put the phone face down",
+  "vaultLocation": "Add location to vault photos",
+  "vaultLocationOn": "New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it."
 }

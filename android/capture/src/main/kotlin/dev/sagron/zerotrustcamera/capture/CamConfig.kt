@@ -144,6 +144,7 @@ class CamConfig(private val mActivity: MainActivity) {
             // ZT Camera: scanned codes kept in the Private vault (off by default)
             const val SCAN_HISTORY = "zt_scan_history"
             const val QUICK_HIDE = "zt_quick_hide"
+            const val VAULT_LOCATION = "zt_vault_location"
 
             const val GYROSCOPE_SUGGESTIONS = "gyroscope_suggestions"
 
@@ -261,6 +262,16 @@ class CamConfig(private val mActivity: MainActivity) {
         fun setQuickHideOn(ctx: Context, on: Boolean) {
             ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
                 .edit().putBoolean(SettingValues.Key.QUICK_HIDE, on).apply()
+        }
+
+        /** The place of new Private vault items is kept in their sealed details (see VaultLocation). */
+        fun isVaultLocationOn(ctx: Context): Boolean =
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .getBoolean(SettingValues.Key.VAULT_LOCATION, false)
+
+        fun setVaultLocationOn(ctx: Context, on: Boolean) {
+            ctx.applicationContext.getSharedPreferences(COMMON_SHARED_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit().putBoolean(SettingValues.Key.VAULT_LOCATION, on).apply()
         }
 
         val FRONT_CAMERA_SELECTOR = CameraSelector.Builder()

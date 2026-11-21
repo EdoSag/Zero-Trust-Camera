@@ -56,6 +56,11 @@ object VaultStore {
 
     // ---- saving (public key only) --------------------------------------------------------------
 
+    /** Latitude and longitude, kept only in the item's sealed details (see VaultLocation). */
+    private fun putPlace(meta: JSONObject, place: DoubleArray?) {
+        if (place != null && place.size == 2) meta.put("lat", place[0]).put("lon", place[1])
+    }
+
     /** Seals a finished photo. Returns the item id and the thumbnail for the viewfinder. */
     fun savePhoto(
         ctx: Context,
@@ -64,6 +69,7 @@ object VaultStore {
         takenAt: Long,
         imported: Boolean = false,
         mime: String = "image/jpeg",
+        place: DoubleArray? = null,
     ): Pair<String, Bitmap?> {
         val id = newId()
         val thumb = photoThumbnail(jpeg)
@@ -74,6 +80,7 @@ object VaultStore {
             .put("takenAt", takenAt)
             .put("size", jpeg.size)
             .put("imported", imported)
+        putPlace(meta, place)
         thumb?.let { meta.put("width", it.second.first).put("height", it.second.second) }
         writeSealed(file(ctx, id, "media"), pub, ByteArrayInputStream(jpeg))
         thumb?.let { writeSealed(file(ctx, id, "thumb"), pub, ByteArrayInputStream(it.first)) }
@@ -85,7 +92,14 @@ object VaultStore {
      * Seals a RAW photo (DNG) from the pro camera, with the thumbnail and size taken from the JPEG
      * shot alongside it, and wipes the plain DNG file. Returns the item id.
      */
-    fun saveRaw(ctx: Context, pub: ByteArray, dng: File, jpeg: ByteArray, takenAt: Long): String {
+    fun saveRaw(
+        ctx: Context,
+        pub: ByteArray,
+        dng: File,
+        jpeg: ByteArray,
+        takenAt: Long,
+        place: DoubleArray? = null,
+    ): String {
         try {
             val id = newId()
             val thumb = photoThumbnail(jpeg)
@@ -96,6 +110,7 @@ object VaultStore {
                 .put("takenAt", takenAt)
                 .put("size", dng.length())
                 .put("imported", false)
+            putPlace(meta, place)
             thumb?.let { meta.put("width", it.second.first).put("height", it.second.second) }
             FileInputStream(dng).use { writeSealed(file(ctx, id, "media"), pub, it) }
             thumb?.let { writeSealed(file(ctx, id, "thumb"), pub, ByteArrayInputStream(it.first)) }
@@ -110,7 +125,14 @@ object VaultStore {
      * Seals a finished recording and wipes the plain file it was recorded to. Returns the item id
      * and a thumbnail, or null if it couldn't be sealed (the plain file is wiped either way).
      */
-    fun saveVideo(ctx: Context, pub: ByteArray, plain: File, takenAt: Long, imported: Boolean = false): Pair<String, Bitmap?>? {
+    fun saveVideo(
+        ctx: Context,
+        pub: ByteArray,
+        plain: File,
+        takenAt: Long,
+        imported: Boolean = false,
+        place: DoubleArray? = null,
+    ): Pair<String, Bitmap?>? {
         try {
             val id = newId()
             var frame: Bitmap? = null
@@ -121,6 +143,7 @@ object VaultStore {
                 .put("takenAt", takenAt)
                 .put("size", plain.length())
                 .put("imported", imported)
+            putPlace(meta, place)
             try {
                 MediaMetadataRetriever().use { r ->
                     r.setDataSource(plain.path)
