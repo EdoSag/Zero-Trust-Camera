@@ -9,6 +9,8 @@ import '../app/camera_bridge.dart';
 import '../app/camera_config.dart';
 import '../l10n/l10n.dart';
 import '../private_vault/vault_page.dart';
+import 'data_protection_page.dart';
+import 'default_camera.dart';
 
 /// Opened from the camera's settings: the optional Zero-Trust account, what
 /// photos keep, language, appearance and about. Needs no account.
@@ -64,6 +66,8 @@ class HomePage extends ConsumerWidget {
               ],
             ),
           ),
+
+          const DefaultCameraCard(),
 
           _Header(zt.account),
           if (user == null)
@@ -131,6 +135,29 @@ class HomePage extends ConsumerWidget {
             leading: const Icon(Icons.apps_outlined),
             title: Text(l.privacyOtherApps),
             subtitle: Text(l.privacyOtherAppsNever),
+          ),
+
+          ListTile(
+            leading: const Icon(Icons.shield_outlined),
+            title: Text(l.protectTitle),
+            subtitle: Text(l.protectSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DataProtectionPage(),
+              ),
+            ),
+          ),
+          ListTile(
+            leading: const Icon(Icons.camera_alt_outlined),
+            title: Text(l.defaultCameraTitle),
+            subtitle: Text(l.defaultCameraSubtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const DefaultCameraPage(),
+              ),
+            ),
           ),
 
           _Header(zt.appearance),

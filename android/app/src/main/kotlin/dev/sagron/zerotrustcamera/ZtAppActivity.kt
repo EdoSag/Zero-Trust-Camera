@@ -76,6 +76,21 @@ class ZtAppActivity : FlutterFragmentActivity() {
                         PanoramaActivity.open(this)
                         result.success(null)
                     }
+                    // Android's "Default apps" screen, or this app's own page when the
+                    // phone has none.
+                    "openDefaultApps" -> {
+                        try {
+                            startActivity(Intent(android.provider.Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
+                        } catch (e: android.content.ActivityNotFoundException) {
+                            startActivity(
+                                Intent(
+                                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    android.net.Uri.fromParts("package", packageName, null),
+                                )
+                            )
+                        }
+                        result.success(null)
+                    }
                     "takeScreen" -> {
                         result.success(requestedScreen)
                         requestedScreen = null

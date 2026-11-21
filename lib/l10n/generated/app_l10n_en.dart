@@ -23,7 +23,7 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get accountOptional =>
-      'Optional: the camera and the Private vault work without one. An account will be needed for encrypted backup, which comes in a later version.';
+      'Optional: the camera and the Private vault work without one. An account is needed only for the encrypted backup of the vault.';
 
   @override
   String get accountManage => 'Password, security and sign out';
@@ -399,4 +399,99 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get vaultSearchEmpty => 'Nothing in the vault matches';
+
+  @override
+  String get protectTitle => 'How your photos are protected';
+
+  @override
+  String get protectSubtitle =>
+      'What is encrypted, what leaves the phone, and what the app can\'t protect';
+
+  @override
+  String get protectGalleryTitle => 'Photos in the gallery';
+
+  @override
+  String get protectGalleryBody =>
+      'Saved with only what a picture needs: size, rotation and colour. No location, date, phone model or hidden thumbnail, unless you turn date or model on in the camera\'s settings. They are ordinary files: any app you allow to see your photos can open them.';
+
+  @override
+  String get protectVaultTitle => 'The Private vault';
+
+  @override
+  String get protectVaultBody =>
+      'Each photo is encrypted in memory, with its own key, before it reaches storage. That key is sealed to this phone\'s vault key, which opens only after your fingerprint, face or screen lock. From the lock screen the camera can add to the vault but can\'t open it.';
+
+  @override
+  String get protectVideoTitle => 'Private videos';
+
+  @override
+  String get protectVideoBody =>
+      'A video is recorded to a file only this app can reach, encrypted when you stop, and the file is then overwritten and deleted. Until you stop it is protected by Android\'s storage encryption, not by the vault. \"Record Private videos in memory\" in the camera\'s settings keeps the recording off storage; clips are then limited by the phone\'s memory.';
+
+  @override
+  String get protectBackupTitle => 'Encrypted backup';
+
+  @override
+  String get protectBackupBody =>
+      'Off until you turn it on. Each file is encrypted on this phone with its own key before it goes to your Zero Trust account. The server sees sizes and times, never pictures or album names. Whoever can sign in to your account and unlock it can restore them, so keep its password safe.';
+
+  @override
+  String get protectNetworkTitle => 'Network';
+
+  @override
+  String get protectNetworkBody =>
+      'The camera screens have no network code. The app goes online only for your account and the backup, and only if you use them.';
+
+  @override
+  String get protectPermissionsTitle => 'Permissions';
+
+  @override
+  String get protectPermissionsBody =>
+      'Camera. Microphone, for video only. Notifications, for backup progress and save errors. Network state, to tell Wi-Fi from mobile data for the backup. No location and no access to your files.';
+
+  @override
+  String get protectLimitsTitle => 'What it can\'t protect';
+
+  @override
+  String get protectLimitsBody =>
+      'A phone that is unlocked with the vault open. Photos you save or share out of the vault: they leave as ordinary files, without location, date or phone details. A phone whose screen lock someone else knows.';
+
+  @override
+  String get defaultCameraTitle => 'Use as your camera';
+
+  @override
+  String get defaultCameraSubtitle =>
+      'Open ZT Camera from the power button and the lock screen';
+
+  @override
+  String get defaultCameraIntro =>
+      'Android has no single switch for the default camera, so it takes two steps.';
+
+  @override
+  String get defaultCameraStep1 =>
+      'Double-press the power button, or open the camera from the lock screen. If Android asks which camera to use, pick ZT Camera and tap Always.';
+
+  @override
+  String get defaultCameraStep2 =>
+      'If another camera opens without asking, open that camera\'s App info, tap Open by default, clear its defaults, and try step 1 again.';
+
+  @override
+  String get defaultCameraOpenSettings => 'Open default apps';
+
+  @override
+  String get defaultCameraOtherApps =>
+      'Inside other apps, for example a chat app\'s camera button, Android 11 and later always use the camera that came with the phone. No app can change that.';
+
+  @override
+  String get defaultCameraCardTitle => 'Make ZT Camera your camera?';
+
+  @override
+  String get defaultCameraCardBody =>
+      'Open it from the power button and the lock screen instead of the phone\'s own camera.';
+
+  @override
+  String get defaultCameraShowMe => 'Show me how';
+
+  @override
+  String get defaultCameraNotNow => 'Not now';
 }
