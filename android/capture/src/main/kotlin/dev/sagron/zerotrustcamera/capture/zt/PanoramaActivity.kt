@@ -125,11 +125,13 @@ class PanoramaActivity : ZtBaseActivity(), SensorEventListener {
     override fun onResume() {
         super.onResume()
         turnSensor()?.let { sensors?.registerListener(this, it, SensorManager.SENSOR_DELAY_GAME) }
+        VaultLocation.startForViewfinder(this)
     }
 
     override fun onPause() {
         super.onPause()
         sensors?.unregisterListener(this)
+        VaultLocation.stop(this)
         // Leaving in the middle of a sweep drops it.
         if (sweeping && !saving) {
             sweeping = false
