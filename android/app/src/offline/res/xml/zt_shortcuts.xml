@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The Offline build's copy of capture/src/main/res/xml/zt_shortcuts.xml:
+     the same shortcuts, aimed at the Offline app id. Keep the two in step. -->
+<!-- ZT Camera: long-press the launcher icon for the document scanner, the pro camera or a panorama -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="scan_document"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_document"
+        android:shortcutShortLabel="@string/doc_shortcut"
+        android:shortcutLongLabel="@string/doc_shortcut">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="dev.sagron.zerotrustcamera.offline"
+            android:targetClass="dev.sagron.zerotrustcamera.capture.zt.DocScanActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="pro_camera"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_pro"
+        android:shortcutShortLabel="@string/pro_shortcut"
+        android:shortcutLongLabel="@string/pro_shortcut">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="dev.sagron.zerotrustcamera.offline"
+            android:targetClass="dev.sagron.zerotrustcamera.capture.zt.ProCameraActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="panorama"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_pano"
+        android:shortcutShortLabel="@string/pano_shortcut"
+        android:shortcutLongLabel="@string/pano_shortcut">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetPackage="dev.sagron.zerotrustcamera.offline"
+            android:targetClass="dev.sagron.zerotrustcamera.capture.zt.PanoramaActivity" />
+    </shortcut>
+</shortcuts>

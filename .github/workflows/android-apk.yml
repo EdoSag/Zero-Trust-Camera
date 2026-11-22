@@ -185,7 +185,7 @@ jobs:
 
       - name: Build the Offline APK
         # The same app without the internet permission (no account, no
-        # backup). Built last, so the files above are the full build's. The
+        # backup), under its own app id so it installs next to the full app. Built last, so the files above are the full build's. The
         # check fails the run if a network permission slipped back in.
         run: |
           set -e
@@ -198,6 +198,12 @@ jobs:
           echo "$PERMISSIONS"
           if echo "$PERMISSIONS" | grep -E "android.permission.(INTERNET|ACCESS_NETWORK_STATE)'"; then
             echo "::error::The Offline APK asks for a network permission."
+            exit 1
+          fi
+          PACKAGE=$("$AAPT2" dump packagename "$OFFLINE_APK")
+          echo "Offline app id: $PACKAGE"
+          if [ "$PACKAGE" != "dev.sagron.zerotrustcamera.offline" ]; then
+            echo "::error::The Offline APK must have its own app id, not $PACKAGE."
             exit 1
           fi
           echo "OFFLINE_APK=$OFFLINE_APK" >> "$GITHUB_ENV"
