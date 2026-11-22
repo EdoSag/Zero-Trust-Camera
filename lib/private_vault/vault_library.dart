@@ -161,11 +161,15 @@ class VaultLibrary {
     disappearSince = after == null ? null : now;
   }
 
-  /// Puts [ids] on a timer: they delete themselves at [at].
+  /// Puts [ids] on a timer: they delete themselves at [at]. A copy already
+  /// backed up is queued for deletion from the account, since disappearing
+  /// items never leave the phone.
   void disappear(Iterable<String> ids, DateTime at) {
     for (final id in ids) {
       disappearAt[id] = at;
       disappearKept.remove(id);
+      final copy = backedUp.remove(id);
+      if (copy != null) backupDeletes.add(copy);
     }
   }
 

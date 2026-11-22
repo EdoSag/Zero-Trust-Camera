@@ -284,7 +284,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
           // would go up a second time.
           final ids = {for (final i in _items) i.id};
           for (final e in library.backedUp.entries) {
-            if (ids.contains(e.key)) {
+            if (!ids.contains(e.key)) continue;
+            if (_library.isDisappearing(e.key)) {
+              // Put on a timer meanwhile: its copy comes down again.
+              _library.backupDeletes.add(e.value);
+            } else {
               _library.backedUp.putIfAbsent(e.key, () => e.value);
             }
           }
