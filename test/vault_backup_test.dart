@@ -375,6 +375,13 @@ void main() {
     expect(account.uploads, 3);
   });
 
+  test('disappearing items are never backed up', () {
+    final lib = _on()..disappear(['a'], _t.add(const Duration(days: 1)));
+    expect(backup.eligible(lib, [_photo('a'), _photo('b')]).map((i) => i.id), [
+      'b',
+    ]);
+  });
+
   test('only the albums picked, videos only when asked, trash never', () async {
     final lib = VaultLibrary()
       ..backup.on = true

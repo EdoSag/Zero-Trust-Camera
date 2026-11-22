@@ -510,6 +510,41 @@ class AppL10nHe extends AppL10n {
       'תמונות חדשות בכספת הפרטית ישמרו את המיקום שלהן, רק בתוך הכספת. עותקים שנשמרים או משותפים לא נושאים אותו אף פעם.';
 
   @override
+  String get vaultDisappearTitle => 'תמונות נעלמות';
+
+  @override
+  String get vaultDisappearBody =>
+      'תמונות וסרטונים חדשים בכספת יימחקו לצמיתות מעצמם אחרי הזמן הזה. הם לא עוברים לאשפה ואף פעם לא מגובים. מה שכבר יש בכספת נשאר כמו שהוא.';
+
+  @override
+  String get vaultDisappearOff => 'כבוי';
+
+  @override
+  String get vaultDisappearHour => 'אחרי שעה';
+
+  @override
+  String get vaultDisappearDay => 'אחרי יום';
+
+  @override
+  String get vaultDisappearWeek => 'אחרי שבוע';
+
+  @override
+  String get vaultDisappearMonth => 'אחרי 30 יום';
+
+  @override
+  String get vaultDisappearOn =>
+      'תמונות וסרטונים חדשים בכספת יימחקו מעכשיו מעצמם. שעון מסמן אותם.';
+
+  @override
+  String get vaultDisappearAfter => 'היעלמות אחרי…';
+
+  @override
+  String get vaultDisappearKeep => 'שמירה (עצירת השעון)';
+
+  @override
+  String get vaultDisappearBadge => 'נעלם';
+
+  @override
   String get backupSpaceSaver => 'חיסכון במקום';
 
   @override

@@ -61,6 +61,9 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
   final _searchText = TextEditingController();
   DateTimeRange? _searchRange;
   bool _quickHide = false;
+
+  /// Checks disappearing items while the vault is open.
+  Timer? _disappearTimer;
   bool _location = false;
   final Set<String> _selected = {};
   final Map<String, Future<Uint8List?>> _thumbs = {};
@@ -89,6 +92,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     WidgetsBinding.instance.removeObserver(this);
     unawaited(_vault.setSecure(false));
     _vault.onLocked(null);
+    _disappearTimer?.cancel();
     _searchText.dispose();
     super.dispose();
   }
@@ -166,6 +170,8 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       Navigator.of(context).popUntil((r) => r == me);
     }
     _lockCount++;
+    _disappearTimer?.cancel();
+    _disappearTimer = null;
     setState(() {
       _items = const [];
       _library = VaultLibrary();
@@ -179,9 +185,20 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       final items = await _vault.list();
       final library = VaultLibrary.fromJson(await _vault.readState());
       library.keepOnly({for (final i in items) i.id});
-      // Time in the trash is up: deleted for good.
-      final expired = library.expired(_now());
+      // Time in the trash is up, or a disappearing item's time: deleted for
+      // good, before anything is shown.
+      final now = _now();
+      final ruled = library.applyDisappearRule([
+        for (final i in items) (id: i.id, takenAt: i.takenAt),
+      ]);
+      final expired = {
+        ...library.expired(now),
+        ...library.disappeared(now),
+      }.toList();
       var shown = items;
+      if (ruled && expired.isEmpty) {
+        await _vault.writeState(library.toJson());
+      }
       if (expired.isNotEmpty) {
         await _vault.delete(expired);
         library.forget(expired);
@@ -196,6 +213,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
         _items = shown;
         _library = library;
       });
+      _disappearTimer?.cancel();
+      _disappearTimer = Timer.periodic(
+        const Duration(seconds: 30),
+        (_) => unawaited(_sweepDisappeared()),
+      );
       unawaited(_autoBackup());
     } on VaultLockedException {
       await _refresh();
@@ -483,6 +505,117 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     await _save();
   }
 
+  /// While the vault is open: items whose time is up go, and a photo of
+  /// theirs open on top closes.
+  Future<void> _sweepDisappeared() async {
+    final ids = _library.disappeared(_now());
+    if (ids.isEmpty || !mounted) return;
+    final locks = _lockCount;
+    try {
+      await _vault.delete(ids);
+    } on Object {
+      return;
+    }
+    if (!mounted || locks != _lockCount) return;
+    final me = ModalRoute.of(context);
+    if (me != null && !me.isCurrent) {
+      Navigator.of(context).popUntil((r) => r == me);
+    }
+    setState(() {
+      _library.forget(ids);
+      _items = [
+        for (final i in _items)
+          if (!ids.contains(i.id)) i,
+      ];
+      _selected.removeAll(ids);
+    });
+    await _save();
+    unawaited(_autoBackup());
+  }
+
+  String _disappearLabel(AppL10n l, Duration d) => switch (d.inHours) {
+    1 => l.vaultDisappearHour,
+    24 => l.vaultDisappearDay,
+    168 => l.vaultDisappearWeek,
+    _ => l.vaultDisappearMonth,
+  };
+
+  /// The rule for new photos and videos: off or one of the choices.
+  Future<void> _pickDisappearRule() async {
+    final l = context.l10n;
+    final current = _library.disappearAfter;
+    final picked = await showDialog<Duration?>(
+      context: context,
+      builder: (c) => SimpleDialog(
+        title: Text(l.vaultDisappearTitle),
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+            child: Text(l.vaultDisappearBody),
+          ),
+          RadioGroup<int>(
+            groupValue: current?.inMinutes ?? 0,
+            onChanged: (v) => Navigator.pop(
+              c,
+              v == null || v == 0 ? Duration.zero : Duration(minutes: v),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                RadioListTile<int>(value: 0, title: Text(l.vaultDisappearOff)),
+                for (final d in VaultLibrary.disappearChoices)
+                  RadioListTile<int>(
+                    value: d.inMinutes,
+                    title: Text(_disappearLabel(l, d)),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    final after = picked == Duration.zero ? null : picked;
+    if (after == current) return;
+    setState(() => _library.setDisappearRule(after, _now()));
+    await _save();
+    if (after != null) _say((l) => l.vaultDisappearOn);
+  }
+
+  /// Puts the selected items on a timer, or takes them off it.
+  Future<void> _disappearSelected(List<String> ids) async {
+    final l = context.l10n;
+    final anyOn = ids.any(_library.isDisappearing);
+    final picked = await showDialog<Duration>(
+      context: context,
+      builder: (c) => SimpleDialog(
+        title: Text(l.vaultDisappearAfter),
+        children: [
+          for (final d in VaultLibrary.disappearChoices)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(c, d),
+              child: Text(_disappearLabel(l, d)),
+            ),
+          if (anyOn)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(c, Duration.zero),
+              child: Text(l.vaultDisappearKeep),
+            ),
+        ],
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (picked == Duration.zero) {
+        _library.keep(ids);
+      } else {
+        _library.disappear(ids, _now().add(picked));
+      }
+      _selected.clear();
+    });
+    await _save();
+  }
+
   Future<void> _deleteForever(List<String> ids) async {
     final l = context.l10n;
     final ok = await showDialog<bool>(
@@ -753,6 +886,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                   ),
                   1 => _setQuickHide(!_quickHide),
                   2 => _setLocation(!_location),
+                  4 => _pickDisappearRule(),
                   _ => _openAccountMedia(),
                 },
                 itemBuilder: (_) => [
@@ -768,6 +902,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                     value: 2,
                     checked: _location,
                     child: Text(l.vaultLocation),
+                  ),
+                  CheckedPopupMenuItem(
+                    value: 4,
+                    checked: _library.disappearAfter != null,
+                    child: Text(l.vaultDisappearTitle),
                   ),
                 ],
               ),
@@ -827,11 +966,13 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
         onSelected: (v) => switch (v) {
           0 => _addToAlbum(ids),
           1 => _saveToGallery(ids),
+          3 => _disappearSelected(ids),
           _ => _removeFromAlbum(ids),
         },
         itemBuilder: (_) => [
           PopupMenuItem(value: 0, child: Text(l.vaultAddToAlbum)),
           PopupMenuItem(value: 1, child: Text(l.vaultSaveToGallery)),
+          PopupMenuItem(value: 3, child: Text(l.vaultDisappearAfter)),
           if (_filter == VaultFilter.albums && _album != null)
             PopupMenuItem(value: 2, child: Text(l.vaultRemoveFromAlbum)),
         ],
@@ -1142,6 +1283,17 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                   bottom: 4,
                   end: 4,
                   child: _VideoBadge(duration: item.duration),
+                ),
+              if (_library.isDisappearing(item.id))
+                PositionedDirectional(
+                  top: 4,
+                  end: 4,
+                  child: Icon(
+                    Icons.timer_outlined,
+                    size: 18,
+                    color: Colors.white,
+                    semanticLabel: context.l10n.vaultDisappearBadge,
+                  ),
                 ),
               if (_library.favourites.contains(item.id))
                 const PositionedDirectional(

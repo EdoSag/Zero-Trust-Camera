@@ -295,7 +295,9 @@ class VaultBackup {
     final inAlbums = {for (final id in s.albums) ...?library.albums[id]?.items};
     return [
       for (final i in items)
+        // Disappearing items never leave the phone.
         if (!library.isTrashed(i.id) &&
+            !library.isDisappearing(i.id) &&
             (s.everything || inAlbums.contains(i.id)) &&
             (!i.isVideo || s.videos))
           i,

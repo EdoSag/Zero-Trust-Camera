@@ -367,6 +367,45 @@ void main() {
       expect(lib.trashed, isEmpty);
     });
 
+    test('disappearing: the rule times new items, keep stops it', () {
+      final lib = VaultLibrary()
+        ..setDisappearRule(const Duration(days: 1), now);
+      final changed = lib.applyDisappearRule([
+        (id: 'before', takenAt: now.subtract(const Duration(minutes: 1))),
+        (id: 'after', takenAt: now.add(const Duration(hours: 2))),
+      ]);
+      expect(changed, isTrue);
+      // Only what was taken since the rule went on.
+      expect(lib.disappearAt, {'after': now.add(const Duration(hours: 26))});
+      expect(lib.disappeared(now.add(const Duration(hours: 25))), isEmpty);
+      expect(lib.disappeared(now.add(const Duration(hours: 26))), ['after']);
+
+      // Kept by hand: the rule doesn't put it back.
+      lib.keep(['after']);
+      expect(
+        lib.applyDisappearRule([
+          (id: 'after', takenAt: now.add(const Duration(hours: 2))),
+        ]),
+        isFalse,
+      );
+      expect(lib.disappearAt, isEmpty);
+
+      // Through JSON.
+      lib.disappear(['x'], now);
+      final back = VaultLibrary.fromJson(lib.toJson());
+      expect(back.disappearAfter, const Duration(days: 1));
+      expect(back.disappearSince, now);
+      expect(back.disappearAt, {'x': now});
+      expect(back.disappearKept, {'after'});
+
+      // Off: nothing new is timed; timers already set stay.
+      back.setDisappearRule(null, now);
+      expect(back.disappearSince, isNull);
+      expect(back.disappearAt, {'x': now});
+      back.forget(['x']);
+      expect(back.disappearAt, isEmpty);
+    });
+
     test('a damaged state file opens as empty, not as an error', () {
       expect(VaultLibrary.fromJson('{not json').albums, isEmpty);
       expect(VaultLibrary.fromJson(null).favourites, isEmpty);
@@ -590,6 +629,98 @@ void main() {
       ]);
       expect(jsonDecode(vault.state!)['trashed'], isEmpty);
       expect(find.byKey(const ValueKey('kept')), findsOneWidget);
+    });
+
+    testWidgets('disappearing items go when their time is up', (tester) async {
+      _phone(tester);
+      final lib = VaultLibrary()
+        ..disappear(['due'], now)
+        ..disappear(['later'], now.add(const Duration(hours: 1)));
+      final vault = FakeVault(
+        unlocked: true,
+        items: [_item('due', now), _item('later', now), _item('plain', now)],
+        state: lib.toJson(),
+      );
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Gone before anything was shown, and not to the trash.
+      expect(vault.deleted, [
+        ['due'],
+      ]);
+      expect(find.byKey(const ValueKey('due')), findsNothing);
+      expect(jsonDecode(vault.state!)['trashed'], isEmpty);
+      // The one still waiting has a timer on it, top end.
+      final timer = find.descendant(
+        of: find.byKey(const ValueKey('later')),
+        matching: find.byIcon(Icons.timer_outlined),
+      );
+      expect(timer, findsOneWidget);
+      final tile = tester.getRect(find.byKey(const ValueKey('later')));
+      expect(tester.getRect(timer).center.dx, greaterThan(tile.center.dx));
+      expect(tester.getRect(timer).center.dy, lessThan(tile.center.dy));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('plain')),
+          matching: find.byIcon(Icons.timer_outlined),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('disappearing photos: turned on from the menu, kept by hand', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappearing photos'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('After 1 day'));
+      await tester.pumpAndSettle();
+      var saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.disappearAfter, const Duration(days: 1));
+      expect(saved.disappearSince, now);
+      // An item already there is left alone.
+      expect(saved.disappearAt, isEmpty);
+
+      // One by hand, then kept.
+      await tester.longPress(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PopupMenuButton<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappear after…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('After 1 hour'));
+      await tester.pumpAndSettle();
+      saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.disappearAt, {'a': now.add(const Duration(hours: 1))});
+      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+
+      await tester.longPress(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PopupMenuButton<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappear after…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Keep (stop the timer)'));
+      await tester.pumpAndSettle();
+      saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.disappearAt, isEmpty);
+      expect(saved.disappearKept, {'a'});
+      expect(find.byIcon(Icons.timer_outlined), findsNothing);
     });
 
     testWidgets('sharing and saving go through the cleaning native side', (
@@ -858,7 +989,7 @@ void main() {
       await tester.tap(find.byTooltip('More'));
       await tester.pumpAndSettle();
       expect(find.text('Add location to vault photos'), findsOneWidget);
-      await tester.tap(find.byType(CheckedPopupMenuItem<int>).last);
+      await tester.tap(find.text('Add location to vault photos'));
       await tester.pumpAndSettle();
       expect(vault.location.on, isTrue);
       expect(find.textContaining('inside the vault only'), findsOneWidget);

@@ -108,6 +108,13 @@ Two parts in one APK:
   plain photo, since its HDR part lives in the details that are cut out. Shared copies sit in the app's cache and are wiped on the next
   unlock. Imported originals stay in the gallery (Android's photo picker can't
   delete them), and the app says so.
+- **Disappearing photos.** Off by default. In the vault's More menu, new
+  photos and videos can be set to delete themselves for good after 1 hour,
+  1 day, 1 week or 30 days (counted from when each was taken), and any item
+  can be put on a timer or taken off it by hand. They skip the trash and are
+  never backed up. The timers live in the sealed library, so an item whose
+  time is up is deleted the next time the vault opens, before anything is
+  shown, and every 30 seconds while it is open.
 
 ## Building
 
