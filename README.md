@@ -112,7 +112,8 @@ Two parts in one APK:
   photos and videos can be set to delete themselves for good after 1 hour,
   1 day, 1 week or 30 days (counted from when each was taken), and any item
   can be put on a timer or taken off it by hand. They skip the trash and are
-  never backed up. The timers live in the sealed library, so an item whose
+  never backed up (a copy already in the account is deleted when the timer
+  starts), and a video open in the player closes when it goes. The timers live in the sealed library, so an item whose
   time is up is deleted the next time the vault opens, before anything is
   shown, and every 30 seconds while it is open.
 
