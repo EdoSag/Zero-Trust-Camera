@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-/// Albums, favourites and the trash of the Private vault. Kept by these
+/// Albums, favourites, the trash and disappearing items of the Private vault. Kept by these
 /// screens in one sealed file (the native side only stores it).
 class VaultLibrary {
   VaultLibrary({
@@ -10,12 +10,26 @@ class VaultLibrary {
     BackupSettings? backup,
     Map<String, String>? backedUp,
     Set<String>? backupDeletes,
+    Map<String, DateTime>? disappearAt,
+    Set<String>? disappearKept,
+    this.disappearAfter,
+    this.disappearSince,
   }) : albums = albums ?? {},
        favourites = favourites ?? {},
        trashed = trashed ?? {},
        backup = backup ?? BackupSettings(),
        backedUp = backedUp ?? {},
-       backupDeletes = backupDeletes ?? {};
+       backupDeletes = backupDeletes ?? {},
+       disappearAt = disappearAt ?? {},
+       disappearKept = disappearKept ?? {};
+
+  /// The choices for disappearing items, shortest first.
+  static const disappearChoices = [
+    Duration(hours: 1),
+    Duration(days: 1),
+    Duration(days: 7),
+    Duration(days: 30),
+  ];
 
   /// Items stay in the trash this long, then are deleted for good.
   static const trashDays = 30;
@@ -35,6 +49,21 @@ class VaultLibrary {
   /// Backed-up copies of items deleted for good here, still to be deleted
   /// from the account (it may not have been reachable).
   final Set<String> backupDeletes;
+
+  /// When each disappearing item deletes itself for good (not to the trash).
+  /// Disappearing items are never backed up.
+  final Map<String, DateTime> disappearAt;
+
+  /// New photos and videos disappear this long after they were taken; null
+  /// is off.
+  Duration? disappearAfter;
+
+  /// When [disappearAfter] was turned on: items taken before then are left
+  /// alone.
+  DateTime? disappearSince;
+
+  /// Items taken under the rule that were kept (taken off the timer) by hand.
+  final Set<String> disappearKept;
 
   factory VaultLibrary.fromJson(String? text) {
     if (text == null || text.isEmpty) return VaultLibrary();
@@ -74,6 +103,27 @@ class VaultLibrary {
           for (final d in (m['backupDeletes'] as List<Object?>? ?? const []))
             if (d is String) d,
         },
+        disappearAt: {
+          for (final e
+              in (m['disappearAt'] as Map<String, Object?>? ?? const {})
+                  .entries)
+            if (e.value is num)
+              e.key: DateTime.fromMillisecondsSinceEpoch(
+                (e.value! as num).toInt(),
+              ),
+        },
+        disappearKept: {
+          for (final d in (m['disappearKept'] as List<Object?>? ?? const []))
+            if (d is String) d,
+        },
+        disappearAfter: switch (m['disappearAfter']) {
+          final num ms when ms > 0 => Duration(milliseconds: ms.toInt()),
+          _ => null,
+        },
+        disappearSince: switch (m['disappearSince']) {
+          final num ms => DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
+          _ => null,
+        },
       );
     } on Object {
       return VaultLibrary();
@@ -93,7 +143,67 @@ class VaultLibrary {
     'backup': backup.toJson(),
     'backedUp': backedUp,
     'backupDeletes': backupDeletes.toList(),
+    'disappearAt': {
+      for (final e in disappearAt.entries)
+        e.key: e.value.millisecondsSinceEpoch,
+    },
+    'disappearKept': disappearKept.toList(),
+    'disappearAfter': disappearAfter?.inMilliseconds,
+    'disappearSince': disappearSince?.millisecondsSinceEpoch,
   });
+
+  bool isDisappearing(String id) => disappearAt.containsKey(id);
+
+  /// Turns the rule for new items on ([after]) or off (null). Items already
+  /// on a timer keep it.
+  void setDisappearRule(Duration? after, DateTime now) {
+    disappearAfter = after;
+    disappearSince = after == null ? null : now;
+  }
+
+  /// Puts [ids] on a timer: they delete themselves at [at]. A copy already
+  /// backed up is queued for deletion from the account, since disappearing
+  /// items never leave the phone.
+  void disappear(Iterable<String> ids, DateTime at) {
+    for (final id in ids) {
+      disappearAt[id] = at;
+      disappearKept.remove(id);
+      final copy = backedUp.remove(id);
+      if (copy != null) backupDeletes.add(copy);
+    }
+  }
+
+  /// Takes [ids] off the timer, for good: the rule doesn't put them back.
+  void keep(Iterable<String> ids) {
+    for (final id in ids) {
+      if (disappearAt.remove(id) != null) disappearKept.add(id);
+    }
+  }
+
+  /// Puts items taken since the rule was turned on on its timer (counted
+  /// from when each was taken). Returns whether anything changed.
+  bool applyDisappearRule(Iterable<({String id, DateTime takenAt})> items) {
+    final after = disappearAfter;
+    final since = disappearSince;
+    if (after == null || since == null) return false;
+    var changed = false;
+    for (final i in items) {
+      if (i.takenAt.isBefore(since) ||
+          disappearAt.containsKey(i.id) ||
+          disappearKept.contains(i.id)) {
+        continue;
+      }
+      disappearAt[i.id] = i.takenAt.add(after);
+      changed = true;
+    }
+    return changed;
+  }
+
+  /// Items whose time is up.
+  List<String> disappeared(DateTime now) => [
+    for (final e in disappearAt.entries)
+      if (!e.value.isAfter(now)) e.key,
+  ];
 
   bool isTrashed(String id) => trashed.containsKey(id);
 
@@ -125,6 +235,8 @@ class VaultLibrary {
       if (copy != null) backupDeletes.add(copy);
     }
     trashed.removeWhere((id, _) => gone.contains(id));
+    disappearAt.removeWhere((id, _) => gone.contains(id));
+    disappearKept.removeAll(gone);
     for (final a in albums.values) {
       a.items.removeWhere(gone.contains);
     }
@@ -138,6 +250,8 @@ class VaultLibrary {
       {
         ...favourites,
         ...trashed.keys,
+        ...disappearAt.keys,
+        ...disappearKept,
         for (final a in albums.values) ...a.items,
       }.difference(existing),
     );

@@ -33,6 +33,7 @@ class VaultVideoActivity : Activity(), SurfaceHolder.Callback, MediaController.M
     private lateinit var surface: SurfaceView
     private lateinit var controller: MediaController
     private var prepared = false
+    private var itemId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,6 +43,8 @@ class VaultVideoActivity : Activity(), SurfaceHolder.Callback, MediaController.M
             finish()
             return
         }
+        itemId = id
+        showing = java.lang.ref.WeakReference(this)
 
         val root = FrameLayout(this).apply { setBackgroundColor(Color.BLACK) }
         surface = SurfaceView(this)
@@ -156,6 +159,11 @@ class VaultVideoActivity : Activity(), SurfaceHolder.Callback, MediaController.M
 
     override fun onDestroy() {
         super.onDestroy()
+        if (showing?.get() === this) showing = null
+        closeSource()
+    }
+
+    private fun closeSource() {
         release()
         try {
             source?.close()
@@ -207,5 +215,23 @@ class VaultVideoActivity : Activity(), SurfaceHolder.Callback, MediaController.M
         private const val TAG = "VaultVideoActivity"
         const val EXTRA_ID = "id"
         private const val FACE_DOWN_Z = -8.5f
+
+        @Volatile
+        private var showing: java.lang.ref.WeakReference<VaultVideoActivity>? = null
+
+        /**
+         * Closes the player if it shows one of [ids], which were just deleted (a disappearing
+         * video's time ran out, say). Deleting only unlinks the file, so an open player could
+         * still read it: its file is closed here, on the main thread, before it finishes.
+         */
+        fun closeIfShowing(ids: Collection<String>) {
+            val activity = showing?.get() ?: return
+            activity.runOnUiThread {
+                if (activity.itemId in ids && !activity.isDestroyed) {
+                    activity.closeSource()
+                    activity.finish()
+                }
+            }
+        }
     }
 }

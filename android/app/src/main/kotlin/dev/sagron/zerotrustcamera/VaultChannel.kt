@@ -293,7 +293,10 @@ class VaultChannel(
                 null
             }
             "delete" -> background(result) {
-                call.argument<List<String>>("ids")!!.forEach { VaultStore.delete(ctx, it) }
+                val ids = call.argument<List<String>>("ids")!!
+                ids.forEach { VaultStore.delete(ctx, it) }
+                // A deleted video still open in the player is closed with it.
+                VaultVideoActivity.closeIfShowing(ids)
                 null
             }
             "saveToGallery" -> unlocked(result) { priv ->

@@ -943,6 +943,72 @@ abstract class AppL10n {
   /// **'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.'**
   String get vaultLocationOn;
 
+  /// No description provided for @vaultDisappearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disappearing photos'**
+  String get vaultDisappearTitle;
+
+  /// No description provided for @vaultDisappearBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New photos and videos in the vault delete themselves for good after this time. They skip the trash and are never backed up. Items you already have stay as they are.'**
+  String get vaultDisappearBody;
+
+  /// No description provided for @vaultDisappearOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get vaultDisappearOff;
+
+  /// No description provided for @vaultDisappearHour.
+  ///
+  /// In en, this message translates to:
+  /// **'After 1 hour'**
+  String get vaultDisappearHour;
+
+  /// No description provided for @vaultDisappearDay.
+  ///
+  /// In en, this message translates to:
+  /// **'After 1 day'**
+  String get vaultDisappearDay;
+
+  /// No description provided for @vaultDisappearWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'After 1 week'**
+  String get vaultDisappearWeek;
+
+  /// No description provided for @vaultDisappearMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'After 30 days'**
+  String get vaultDisappearMonth;
+
+  /// No description provided for @vaultDisappearOn.
+  ///
+  /// In en, this message translates to:
+  /// **'New vault photos and videos will now delete themselves. A timer marks them.'**
+  String get vaultDisappearOn;
+
+  /// No description provided for @vaultDisappearAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Disappear after…'**
+  String get vaultDisappearAfter;
+
+  /// No description provided for @vaultDisappearKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep (stop the timer)'**
+  String get vaultDisappearKeep;
+
+  /// No description provided for @vaultDisappearBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Disappears'**
+  String get vaultDisappearBadge;
+
   /// No description provided for @backupSpaceSaver.
   ///
   /// In en, this message translates to:
