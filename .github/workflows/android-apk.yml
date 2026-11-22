@@ -136,6 +136,10 @@ jobs:
       - name: Fetch the OCR language files
         run: tool/fetch_tessdata.sh
 
+      # The picture model for searching the vault by what is in a photo, bundled the same way.
+      - name: Fetch the picture search model
+        run: tool/fetch_vision_model.sh
+
       - name: Release checks
         # Shared by every Zero-Trust app (Zero-Trust-Core,
         # packages/zt_release_checks): key, sync and sign-in vectors run with

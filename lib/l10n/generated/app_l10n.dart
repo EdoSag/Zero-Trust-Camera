@@ -736,7 +736,7 @@ abstract class AppL10n {
   /// No description provided for @vaultSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Album, month, year or date'**
+  /// **'Album, date, what is in it, or text'**
   String get vaultSearchHint;
 
   /// No description provided for @vaultSearchDates.
@@ -1008,6 +1008,24 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'Disappears'**
   String get vaultDisappearBadge;
+
+  /// No description provided for @vaultContentSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by what is in photos'**
+  String get vaultContentSearch;
+
+  /// No description provided for @vaultContentSearchOn.
+  ///
+  /// In en, this message translates to:
+  /// **'The vault now looks at each photo on this phone, while it is open, so you can search for a dog, the beach or text in it. Nothing is uploaded.'**
+  String get vaultContentSearchOn;
+
+  /// No description provided for @vaultContentSearchOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by what is in photos is off, and what was worked out is forgotten.'**
+  String get vaultContentSearchOff;
 
   /// No description provided for @backupSpaceSaver.
   ///

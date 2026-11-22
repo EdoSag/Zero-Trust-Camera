@@ -64,6 +64,9 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
 
   /// Checks disappearing items while the vault is open.
   Timer? _disappearTimer;
+
+  /// Whether photos are being looked at for search right now.
+  bool _describing = false;
   bool _location = false;
   final Set<String> _selected = {};
   final Map<String, Future<Uint8List?>> _thumbs = {};
@@ -219,6 +222,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
         (_) => unawaited(_sweepDisappeared()),
       );
       unawaited(_autoBackup());
+      unawaited(_describeContent());
     } on VaultLockedException {
       await _refresh();
     }
@@ -531,6 +535,55 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     });
     await _save();
     unawaited(_autoBackup());
+  }
+
+  /// Works out what is in each photo not looked at yet (newest first), one
+  /// at a time and only while the vault stays open, for search. Saved in the
+  /// sealed library every few photos.
+  Future<void> _describeContent() async {
+    if (_describing) return;
+    _describing = true;
+    final locks = _lockCount;
+    var unsaved = 0;
+    bool open() => mounted && locks == _lockCount && _library.contentSearch;
+    try {
+      while (open()) {
+        final next = [
+          for (final i in _items)
+            if (!_library.content.containsKey(i.id)) i,
+        ].firstOrNull;
+        if (next == null) break;
+        VaultContent? found;
+        try {
+          found = await _vault.describe(next.id, isVideo: next.isVideo);
+          // The picture model is not in this build.
+          if (found == null) break;
+        } on VaultLockedException {
+          break;
+        } on Object {
+          // A photo that can't be opened is not tried again each time.
+          found = const VaultContent();
+        }
+        if (!open() || !_items.any((i) => i.id == next.id)) continue;
+        _library.content[next.id] = found;
+        // Results being shown take in what was just found.
+        if (_searching) setState(() {});
+        if (++unsaved >= 10) {
+          unsaved = 0;
+          await _save();
+        }
+      }
+    } finally {
+      _describing = false;
+      if (unsaved > 0 && mounted && locks == _lockCount) await _save();
+    }
+  }
+
+  Future<void> _setContentSearch(bool on) async {
+    setState(() => _library.setContentSearch(on));
+    await _save();
+    _say((l) => on ? l.vaultContentSearchOn : l.vaultContentSearchOff);
+    if (on) unawaited(_describeContent());
   }
 
   String _disappearLabel(AppL10n l, Duration d) => switch (d.inHours) {
@@ -887,6 +940,7 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                   1 => _setQuickHide(!_quickHide),
                   2 => _setLocation(!_location),
                   4 => _pickDisappearRule(),
+                  5 => _setContentSearch(!_library.contentSearch),
                   _ => _openAccountMedia(),
                 },
                 itemBuilder: (_) => [
@@ -907,6 +961,11 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
                     value: 4,
                     checked: _library.disappearAfter != null,
                     child: Text(l.vaultDisappearTitle),
+                  ),
+                  CheckedPopupMenuItem(
+                    value: 5,
+                    checked: _library.contentSearch,
+                    child: Text(l.vaultContentSearch),
                   ),
                 ],
               ),

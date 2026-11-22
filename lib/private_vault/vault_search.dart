@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
 import 'vault_backend.dart';
+import 'vault_content_words.dart';
 import 'vault_library.dart';
 
-/// A search of the Private vault by date and album. Everything is matched on
-/// the phone, against details the vault already opened: nothing is indexed
-/// or kept.
+/// A search of the Private vault by date, album and what is in a photo.
+/// Everything is matched on the phone, against details the vault already
+/// opened and what it worked out about each photo (VaultContent, kept in the
+/// sealed library).
 class VaultSearch {
   const VaultSearch({this.text = '', this.range});
 
-  /// Words typed: album names, a month, a year, a day of the month, or a
-  /// date such as 21/11/2026 or 2026-11-21.
+  /// Words typed: album names, a month, a year, a day of the month, a date
+  /// such as 21/11/2026 or 2026-11-21, what is in a photo (dog, beach, כלב)
+  /// or text in it.
   final String text;
 
   /// Only items taken from the start of the first day to the end of the last.
@@ -62,6 +65,7 @@ class VaultSearch {
                 i.takenAt,
                 albumNames[i.id] ?? const [],
                 months[i.takenAt.month] ?? const [],
+                library.content[i.id],
               ),
             ))
           i,
@@ -73,8 +77,10 @@ class VaultSearch {
     DateTime at,
     List<String> albums,
     List<String> monthNames,
+    VaultContent? content,
   ) {
     if (albums.any((a) => a.contains(w))) return true;
+    if (content != null && matchesContent(w, content)) return true;
     final number = int.tryParse(w);
     if (number != null) {
       // A year, or a day of the month.
@@ -88,6 +94,23 @@ class VaultSearch {
         date.$1 == at.year &&
         date.$2 == at.month &&
         (date.$3 == null || date.$3 == at.day);
+  }
+
+  /// Whether the word [w] (lower case) names what is in a photo, or is in
+  /// its text. "dog" finds every breed, "כלב" too; a label's own name
+  /// ("golden retriever") works as well.
+  static bool matchesContent(String w, VaultContent content) {
+    if (w.length < 2) return false;
+    final labels = [for (final l in content.labels) l.toLowerCase()];
+    if (labels.any((l) => l.contains(w))) return true;
+    if (content.text.toLowerCase().contains(w)) return true;
+    for (final c in contentCategories) {
+      if (c.names.any((n) => n.startsWith(w)) &&
+          content.labels.any(c.labels.contains)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// 2026-11-21, 21/11/2026, 21.11.2026, and without the day: 2026-11,
