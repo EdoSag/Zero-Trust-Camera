@@ -389,7 +389,7 @@ class AppL10nHe extends AppL10n {
   String get vaultSearchClose => 'סגירת החיפוש';
 
   @override
-  String get vaultSearchHint => 'אלבום, חודש, שנה או תאריך';
+  String get vaultSearchHint => 'אלבום, תאריך, מה יש בתמונה או טקסט';
 
   @override
   String get vaultSearchDates => 'בחירת תאריכים';
@@ -543,6 +543,17 @@ class AppL10nHe extends AppL10n {
 
   @override
   String get vaultDisappearBadge => 'נעלם';
+
+  @override
+  String get vaultContentSearch => 'חיפוש לפי מה שיש בתמונות';
+
+  @override
+  String get vaultContentSearchOn =>
+      'הכספת בודקת עכשיו כל תמונה בטלפון הזה, כשהיא פתוחה, כדי שאפשר יהיה לחפש כלב, חוף ים או טקסט שבתמונה. שום דבר לא עולה לרשת.';
+
+  @override
+  String get vaultContentSearchOff =>
+      'החיפוש לפי מה שיש בתמונות כבוי, ומה שנלמד עליהן נמחק.';
 
   @override
   String get backupSpaceSaver => 'חיסכון במקום';

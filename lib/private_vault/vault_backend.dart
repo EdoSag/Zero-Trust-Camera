@@ -1,6 +1,8 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'vault_library.dart';
+
 /// One photo or video in the Private vault. Its file stays sealed on the
 /// phone; these are only its details (opened by the native side).
 class VaultItem {
@@ -130,6 +132,10 @@ abstract class VaultBackend {
 
   /// The text in a photo, read on the phone; null when there is none.
   Future<String?> readText(String id);
+
+  /// What is in an item, worked out on the phone for search; null when it
+  /// can't be (the picture model is not in this build).
+  Future<VaultContent?> describe(String id, {required bool isVideo});
 
   /// Opens the photo editor; the edited copy is saved into the vault as a new photo.
   Future<void> editPhoto(String id);
@@ -350,6 +356,12 @@ class ChannelVaultBackend implements VaultBackend {
 
   @override
   Future<String?> readText(String id) => _call<String>('readText', {'id': id});
+
+  @override
+  Future<VaultContent?> describe(String id, {required bool isVideo}) async =>
+      VaultContent.fromNative(
+        await _call<Object>('describe', {'id': id, 'video': isVideo}),
+      );
 
   @override
   Future<void> editPhoto(String id) => _call<void>('editPhoto', {'id': id});

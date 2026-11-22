@@ -61,6 +61,10 @@ dependencies {
     // files are bundled at build time (tool/fetch_tessdata.sh).
     implementation("cz.adaptech.tesseract4android:tesseract4android:4.9.0")
 
+    // ZT Camera search by what is in a photo: LiteRT (TensorFlow Lite) runs a small image
+    // classifier on the phone. The model is bundled at build time (tool/fetch_vision_model.sh).
+    implementation("com.google.ai.edge.litert:litert:1.4.0")
+
     testImplementation("junit:junit:4.13.2")
     testImplementation("com.google.crypto.tink:tink:1.18.0")
 }

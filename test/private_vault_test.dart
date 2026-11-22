@@ -162,6 +162,18 @@ class FakeVault implements VaultBackend {
     return textInPhoto;
   }
 
+  /// What describe() finds; empty means this build has no picture model.
+  final contents = <String, VaultContent>{};
+  final described = <String>[];
+
+  @override
+  Future<VaultContent?> describe(String id, {required bool isVideo}) async {
+    _check();
+    if (contents.isEmpty) return null;
+    described.add(id);
+    return contents[id] ?? const VaultContent();
+  }
+
   final edited = <String>[];
 
   /// Files as sealed, for the backup tests.
@@ -335,6 +347,34 @@ void main() {
   final now = DateTime(2026, 11, 19, 12);
 
   group('library', () {
+    test('what is in photos: kept through JSON, forgotten with the item', () {
+      final lib = VaultLibrary()
+        ..content['x'] = const VaultContent(labels: ['pizza'], text: 'Menu')
+        ..content['y'] = const VaultContent();
+      var back = VaultLibrary.fromJson(lib.toJson());
+      expect(back.contentSearch, isTrue);
+      expect(back.content['x']!.labels, ['pizza']);
+      expect(back.content['x']!.text, 'Menu');
+      expect(back.content['y']!.labels, isEmpty);
+      back.forget(['x']);
+      expect(back.content.keys, ['y']);
+      back.keepOnly({'z'});
+      expect(back.content, isEmpty);
+      back
+        ..content['z'] = const VaultContent(labels: ['dog'])
+        ..setContentSearch(false);
+      back = VaultLibrary.fromJson(back.toJson());
+      expect(back.contentSearch, isFalse);
+      expect(back.content, isEmpty);
+      // Long text is cut; a build without the model sends nothing usable.
+      final long = VaultContent.fromNative({
+        'labels': ['menu'],
+        'text': 'a' * 5000,
+      })!;
+      expect(long.text, hasLength(VaultContent.maxText));
+      expect(VaultContent.fromNative({'labels': null, 'text': null}), isNull);
+    });
+
     test('keeps albums, favourites and the trash through JSON', () {
       final lib = VaultLibrary();
       lib.addAlbum('Trip', 'a1');
@@ -453,6 +493,39 @@ void main() {
       expect(ids(const VaultSearch(text: 'march 2026')), isEmpty);
       // Two letters are too few for a month.
       expect(ids(const VaultSearch(text: 'no')), isEmpty);
+    });
+
+    test('what is in a photo, and text in it', () {
+      final seen = VaultLibrary()
+        ..content['a'] = const VaultContent(labels: ['golden retriever'])
+        ..content['b'] = const VaultContent(
+          labels: ['seashore'],
+          text: 'Total 42.50 שקל',
+        )
+        ..content['c'] = const VaultContent(labels: ['pizza']);
+      List<String> found(String text) => [
+        for (final i in VaultSearch(
+          text: text,
+        ).apply([a, b, c], seen, months: _months))
+          i.id,
+      ];
+      // A kind of thing, in English or Hebrew, or the model's own label.
+      expect(found('dog'), ['a']);
+      expect(found('כלב'), ['a']);
+      expect(found('retriever'), ['a']);
+      expect(found('beach'), ['b']);
+      expect(found('ים'), ['b']);
+      expect(found('food'), ['c']);
+      expect(found('אוכל'), ['c']);
+      // Text read in the photo.
+      expect(found('total'), ['b']);
+      expect(found('שקל'), ['b']);
+      // With a date too.
+      expect(found('dog 2026'), ['a']);
+      expect(found('dog 2025'), isEmpty);
+      expect(found('cat'), isEmpty);
+      // One letter is too few.
+      expect(VaultSearch.matchesContent('d', seen.content['a']!), isFalse);
     });
 
     test('a date range takes its whole last day', () {
@@ -926,6 +999,53 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('a')), findsOneWidget);
       expect(find.byKey(const ValueKey('b')), findsOneWidget);
+    });
+
+    testWidgets('search by what is in photos: looked at on open, off forgets', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(
+        unlocked: true,
+        items: [_item('a', now), _item('b', now, video: true)],
+      )..contents['a'] = const VaultContent(labels: ['tabby']);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Both looked at once, and kept in the sealed library.
+      expect(vault.described, unorderedEquals(['a', 'b']));
+      var saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.content['a']!.labels, ['tabby']);
+      expect(saved.content.keys, unorderedEquals(['a', 'b']));
+      await tester.tap(find.byTooltip('Search'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('vault_search')), 'cat');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byKey(const ValueKey('b')), findsNothing);
+      await tester.tap(find.byTooltip('Close search'));
+      await tester.pumpAndSettle();
+      // Turned off from More: what was worked out is forgotten.
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search by what is in photos'));
+      await tester.pumpAndSettle();
+      saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.contentSearch, isFalse);
+      expect(saved.content, isEmpty);
+      expect(find.textContaining('is off'), findsOneWidget);
+      // On again: looked at again.
+      vault.described.clear();
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search by what is in photos'));
+      await tester.pumpAndSettle();
+      expect(vault.described, unorderedEquals(['a', 'b']));
+      expect(VaultLibrary.fromJson(vault.state).content, hasLength(2));
     });
 
     testWidgets('quick hide: turned on from More, face down locks', (

@@ -392,7 +392,7 @@ class AppL10nEn extends AppL10n {
   String get vaultSearchClose => 'Close search';
 
   @override
-  String get vaultSearchHint => 'Album, month, year or date';
+  String get vaultSearchHint => 'Album, date, what is in it, or text';
 
   @override
   String get vaultSearchDates => 'Pick dates';
@@ -546,6 +546,17 @@ class AppL10nEn extends AppL10n {
 
   @override
   String get vaultDisappearBadge => 'Disappears';
+
+  @override
+  String get vaultContentSearch => 'Search by what is in photos';
+
+  @override
+  String get vaultContentSearchOn =>
+      'The vault now looks at each photo on this phone, while it is open, so you can search for a dog, the beach or text in it. Nothing is uploaded.';
+
+  @override
+  String get vaultContentSearchOff =>
+      'Search by what is in photos is off, and what was worked out is forgotten.';
 
   @override
   String get backupSpaceSaver => 'Space saver';

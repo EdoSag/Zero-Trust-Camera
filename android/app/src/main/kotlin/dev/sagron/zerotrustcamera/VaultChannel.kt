@@ -23,6 +23,7 @@ import android.view.WindowManager
 import androidx.core.content.FileProvider
 import androidx.fragment.app.FragmentActivity
 import dev.sagron.zerotrustcamera.capture.CamConfig
+import dev.sagron.zerotrustcamera.capture.zt.Describe
 import dev.sagron.zerotrustcamera.capture.zt.Ocr
 import dev.sagron.zerotrustcamera.capture.zt.PhotoEditActivity
 import dev.sagron.zerotrustcamera.capture.zt.VaultKeys
@@ -266,6 +267,39 @@ class VaultChannel(
                 ) { d, _, _ -> d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE }
                 bytes.fill(0)
                 Ocr.read(ctx, bmp).also { bmp.recycle() }
+            }
+            // For searching the vault by what is in a photo: its labels and its text, worked
+            // out on the phone. A video is described from its thumbnail, without text.
+            "describe" -> unlocked(result) { priv ->
+                val id = call.argument<String>("id")!!
+                val video = call.argument<Boolean>("video") == true
+                val bytes = (if (video) VaultStore.thumb(ctx, id, priv) else VaultStore.media(ctx, id, priv))
+                    ?: return@unlocked null
+                val bmp = try {
+                    android.graphics.ImageDecoder.decodeBitmap(
+                        android.graphics.ImageDecoder.createSource(java.nio.ByteBuffer.wrap(bytes))
+                    ) { d, info, _ ->
+                        d.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                        // Big enough to read text, small enough to be quick.
+                        val longest = maxOf(info.size.width, info.size.height)
+                        if (longest > 2048) {
+                            d.setTargetSize(
+                                info.size.width * 2048 / longest,
+                                info.size.height * 2048 / longest,
+                            )
+                        }
+                    }
+                } finally {
+                    bytes.fill(0)
+                }
+                try {
+                    mapOf(
+                        "labels" to Describe.labels(ctx, bmp),
+                        "text" to if (video) null else Ocr.read(ctx, bmp),
+                    )
+                } finally {
+                    bmp.recycle()
+                }
             }
             "editPhoto" -> {
                 if (!VaultSession.isUnlocked) {

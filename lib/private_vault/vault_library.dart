@@ -14,7 +14,10 @@ class VaultLibrary {
     Set<String>? disappearKept,
     this.disappearAfter,
     this.disappearSince,
-  }) : albums = albums ?? {},
+    Map<String, VaultContent>? content,
+    this.contentSearch = true,
+  }) : content = content ?? {},
+       albums = albums ?? {},
        favourites = favourites ?? {},
        trashed = trashed ?? {},
        backup = backup ?? BackupSettings(),
@@ -64,6 +67,14 @@ class VaultLibrary {
 
   /// Items taken under the rule that were kept (taken off the timer) by hand.
   final Set<String> disappearKept;
+
+  /// What is in each item, worked out on the phone for search (see
+  /// VaultContent). Kept only here, in the sealed library: never backed up.
+  final Map<String, VaultContent> content;
+
+  /// Whether the vault works out what is in photos for search. On by
+  /// default; turning it off forgets what was worked out.
+  bool contentSearch;
 
   factory VaultLibrary.fromJson(String? text) {
     if (text == null || text.isEmpty) return VaultLibrary();
@@ -124,6 +135,12 @@ class VaultLibrary {
           final num ms => DateTime.fromMillisecondsSinceEpoch(ms.toInt()),
           _ => null,
         },
+        content: {
+          for (final e
+              in (m['content'] as Map<String, Object?>? ?? const {}).entries)
+            if (VaultContent.fromJson(e.value) case final c?) e.key: c,
+        },
+        contentSearch: m['contentSearch'] != false,
       );
     } on Object {
       return VaultLibrary();
@@ -150,7 +167,15 @@ class VaultLibrary {
     'disappearKept': disappearKept.toList(),
     'disappearAfter': disappearAfter?.inMilliseconds,
     'disappearSince': disappearSince?.millisecondsSinceEpoch,
+    'content': {for (final e in content.entries) e.key: e.value.toJson()},
+    'contentSearch': contentSearch,
   });
+
+  /// Turns working out what is in photos on or off. Off forgets it all.
+  void setContentSearch(bool on) {
+    contentSearch = on;
+    if (!on) content.clear();
+  }
 
   bool isDisappearing(String id) => disappearAt.containsKey(id);
 
@@ -237,6 +262,7 @@ class VaultLibrary {
     trashed.removeWhere((id, _) => gone.contains(id));
     disappearAt.removeWhere((id, _) => gone.contains(id));
     disappearKept.removeAll(gone);
+    content.removeWhere((id, _) => gone.contains(id));
     for (final a in albums.values) {
       a.items.removeWhere(gone.contains);
     }
@@ -252,6 +278,7 @@ class VaultLibrary {
         ...trashed.keys,
         ...disappearAt.keys,
         ...disappearKept,
+        ...content.keys,
         for (final a in albums.values) ...a.items,
       }.difference(existing),
     );
@@ -385,4 +412,48 @@ class VaultAlbum {
   final String id;
   String name;
   final List<String> items;
+}
+
+/// What is in one vault item, worked out on the phone: labels from the
+/// picture model (English, ImageNet's names) and the text read in a photo.
+class VaultContent {
+  const VaultContent({this.labels = const [], this.text = ''});
+
+  /// Text beyond this is not kept: enough to find a receipt or a sign.
+  static const maxText = 2000;
+
+  final List<String> labels;
+  final String text;
+
+  static VaultContent? fromJson(Object? v) {
+    if (v is! Map<String, Object?>) return null;
+    return VaultContent(
+      labels: [
+        for (final l in (v['l'] as List<Object?>? ?? const []))
+          if (l is String) l,
+      ],
+      text: v['t'] as String? ?? '',
+    );
+  }
+
+  /// From what the phone sends back; null when it can't be worked out (the
+  /// model is not in this build).
+  static VaultContent? fromNative(Object? v) {
+    if (v is! Map) return null;
+    final labels = v['labels'];
+    if (labels is! List) return null;
+    final text = (v['text'] as String? ?? '').trim();
+    return VaultContent(
+      labels: [
+        for (final l in labels)
+          if (l is String) l,
+      ],
+      text: text.length > maxText ? text.substring(0, maxText) : text,
+    );
+  }
+
+  Map<String, Object?> toJson() => {
+    'l': labels,
+    if (text.isNotEmpty) 't': text,
+  };
 }
