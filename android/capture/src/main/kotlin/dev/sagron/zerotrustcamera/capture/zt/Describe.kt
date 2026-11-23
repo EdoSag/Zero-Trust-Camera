@@ -3,6 +3,7 @@ package dev.sagron.zerotrustcamera.capture.zt
 import android.content.Context
 import android.graphics.Bitmap
 import android.util.Log
+import org.tensorflow.lite.DataType
 import org.tensorflow.lite.Interpreter
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -30,6 +31,10 @@ object Describe {
     private var interpreter: Interpreter? = null
     private var labels: List<String> = emptyList()
 
+    /** What each 0-255 colour value becomes in the model's input (see [ModelInput]). */
+    private var table: ByteArray? = null
+    private var floats = false
+
     fun available(ctx: Context): Boolean =
         ctx.assets.list("vision").orEmpty().contains("efficientnet_lite0.tflite")
 
@@ -40,7 +45,16 @@ object Describe {
         val model = ByteBuffer.allocateDirect(bytes.size).order(ByteOrder.nativeOrder())
         model.put(bytes).rewind()
         labels = ctx.assets.open(LABELS).bufferedReader().readLines()
-        return Interpreter(model, Interpreter.Options().setNumThreads(2)).also { interpreter = it }
+        val loaded = Interpreter(model, Interpreter.Options().setNumThreads(2))
+        // Fill the input the way the model was trained: each colour normalized, then
+        // quantized with the input's own scale and zero point (read from the model file).
+        val input = loaded.getInputTensor(0)
+        floats = input.dataType() == DataType.FLOAT32
+        if (!floats) {
+            val q = input.quantizationParams()
+            table = ModelInput.table(q.scale, q.zeroPoint)
+        }
+        return loaded.also { interpreter = it }
     }
 
     /**
@@ -66,7 +80,7 @@ object Describe {
         }
     }
 
-    /** The middle square of [bitmap] at 224 by 224, as the RGB bytes the model takes. */
+    /** The middle square of [bitmap] at 224 by 224, as the RGB input the model takes. */
     private fun pixels(bitmap: Bitmap): ByteBuffer {
         val side = minOf(bitmap.width, bitmap.height)
         val square = Bitmap.createBitmap(
@@ -77,13 +91,45 @@ object Describe {
         scaled.getPixels(argb, 0, SIZE, 0, 0, SIZE, SIZE)
         if (scaled !== square) scaled.recycle()
         if (square !== bitmap) square.recycle()
-        val buffer = ByteBuffer.allocateDirect(SIZE * SIZE * 3).order(ByteOrder.nativeOrder())
+        val perValue = if (floats) 4 else 1
+        val buffer = ByteBuffer.allocateDirect(SIZE * SIZE * 3 * perValue)
+            .order(ByteOrder.nativeOrder())
+        val map = table
         for (p in argb) {
-            buffer.put((p shr 16 and 0xff).toByte())
-            buffer.put((p shr 8 and 0xff).toByte())
-            buffer.put((p and 0xff).toByte())
+            for (shift in intArrayOf(16, 8, 0)) {
+                val v = p shr shift and 0xff
+                when {
+                    floats -> buffer.putFloat(ModelInput.normalize(v))
+                    map != null -> buffer.put(map[v])
+                    else -> buffer.put(v.toByte())
+                }
+            }
         }
         buffer.rewind()
         return buffer
+    }
+}
+
+/**
+ * How a colour value (0-255) becomes the picture model's input. EfficientNet-Lite was trained
+ * on colours normalized as (value - 127) / 128; its int8 file then stores that number
+ * quantized as round(normalized / scale) + zeroPoint. Without this, black and white reach the
+ * model as 0 and 255 instead of about 52 and 211, and the labels come out worse.
+ */
+object ModelInput {
+    private const val MEAN = 127f
+    private const val STD = 128f
+
+    @JvmStatic
+    fun normalize(value: Int): Float = (value - MEAN) / STD
+
+    /** For each colour value 0-255, the quantized byte the model takes (unsigned 0-255). */
+    @JvmStatic
+    fun table(scale: Float, zeroPoint: Int): ByteArray = ByteArray(256) { v ->
+        if (scale == 0f) {
+            v.toByte() // Not quantized: nothing to map.
+        } else {
+            (Math.round(normalize(v) / scale) + zeroPoint).coerceIn(0, 255).toByte()
+        }
     }
 }
