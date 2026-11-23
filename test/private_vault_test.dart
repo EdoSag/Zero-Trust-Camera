@@ -312,6 +312,21 @@ class _OtherPhoneStore implements BackupStore {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+/// An account holding the backed-up copy of 'a' (m1), noting deletions.
+class _DeletingStore extends _OtherPhoneStore {
+  final deletedMedia = <String>[];
+  bool gone = false;
+
+  @override
+  Future<List<CameraMedia>> media() async => gone ? const [] : [photo];
+
+  @override
+  Future<void> deleteMedia(CameraMedia m) async {
+    deletedMedia.add(m.id);
+    gone = true;
+  }
+}
+
 /// An account that only counts how often the backup looked at it.
 class _CountingStore implements BackupStore {
   int looks = 0;
@@ -794,6 +809,50 @@ void main() {
       expect(saved.disappearAt, isEmpty);
       expect(saved.disappearKept, {'a'});
       expect(find.byIcon(Icons.timer_outlined), findsNothing);
+    });
+
+    testWidgets('a timer deletes the account copy at once, off Wi-Fi too', (
+      tester,
+    ) async {
+      _phone(tester);
+      final lib = VaultLibrary()
+        ..backup.account = 'u1'
+        ..backup.on = true
+        ..backup.chargingOnly = true;
+      lib.backedUp['a'] = 'm1';
+      // Neither Wi-Fi nor the charger: no upload would run now.
+      final vault = FakeVault(
+        unlocked: true,
+        items: [_item('a', now)],
+        state: lib.toJson(),
+      )..conditions = const BackupConditions(unmetered: false, charging: false);
+      final store = _DeletingStore();
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [
+            vaultBackendProvider.overrideWithValue(vault),
+            backupStoreProvider.overrideWithValue(store),
+            backupAccountProvider.overrideWithValue('u1'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(store.deletedMedia, isEmpty);
+
+      await tester.longPress(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PopupMenuButton<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappear after…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('After 1 hour'));
+      await tester.pumpAndSettle();
+
+      expect(store.deletedMedia, ['m1']);
+      final saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.backedUp, isEmpty);
+      expect(saved.backupDeletes, isEmpty);
     });
 
     testWidgets('sharing and saving go through the cleaning native side', (
