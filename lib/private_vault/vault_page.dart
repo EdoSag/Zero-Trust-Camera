@@ -671,6 +671,44 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       _selected.clear();
     });
     await _save();
+    // A copy already in the account goes now, not when the timer ends.
+    if (picked != Duration.zero) unawaited(_deleteQueuedCopies());
+  }
+
+  /// Deletes the account copies queued for deletion (items put on a timer or
+  /// deleted for good) straight away. The backup rules (Wi-Fi only, while
+  /// charging) are for uploads, so they don't hold this back: a disappearing
+  /// item's copy must leave the account when its timer starts.
+  Future<void> _deleteQueuedCopies() async {
+    if (ref.read(offlineBuildProvider)) return;
+    if (_library.backupDeletes.isEmpty) return;
+    final account = ref.read(backupAccountProvider);
+    if (account == null || !_library.backupFor(account)) return;
+    final library = _library;
+    final locks = _lockCount;
+    try {
+      final engine = VaultBackup(
+        vault: _vault,
+        store: ref.read(backupStoreProvider),
+        account: account,
+      );
+      // When a backup is running it deletes them itself first.
+      await VaultBackup.exclusive(() async {
+        final queued = library.backupDeletes.toSet();
+        await engine.deletePending(library);
+        if (locks != _lockCount) return;
+        if (!identical(library, _library)) {
+          // The list was read again meanwhile: the deleted copies leave the
+          // queue of the one in use now (anything queued since stays).
+          _library.backupDeletes.removeAll(
+            queued.difference(library.backupDeletes),
+          );
+        }
+        await _save();
+      });
+    } on Object {
+      // Offline: they stay queued and the next backup deletes them.
+    }
   }
 
   Future<void> _deleteForever(List<String> ids) async {
@@ -702,8 +740,10 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
       _selected.clear();
     });
     await _save();
-    // Their backed-up copies go too (queued by forget).
-    unawaited(_autoBackup());
+    // Their backed-up copies go too (queued by forget), whatever the
+    // backup rules say.
+    // One after the other: two at once would skip the backup.
+    unawaited(_deleteQueuedCopies().then((_) => _autoBackup()));
   }
 
   Future<void> _saveToGallery(List<String> ids) async {
