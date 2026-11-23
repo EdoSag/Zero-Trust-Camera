@@ -108,6 +108,24 @@ Two parts in one APK:
   plain photo, since its HDR part lives in the details that are cut out. Shared copies sit in the app's cache and are wiped on the next
   unlock. Imported originals stay in the gallery (Android's photo picker can't
   delete them), and the app says so.
+- **Disappearing photos.** Off by default. In the vault's More menu, new
+  photos and videos can be set to delete themselves for good after 1 hour,
+  1 day, 1 week or 30 days (counted from when each was taken), and any item
+  can be put on a timer or taken off it by hand. They skip the trash and are
+  never backed up (a copy already in the account is deleted when the timer
+  starts), and a video open in the player closes when it goes. The timers live in the sealed library, so an item whose
+  time is up is deleted the next time the vault opens, before anything is
+  shown, and every 30 seconds while it is open.
+
+- **Search by what is in photos.** On by default, switched off in the
+  vault's More menu (which also forgets what was worked out). While the vault
+  is open, each photo is looked at on the phone, one at a time: a small
+  picture model (MediaPipe EfficientNet-Lite0, Apache 2.0, run with LiteRT)
+  names what is in it, and Tesseract reads its text. Videos are looked at
+  from their thumbnail. The results live only in the sealed library, are
+  never backed up, and let the search bar find "dog", "beach", "food",
+  "כלב", "ים" or a word written in the photo. The model is fetched at build
+  time by `tool/fetch_vision_model.sh` and checked against a pinned SHA-256.
 
 ## Building
 

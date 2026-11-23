@@ -162,6 +162,18 @@ class FakeVault implements VaultBackend {
     return textInPhoto;
   }
 
+  /// What describe() finds; empty means this build has no picture model.
+  final contents = <String, VaultContent>{};
+  final described = <String>[];
+
+  @override
+  Future<VaultContent?> describe(String id, {required bool isVideo}) async {
+    _check();
+    if (contents.isEmpty) return null;
+    described.add(id);
+    return contents[id] ?? const VaultContent();
+  }
+
   final edited = <String>[];
 
   /// Files as sealed, for the backup tests.
@@ -300,6 +312,21 @@ class _OtherPhoneStore implements BackupStore {
   dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
+/// An account holding the backed-up copy of 'a' (m1), noting deletions.
+class _DeletingStore extends _OtherPhoneStore {
+  final deletedMedia = <String>[];
+  bool gone = false;
+
+  @override
+  Future<List<CameraMedia>> media() async => gone ? const [] : [photo];
+
+  @override
+  Future<void> deleteMedia(CameraMedia m) async {
+    deletedMedia.add(m.id);
+    gone = true;
+  }
+}
+
 /// An account that only counts how often the backup looked at it.
 class _CountingStore implements BackupStore {
   int looks = 0;
@@ -335,6 +362,34 @@ void main() {
   final now = DateTime(2026, 11, 19, 12);
 
   group('library', () {
+    test('what is in photos: kept through JSON, forgotten with the item', () {
+      final lib = VaultLibrary()
+        ..content['x'] = const VaultContent(labels: ['pizza'], text: 'Menu')
+        ..content['y'] = const VaultContent();
+      var back = VaultLibrary.fromJson(lib.toJson());
+      expect(back.contentSearch, isTrue);
+      expect(back.content['x']!.labels, ['pizza']);
+      expect(back.content['x']!.text, 'Menu');
+      expect(back.content['y']!.labels, isEmpty);
+      back.forget(['x']);
+      expect(back.content.keys, ['y']);
+      back.keepOnly({'z'});
+      expect(back.content, isEmpty);
+      back
+        ..content['z'] = const VaultContent(labels: ['dog'])
+        ..setContentSearch(false);
+      back = VaultLibrary.fromJson(back.toJson());
+      expect(back.contentSearch, isFalse);
+      expect(back.content, isEmpty);
+      // Long text is cut; a build without the model sends nothing usable.
+      final long = VaultContent.fromNative({
+        'labels': ['menu'],
+        'text': 'a' * 5000,
+      })!;
+      expect(long.text, hasLength(VaultContent.maxText));
+      expect(VaultContent.fromNative({'labels': null, 'text': null}), isNull);
+    });
+
     test('keeps albums, favourites and the trash through JSON', () {
       final lib = VaultLibrary();
       lib.addAlbum('Trip', 'a1');
@@ -365,6 +420,45 @@ void main() {
       expect(lib.albums['a']!.items, ['y']);
       expect(lib.favourites, {'y'});
       expect(lib.trashed, isEmpty);
+    });
+
+    test('disappearing: the rule times new items, keep stops it', () {
+      final lib = VaultLibrary()
+        ..setDisappearRule(const Duration(days: 1), now);
+      final changed = lib.applyDisappearRule([
+        (id: 'before', takenAt: now.subtract(const Duration(minutes: 1))),
+        (id: 'after', takenAt: now.add(const Duration(hours: 2))),
+      ]);
+      expect(changed, isTrue);
+      // Only what was taken since the rule went on.
+      expect(lib.disappearAt, {'after': now.add(const Duration(hours: 26))});
+      expect(lib.disappeared(now.add(const Duration(hours: 25))), isEmpty);
+      expect(lib.disappeared(now.add(const Duration(hours: 26))), ['after']);
+
+      // Kept by hand: the rule doesn't put it back.
+      lib.keep(['after']);
+      expect(
+        lib.applyDisappearRule([
+          (id: 'after', takenAt: now.add(const Duration(hours: 2))),
+        ]),
+        isFalse,
+      );
+      expect(lib.disappearAt, isEmpty);
+
+      // Through JSON.
+      lib.disappear(['x'], now);
+      final back = VaultLibrary.fromJson(lib.toJson());
+      expect(back.disappearAfter, const Duration(days: 1));
+      expect(back.disappearSince, now);
+      expect(back.disappearAt, {'x': now});
+      expect(back.disappearKept, {'after'});
+
+      // Off: nothing new is timed; timers already set stay.
+      back.setDisappearRule(null, now);
+      expect(back.disappearSince, isNull);
+      expect(back.disappearAt, {'x': now});
+      back.forget(['x']);
+      expect(back.disappearAt, isEmpty);
     });
 
     test('a damaged state file opens as empty, not as an error', () {
@@ -414,6 +508,39 @@ void main() {
       expect(ids(const VaultSearch(text: 'march 2026')), isEmpty);
       // Two letters are too few for a month.
       expect(ids(const VaultSearch(text: 'no')), isEmpty);
+    });
+
+    test('what is in a photo, and text in it', () {
+      final seen = VaultLibrary()
+        ..content['a'] = const VaultContent(labels: ['golden retriever'])
+        ..content['b'] = const VaultContent(
+          labels: ['seashore'],
+          text: 'Total 42.50 שקל',
+        )
+        ..content['c'] = const VaultContent(labels: ['pizza']);
+      List<String> found(String text) => [
+        for (final i in VaultSearch(
+          text: text,
+        ).apply([a, b, c], seen, months: _months))
+          i.id,
+      ];
+      // A kind of thing, in English or Hebrew, or the model's own label.
+      expect(found('dog'), ['a']);
+      expect(found('כלב'), ['a']);
+      expect(found('retriever'), ['a']);
+      expect(found('beach'), ['b']);
+      expect(found('ים'), ['b']);
+      expect(found('food'), ['c']);
+      expect(found('אוכל'), ['c']);
+      // Text read in the photo.
+      expect(found('total'), ['b']);
+      expect(found('שקל'), ['b']);
+      // With a date too.
+      expect(found('dog 2026'), ['a']);
+      expect(found('dog 2025'), isEmpty);
+      expect(found('cat'), isEmpty);
+      // One letter is too few.
+      expect(VaultSearch.matchesContent('d', seen.content['a']!), isFalse);
     });
 
     test('a date range takes its whole last day', () {
@@ -590,6 +717,142 @@ void main() {
       ]);
       expect(jsonDecode(vault.state!)['trashed'], isEmpty);
       expect(find.byKey(const ValueKey('kept')), findsOneWidget);
+    });
+
+    testWidgets('disappearing items go when their time is up', (tester) async {
+      _phone(tester);
+      final lib = VaultLibrary()
+        ..disappear(['due'], now)
+        ..disappear(['later'], now.add(const Duration(hours: 1)));
+      final vault = FakeVault(
+        unlocked: true,
+        items: [_item('due', now), _item('later', now), _item('plain', now)],
+        state: lib.toJson(),
+      );
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Gone before anything was shown, and not to the trash.
+      expect(vault.deleted, [
+        ['due'],
+      ]);
+      expect(find.byKey(const ValueKey('due')), findsNothing);
+      expect(jsonDecode(vault.state!)['trashed'], isEmpty);
+      // The one still waiting has a timer on it, top end.
+      final timer = find.descendant(
+        of: find.byKey(const ValueKey('later')),
+        matching: find.byIcon(Icons.timer_outlined),
+      );
+      expect(timer, findsOneWidget);
+      final tile = tester.getRect(find.byKey(const ValueKey('later')));
+      expect(tester.getRect(timer).center.dx, greaterThan(tile.center.dx));
+      expect(tester.getRect(timer).center.dy, lessThan(tile.center.dy));
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('plain')),
+          matching: find.byIcon(Icons.timer_outlined),
+        ),
+        findsNothing,
+      );
+    });
+
+    testWidgets('disappearing photos: turned on from the menu, kept by hand', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(unlocked: true, items: [_item('a', now)]);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappearing photos'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('After 1 day'));
+      await tester.pumpAndSettle();
+      var saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.disappearAfter, const Duration(days: 1));
+      expect(saved.disappearSince, now);
+      // An item already there is left alone.
+      expect(saved.disappearAt, isEmpty);
+
+      // One by hand, then kept.
+      await tester.longPress(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PopupMenuButton<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappear after…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('After 1 hour'));
+      await tester.pumpAndSettle();
+      saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.disappearAt, {'a': now.add(const Duration(hours: 1))});
+      expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
+
+      await tester.longPress(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PopupMenuButton<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappear after…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Keep (stop the timer)'));
+      await tester.pumpAndSettle();
+      saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.disappearAt, isEmpty);
+      expect(saved.disappearKept, {'a'});
+      expect(find.byIcon(Icons.timer_outlined), findsNothing);
+    });
+
+    testWidgets('a timer deletes the account copy at once, off Wi-Fi too', (
+      tester,
+    ) async {
+      _phone(tester);
+      final lib = VaultLibrary()
+        ..backup.account = 'u1'
+        ..backup.on = true
+        ..backup.chargingOnly = true;
+      lib.backedUp['a'] = 'm1';
+      // Neither Wi-Fi nor the charger: no upload would run now.
+      final vault = FakeVault(
+        unlocked: true,
+        items: [_item('a', now)],
+        state: lib.toJson(),
+      )..conditions = const BackupConditions(unmetered: false, charging: false);
+      final store = _DeletingStore();
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [
+            vaultBackendProvider.overrideWithValue(vault),
+            backupStoreProvider.overrideWithValue(store),
+            backupAccountProvider.overrideWithValue('u1'),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(store.deletedMedia, isEmpty);
+
+      await tester.longPress(find.byKey(const ValueKey('a')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(PopupMenuButton<int>).last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Disappear after…'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('After 1 hour'));
+      await tester.pumpAndSettle();
+
+      expect(store.deletedMedia, ['m1']);
+      final saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.backedUp, isEmpty);
+      expect(saved.backupDeletes, isEmpty);
     });
 
     testWidgets('sharing and saving go through the cleaning native side', (
@@ -797,6 +1060,53 @@ void main() {
       expect(find.byKey(const ValueKey('b')), findsOneWidget);
     });
 
+    testWidgets('search by what is in photos: looked at on open, off forgets', (
+      tester,
+    ) async {
+      _phone(tester);
+      final vault = FakeVault(
+        unlocked: true,
+        items: [_item('a', now), _item('b', now, video: true)],
+      )..contents['a'] = const VaultContent(labels: ['tabby']);
+      await tester.pumpWidget(
+        app(
+          PrivateVaultPage(now: () => now),
+          overrides: [vaultBackendProvider.overrideWithValue(vault)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Both looked at once, and kept in the sealed library.
+      expect(vault.described, unorderedEquals(['a', 'b']));
+      var saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.content['a']!.labels, ['tabby']);
+      expect(saved.content.keys, unorderedEquals(['a', 'b']));
+      await tester.tap(find.byTooltip('Search'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byKey(const ValueKey('vault_search')), 'cat');
+      await tester.pumpAndSettle();
+      expect(find.byKey(const ValueKey('a')), findsOneWidget);
+      expect(find.byKey(const ValueKey('b')), findsNothing);
+      await tester.tap(find.byTooltip('Close search'));
+      await tester.pumpAndSettle();
+      // Turned off from More: what was worked out is forgotten.
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search by what is in photos'));
+      await tester.pumpAndSettle();
+      saved = VaultLibrary.fromJson(vault.state);
+      expect(saved.contentSearch, isFalse);
+      expect(saved.content, isEmpty);
+      expect(find.textContaining('is off'), findsOneWidget);
+      // On again: looked at again.
+      vault.described.clear();
+      await tester.tap(find.byTooltip('More'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Search by what is in photos'));
+      await tester.pumpAndSettle();
+      expect(vault.described, unorderedEquals(['a', 'b']));
+      expect(VaultLibrary.fromJson(vault.state).content, hasLength(2));
+    });
+
     testWidgets('quick hide: turned on from More, face down locks', (
       tester,
     ) async {
@@ -858,7 +1168,7 @@ void main() {
       await tester.tap(find.byTooltip('More'));
       await tester.pumpAndSettle();
       expect(find.text('Add location to vault photos'), findsOneWidget);
-      await tester.tap(find.byType(CheckedPopupMenuItem<int>).last);
+      await tester.tap(find.text('Add location to vault photos'));
       await tester.pumpAndSettle();
       expect(vault.location.on, isTrue);
       expect(find.textContaining('inside the vault only'), findsOneWidget);

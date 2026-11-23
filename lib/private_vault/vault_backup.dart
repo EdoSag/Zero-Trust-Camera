@@ -295,7 +295,9 @@ class VaultBackup {
     final inAlbums = {for (final id in s.albums) ...?library.albums[id]?.items};
     return [
       for (final i in items)
+        // Disappearing items never leave the phone.
         if (!library.isTrashed(i.id) &&
+            !library.isDisappearing(i.id) &&
             (s.everything || inAlbums.contains(i.id)) &&
             (!i.isVideo || s.videos))
           i,
@@ -335,6 +337,9 @@ class VaultBackup {
         allowed == null || uploads++ == 0 || await allowed();
     for (final item in todo) {
       progress?.call(step++, todo.length);
+      // Put on a timer since the list was made (the vault stays usable while
+      // a backup runs): it never leaves the phone.
+      if (library.isDisappearing(item.id)) continue;
       final favourite = library.favourites.contains(item.id);
       final albums = library.albumsOf(item.id);
       final mediaId = library.backedUp[item.id];
@@ -385,6 +390,10 @@ class VaultBackup {
             lon: item.lon,
             thumb: await _uploadThumb(item.id),
           );
+          if (library.isDisappearing(item.id)) {
+            await _discardAll([...uploaded, media.thumb]);
+            continue;
+          }
           await store.saveMedia(media);
           library.backedUp[item.id] = media.id;
           done++;
@@ -432,6 +441,11 @@ class VaultBackup {
           saver: small != null,
           thumb: await _uploadThumb(item.id),
         );
+        // Put on a timer while it went up: what went up comes down again.
+        if (library.isDisappearing(item.id)) {
+          await _discardAll([ref, media.thumb]);
+          continue;
+        }
         await store.saveMedia(media);
         library.backedUp[item.id] = media.id;
         done++;
@@ -451,6 +465,18 @@ class VaultBackup {
     }
     progress?.call(todo.length, todo.length);
     return BackupResult(done: done, tooLarge: tooLarge, failed: failed);
+  }
+
+  /// Deletes files that went up but are not to be kept.
+  Future<void> _discardAll(List<ZtAttachmentRef?> refs) async {
+    for (final ref in refs) {
+      if (ref == null) continue;
+      try {
+        await store.discard(ref);
+      } on Object {
+        // Left behind; it counts toward storage until deleted.
+      }
+    }
   }
 
   /// The item's small preview, uploaded for other phones to show. Null when

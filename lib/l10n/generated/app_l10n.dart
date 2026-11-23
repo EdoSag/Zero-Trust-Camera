@@ -736,7 +736,7 @@ abstract class AppL10n {
   /// No description provided for @vaultSearchHint.
   ///
   /// In en, this message translates to:
-  /// **'Album, month, year or date'**
+  /// **'Album, date, what is in it, or text'**
   String get vaultSearchHint;
 
   /// No description provided for @vaultSearchDates.
@@ -942,6 +942,90 @@ abstract class AppL10n {
   /// In en, this message translates to:
   /// **'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.'**
   String get vaultLocationOn;
+
+  /// No description provided for @vaultDisappearTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Disappearing photos'**
+  String get vaultDisappearTitle;
+
+  /// No description provided for @vaultDisappearBody.
+  ///
+  /// In en, this message translates to:
+  /// **'New photos and videos in the vault delete themselves for good after this time. They skip the trash and are never backed up. Items you already have stay as they are.'**
+  String get vaultDisappearBody;
+
+  /// No description provided for @vaultDisappearOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get vaultDisappearOff;
+
+  /// No description provided for @vaultDisappearHour.
+  ///
+  /// In en, this message translates to:
+  /// **'After 1 hour'**
+  String get vaultDisappearHour;
+
+  /// No description provided for @vaultDisappearDay.
+  ///
+  /// In en, this message translates to:
+  /// **'After 1 day'**
+  String get vaultDisappearDay;
+
+  /// No description provided for @vaultDisappearWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'After 1 week'**
+  String get vaultDisappearWeek;
+
+  /// No description provided for @vaultDisappearMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'After 30 days'**
+  String get vaultDisappearMonth;
+
+  /// No description provided for @vaultDisappearOn.
+  ///
+  /// In en, this message translates to:
+  /// **'New vault photos and videos will now delete themselves. A timer marks them.'**
+  String get vaultDisappearOn;
+
+  /// No description provided for @vaultDisappearAfter.
+  ///
+  /// In en, this message translates to:
+  /// **'Disappear after…'**
+  String get vaultDisappearAfter;
+
+  /// No description provided for @vaultDisappearKeep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep (stop the timer)'**
+  String get vaultDisappearKeep;
+
+  /// No description provided for @vaultDisappearBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'Disappears'**
+  String get vaultDisappearBadge;
+
+  /// No description provided for @vaultContentSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by what is in photos'**
+  String get vaultContentSearch;
+
+  /// No description provided for @vaultContentSearchOn.
+  ///
+  /// In en, this message translates to:
+  /// **'The vault now looks at each photo on this phone, while it is open, so you can search for a dog, the beach or text in it. Nothing is uploaded.'**
+  String get vaultContentSearchOn;
+
+  /// No description provided for @vaultContentSearchOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Search by what is in photos is off, and what was worked out is forgotten.'**
+  String get vaultContentSearchOff;
 
   /// No description provided for @backupSpaceSaver.
   ///

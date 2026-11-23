@@ -392,7 +392,7 @@ class AppL10nEn extends AppL10n {
   String get vaultSearchClose => 'Close search';
 
   @override
-  String get vaultSearchHint => 'Album, month, year or date';
+  String get vaultSearchHint => 'Album, date, what is in it, or text';
 
   @override
   String get vaultSearchDates => 'Pick dates';
@@ -511,6 +511,52 @@ class AppL10nEn extends AppL10n {
   @override
   String get vaultLocationOn =>
       'New Private vault photos keep their place, inside the vault only. Saved and shared copies never carry it.';
+
+  @override
+  String get vaultDisappearTitle => 'Disappearing photos';
+
+  @override
+  String get vaultDisappearBody =>
+      'New photos and videos in the vault delete themselves for good after this time. They skip the trash and are never backed up. Items you already have stay as they are.';
+
+  @override
+  String get vaultDisappearOff => 'Off';
+
+  @override
+  String get vaultDisappearHour => 'After 1 hour';
+
+  @override
+  String get vaultDisappearDay => 'After 1 day';
+
+  @override
+  String get vaultDisappearWeek => 'After 1 week';
+
+  @override
+  String get vaultDisappearMonth => 'After 30 days';
+
+  @override
+  String get vaultDisappearOn =>
+      'New vault photos and videos will now delete themselves. A timer marks them.';
+
+  @override
+  String get vaultDisappearAfter => 'Disappear after…';
+
+  @override
+  String get vaultDisappearKeep => 'Keep (stop the timer)';
+
+  @override
+  String get vaultDisappearBadge => 'Disappears';
+
+  @override
+  String get vaultContentSearch => 'Search by what is in photos';
+
+  @override
+  String get vaultContentSearchOn =>
+      'The vault now looks at each photo on this phone, while it is open, so you can search for a dog, the beach or text in it. Nothing is uploaded.';
+
+  @override
+  String get vaultContentSearchOff =>
+      'Search by what is in photos is off, and what was worked out is forgotten.';
 
   @override
   String get backupSpaceSaver => 'Space saver';

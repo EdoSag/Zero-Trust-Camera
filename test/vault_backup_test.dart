@@ -119,11 +119,15 @@ class _Account implements BackupStore {
   /// Uploads start failing after this many.
   int? failAfter;
 
+  /// Runs as each file goes up.
+  void Function()? onUpload;
+
   @override
   Future<ZtAttachmentRef> upload(Uint8List bytes, String mime) async {
     if (full) throw Exception('Storage quota exceeded');
     if (failAfter != null && uploads >= failAfter!) throw Exception('offline');
     uploads++;
+    onUpload?.call();
     final id = 'f$uploads';
     files[id] = bytes;
     return ZtAttachmentRef(
@@ -373,6 +377,35 @@ void main() {
     expect(again.paused, isFalse);
     expect(again.done, 2);
     expect(account.uploads, 3);
+  });
+
+  test('disappearing items are never backed up', () {
+    final lib = _on()..disappear(['a'], _t.add(const Duration(days: 1)));
+    expect(backup.eligible(lib, [_photo('a'), _photo('b')]).map((i) => i.id), [
+      'b',
+    ]);
+  });
+
+  test('put on a timer while going up: it comes down again', () async {
+    final lib = _on();
+    vault.files['a'] = VaultOriginal(
+      Uint8List.fromList([1, 2, 3]),
+      'image/jpeg',
+    );
+    account.onUpload = () =>
+        lib.disappear(['a'], _t.add(const Duration(hours: 1)));
+    final r = await backup.backUp(lib, [_photo('a')]);
+    expect(r.done, 0);
+    expect(account.media_, isEmpty);
+    expect(account.files, isEmpty);
+    expect(lib.backedUp, isEmpty);
+  });
+
+  test('putting a backed-up item on a timer deletes its copy', () {
+    final lib = _on()..backedUp['a'] = 'm1';
+    lib.disappear(['a'], _t.add(const Duration(hours: 1)));
+    expect(lib.backedUp, isEmpty);
+    expect(lib.backupDeletes, {'m1'});
   });
 
   test('only the albums picked, videos only when asked, trash never', () async {

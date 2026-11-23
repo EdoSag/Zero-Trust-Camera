@@ -136,6 +136,10 @@ jobs:
       - name: Fetch the OCR language files
         run: tool/fetch_tessdata.sh
 
+      # The picture model for searching the vault by what is in a photo, bundled the same way.
+      - name: Fetch the picture search model
+        run: tool/fetch_vision_model.sh
+
       - name: Release checks
         # Shared by every Zero-Trust app (Zero-Trust-Core,
         # packages/zt_release_checks): key, sync and sign-in vectors run with
@@ -157,7 +161,7 @@ jobs:
           # versionCode must grow with every build so updates install over
           # the previous APK; 1000 + run number stays above old pubspec codes.
           BUILD=$((1000 + GITHUB_RUN_NUMBER))
-          flutter build apk --release --build-number="$BUILD"
+          flutter build apk --release --build-number="$BUILD" --dart-define=ZT_CHANNEL=direct
           APK="$APP_SLUG-$VERSION-build$BUILD.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "$APK"
           {
@@ -185,7 +189,7 @@ jobs:
 
       - name: Build the Offline APK
         # The same app without the internet permission (no account, no
-        # backup). Built last, so the files above are the full build's. The
+        # backup), under its own app id so it installs next to the full app. Built last, so the files above are the full build's. The
         # check fails the run if a network permission slipped back in.
         run: |
           set -e
@@ -198,6 +202,12 @@ jobs:
           echo "$PERMISSIONS"
           if echo "$PERMISSIONS" | grep -E "android.permission.(INTERNET|ACCESS_NETWORK_STATE)'"; then
             echo "::error::The Offline APK asks for a network permission."
+            exit 1
+          fi
+          PACKAGE=$("$AAPT2" dump packagename "$OFFLINE_APK")
+          echo "Offline app id: $PACKAGE"
+          if [ "$PACKAGE" != "dev.sagron.zerotrustcamera.offline" ]; then
+            echo "::error::The Offline APK must have its own app id, not $PACKAGE."
             exit 1
           fi
           echo "OFFLINE_APK=$OFFLINE_APK" >> "$GITHUB_ENV"

@@ -56,3 +56,4 @@ app.*.map.json
 # Written and removed by `dart run zt_release_checks`.
 test/zt_release_checks_test.dart
 android/capture/src/main/assets/tessdata/
+android/capture/src/main/assets/vision/

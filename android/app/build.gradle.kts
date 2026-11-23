@@ -17,8 +17,10 @@ if (keystorePropertiesFile.exists()) {
 }
 
 // The Offline build: `flutter build apk --android-project-arg zt.offline=true
-// --dart-define=ZT_OFFLINE=true`. Same app and same id, without the internet
-// permission (src/offline/AndroidManifest.xml), so no account and no backup.
+// --dart-define=ZT_OFFLINE=true`. The same app without the internet permission
+// (src/offline/AndroidManifest.xml), so no account and no backup. It has its
+// own app id (dev.sagron.zerotrustcamera.offline) and name ("ZT Camera
+// Offline"), so it installs next to the normal app instead of over it.
 val ztOffline = (project.findProperty("zt.offline") as String?) == "true"
 
 android {
@@ -42,12 +44,17 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        if (ztOffline) versionNameSuffix = "-offline"
+        if (ztOffline) {
+            applicationIdSuffix = ".offline"
+            versionNameSuffix = "-offline"
+        }
     }
 
     if (ztOffline) {
         // Release only: debug and profile builds need the network for Flutter's tools.
         sourceSets.getByName("release").manifest.srcFile("src/offline/AndroidManifest.xml")
+        // Launcher shortcuts name their app by id: these point at the Offline one.
+        sourceSets.getByName("release").res.srcDir("src/offline/res")
     }
 
     signingConfigs {
