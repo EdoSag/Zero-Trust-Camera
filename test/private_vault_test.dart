@@ -1107,6 +1107,48 @@ void main() {
       expect(VaultLibrary.fromJson(vault.state).content, hasLength(2));
     });
 
+    testWidgets(
+      'photos labelled by the older picture model are looked at again',
+      (tester) async {
+        _phone(tester);
+        final vault =
+            FakeVault(
+                unlocked: true,
+                items: [_item('a', now), _item('b', now), _item('c', now)],
+                state: VaultLibrary(
+                  content: {
+                    // Saved before the model got its proper input (no version).
+                    'a': VaultContent.fromJson({
+                      'l': ['dishwasher'],
+                    })!,
+                    'b': const VaultContent(labels: ['tabby']),
+                  },
+                ).toJson(),
+              )
+              ..contents['a'] = const VaultContent(labels: ['golden retriever'])
+              ..contents['b'] = const VaultContent(labels: ['ignored'])
+              ..contents['c'] = const VaultContent(labels: ['seashore']);
+        expect(
+          VaultLibrary.fromJson(vault.state).content['a']!.outdated,
+          isTrue,
+        );
+        await tester.pumpWidget(
+          app(
+            PrivateVaultPage(now: () => now),
+            overrides: [vaultBackendProvider.overrideWithValue(vault)],
+          ),
+        );
+        await tester.pumpAndSettle();
+        // New photos first, then the outdated one; the current one is left.
+        expect(vault.described, ['c', 'a']);
+        final saved = VaultLibrary.fromJson(vault.state).content;
+        expect(saved['a']!.labels, ['golden retriever']);
+        expect(saved['a']!.outdated, isFalse);
+        expect(saved['b']!.labels, ['tabby']);
+        expect(saved['c']!.labels, ['seashore']);
+      },
+    );
+
     testWidgets('quick hide: turned on from More, face down locks', (
       tester,
     ) async {

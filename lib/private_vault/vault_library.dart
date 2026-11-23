@@ -417,13 +417,26 @@ class VaultAlbum {
 /// What is in one vault item, worked out on the phone: labels from the
 /// picture model (English, ImageNet's names) and the text read in a photo.
 class VaultContent {
-  const VaultContent({this.labels = const [], this.text = ''});
+  const VaultContent({
+    this.labels = const [],
+    this.text = '',
+    this.model = currentModel,
+  });
 
   /// Text beyond this is not kept: enough to find a receipt or a sign.
   static const maxText = 2000;
 
+  /// How the picture model is fed. 1: raw colours (labels came out worse);
+  /// 2: the colours the model was trained on. Photos looked at with an
+  /// older one are looked at again, keeping what they had until then.
+  static const currentModel = 2;
+
   final List<String> labels;
   final String text;
+  final int model;
+
+  /// Worked out by an older picture model: to be looked at again.
+  bool get outdated => model < currentModel;
 
   static VaultContent? fromJson(Object? v) {
     if (v is! Map<String, Object?>) return null;
@@ -433,6 +446,7 @@ class VaultContent {
           if (l is String) l,
       ],
       text: v['t'] as String? ?? '',
+      model: (v['m'] as num?)?.toInt() ?? 1,
     );
   }
 
@@ -455,5 +469,6 @@ class VaultContent {
   Map<String, Object?> toJson() => {
     'l': labels,
     if (text.isNotEmpty) 't': text,
+    'm': model,
   };
 }

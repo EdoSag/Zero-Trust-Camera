@@ -541,9 +541,10 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     unawaited(_autoBackup());
   }
 
-  /// Works out what is in each photo not looked at yet (newest first), one
-  /// at a time and only while the vault stays open, for search. Saved in the
-  /// sealed library every few photos.
+  /// Works out what is in each photo not looked at yet (newest first), then
+  /// those looked at by an older picture model, one at a time and only while
+  /// the vault stays open, for search. Saved in the sealed library every few
+  /// photos.
   Future<void> _describeContent() async {
     if (_describing) return;
     _describing = true;
@@ -552,10 +553,13 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
     bool open() => mounted && locks == _lockCount && _library.contentSearch;
     try {
       while (open()) {
-        final next = [
-          for (final i in _items)
-            if (!_library.content.containsKey(i.id)) i,
-        ].firstOrNull;
+        final next =
+            _items
+                .where((i) => !_library.content.containsKey(i.id))
+                .firstOrNull ??
+            _items
+                .where((i) => _library.content[i.id]?.outdated ?? false)
+                .firstOrNull;
         if (next == null) break;
         VaultContent? found;
         try {
@@ -565,8 +569,13 @@ class _PrivateVaultPageState extends ConsumerState<PrivateVaultPage>
         } on VaultLockedException {
           break;
         } on Object {
-          // A photo that can't be opened is not tried again each time.
-          found = const VaultContent();
+          // A photo that can't be opened is not tried again each time; one
+          // looked at before keeps what was found then.
+          final had = _library.content[next.id];
+          found = VaultContent(
+            labels: had?.labels ?? const [],
+            text: had?.text ?? '',
+          );
         }
         if (!open() || !_items.any((i) => i.id == next.id)) continue;
         _library.content[next.id] = found;
